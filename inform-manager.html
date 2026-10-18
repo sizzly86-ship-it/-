@@ -280,6 +280,8 @@
       if (!isHeader(line)) return false;
       if (hasBlankLinesBefore(lines, index, 2)) return true;
       if (unitCount === 0) {
+        // 최종 텍스트 맨 첫 줄: 기존 챔버 제목과 똑같을 때만 챔버로 인정 (새로 적은 공지가 챔버로 바뀌지 않도록)
+        if (opts.knownNames) return index === 0 && (opts.knownNames.has(normalizeName(line)) || (isPureHeader(line) && opts.knownNames.has(sectionKey(line))));
         if (opts.strictTop) return false;
         return index === 0 || isPureHeader(line);
       }
@@ -334,7 +336,10 @@
           return { important: imp, units: parseInformText(rest).units };
         }
       }
-      return parseInformText(text, { strictTop: !!imp });
+      if (imp) return parseInformText(text, { strictTop: true });
+      const knownNames = new Set();
+      [...state.reviewBaseline, ...state.units].forEach(u => { knownNames.add(u.name); knownNames.add(sectionKey(u.name)); });
+      return parseInformText(text, { knownNames });
     }
     /** 챔버로 나누지 못한 '챔버명처럼 보이는 줄'과 중복 챔버를 찾음 */
     function findSuspiciousLines(parsed, opts = {}) {

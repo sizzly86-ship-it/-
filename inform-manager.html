@@ -85,8 +85,9 @@
     .editor-stack.highlight #editOverlay { display: block; }
     .editor-stack.highlight #editText { color: transparent; -webkit-text-fill-color: transparent; caret-color: #111; background: transparent; }
     .editor-stack.highlight #editText::selection { background: rgba(70, 135, 230, .28); }
-    .overlay-new { color: #0869c4; font-weight: 700; }
-    .overlay-yesterday { color: #7a4b00; background: #ffe99a; font-weight: 800; border-radius: 3px; }
+    /* 굵게(bold)는 글자 폭이 달라져 실제 입력 위치와 어긋나므로 색·배경만 사용 */
+    .overlay-new { color: #0869c4; }
+    .overlay-yesterday { color: #7a4b00; background: #ffe99a; }
     .edit-actions { display: flex; justify-content: space-between; gap: 8px; }
     .edit-actions-left { display: flex; gap: 8px; }
     .important { display: flex; flex-direction: column; height: 100%; }
@@ -674,7 +675,8 @@
       const counts = new Map();
       added.forEach(line => counts.set(line, (counts.get(line) || 0) + 1));
       const highlightDay = highlightDateText();
-      $('#editOverlayContent').innerHTML = unit.edited.split('\n').map(raw => {
+      // 입력칸에 실제로 있는 글자 그대로 그려야 줄 위치가 맞음 (앞뒤 빈 줄 포함)
+      $('#editOverlayContent').innerHTML = $('#editText').value.split('\n').map(raw => {
         const line = raw.trim();
         const isNew = highlightNew && !!line && (counts.get(line) || 0) > 0;
         if (isNew) counts.set(line, counts.get(line) - 1);
@@ -720,6 +722,10 @@
     }
     function syncEditorOverlay() {
       const overlay = $('#editOverlay'), editor = $('#editText');
+      // 입력칸에 세로 스크롤바가 생기면 글자 영역이 좁아지므로, 덮어 그리는 쪽도 같은 폭으로 맞춤
+      const cs = getComputedStyle(editor);
+      const scrollbar = Math.max(0, editor.offsetWidth - editor.clientWidth - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth));
+      overlay.style.paddingRight = (parseFloat(cs.paddingRight) + scrollbar) + 'px';
       overlay.scrollTop = editor.scrollTop;
       overlay.scrollLeft = editor.scrollLeft;
     }
@@ -934,6 +940,7 @@
       document.documentElement.style.setProperty('--content-font-size', value + 'px');
       $('#fontSizeLabel').textContent = value;
       try { localStorage.setItem('informFontSize', value); } catch {}
+      updateLiveDiff();
     }
     function initDatePickers() {
       const entry = $('#entryDate');
@@ -992,6 +999,7 @@
     $('#editText').oninput = saveCurrent;
     $('#editText').onkeydown = handleEditorEnter;
     $('#editText').onscroll = syncEditorOverlay;
+    if (window.ResizeObserver) new ResizeObserver(() => syncEditorOverlay()).observe($('#editText'));
     $('#finalText').oninput = syncFinalEdits;
     $('#targetCheck').onchange = saveCurrent;
     $('#doneCheck').onchange = saveCurrent;

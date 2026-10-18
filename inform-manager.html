@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>라인 인폼 정리함</title>
+  <style>
+    :root {
+      --bg: #f4f6f8; --panel: #fff; --ink: #17212b; --muted: #6b7785;
+      --line: #dfe5eb; --navy: #17324d; --blue: #1f6feb; --blue2: #e9f2ff;
+      --yellow: #fff4cc; --yellow-line: #e2b93b; --green: #e7f7ed; --green-line: #35a461;
+      --red: #fff0f0; --red-line: #da4d4d; --shadow: 0 8px 26px rgba(26, 48, 70, .08);
+      --content-font-size: 15px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 980px; background: var(--bg); color: var(--ink); font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+    button, textarea, input { font: inherit; }
+    button { cursor: pointer; }
+    header { display: flex; align-items: center; gap: 14px; padding: 12px 25px; color: white; background: var(--navy); }
+    .header-title { flex: 0 0 auto; }
+    header h1 { margin: 0; font-size: 20px; letter-spacing: -.4px; }
+    header p { margin: 4px 0 0; font-size: 12px; color: #c8d5e2; }
+    .header-actions { display: flex; flex: 0 0 auto; gap: 8px; }
+    .top-utilities { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+    .font-control { display: flex; align-items: center; gap: 4px; margin-right: 5px; padding: 3px 5px 3px 9px; border: 1px solid #698096; border-radius: 7px; color: #dce8f3; font-size: 12px; }
+    .font-control button { width: 30px; height: 30px; border: 0; border-radius: 5px; color: white; background: rgba(255,255,255,.12); font-weight: 900; }
+    .font-control output { min-width: 34px; text-align: center; font-weight: 800; }
+    .app { padding: 18px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .toolbar h2 { margin: 0; font-size: 15px; }
+    .toolbar small { color: var(--muted); }
+    .editor-toolbar-actions { display: flex; align-items: center; gap: 10px; }
+    .merge-btn { border: 1px solid #73a6df; border-radius: 6px; padding: 6px 9px; color: #145999; background: #eaf4ff; font-size: 11px; font-weight: 900; }
+    .btn { border: 1px solid #bcc8d4; border-radius: 7px; padding: 8px 12px; color: var(--ink); background: white; font-weight: 700; }
+    .btn:hover { filter: brightness(.97); }
+    .btn.primary { border-color: var(--blue); color: white; background: var(--blue); }
+    .btn.ghost-dark { border-color: #698096; color: white; background: transparent; }
+    .btn.danger { border-color: #e4b4b4; color: #b52f2f; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .input-wrap { padding: 15px; }
+    textarea { width: 100%; resize: none; border: 1px solid #c9d2dc; border-radius: 8px; padding: 12px; line-height: 1.65; outline: none; background: #fbfcfd; }
+    textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,111,235,.1); background: white; }
+    #sourceText { height: calc(100vh - 215px); min-height: 450px; font-family: Consolas, "Malgun Gothic", monospace; }
+    #sourceText, #editText, #importantText, #finalText { font-size: var(--content-font-size); line-height: 1.8; }
+    .hint { margin-top: 10px; padding: 10px 12px; border-radius: 7px; color: #4b6073; background: #eef3f7; font-size: 12px; }
+    .workspace { display: grid; grid-template-columns: var(--unit-pane, 235px) 10px minmax(360px, 1fr) 10px var(--important-pane, 34%); gap: 2px; height: calc(100vh - 120px); min-height: 610px; }
+    .workspace > .panel { min-height: 0; overflow: hidden; }
+    .splitter { position: relative; z-index: 2; border-radius: 6px; cursor: col-resize; touch-action: none; }
+    .splitter::after { content: ''; position: absolute; top: 45%; bottom: 45%; left: 4px; width: 2px; min-height: 34px; border-radius: 2px; background: #aab8c5; transition: .15s; }
+    .splitter:hover, .splitter.dragging { background: #dceaff; }
+    .splitter:hover::after, .splitter.dragging::after { background: var(--blue); }
+    .unit-list { height: calc(100% - 55px); overflow: auto; padding: 7px; }
+    .unit { display: flex; align-items: center; gap: 9px; width: 100%; margin: 3px 0; padding: 10px; border: 1px solid transparent; border-radius: 7px; text-align: left; background: transparent; }
+    .unit:hover { background: #f3f6f9; }
+    .unit.active { border-color: #8ebcff; background: var(--blue2); }
+    .unit.changed { border-left: 5px solid var(--yellow-line); background: var(--yellow); }
+    .unit.checked:not(.changed) { border-left: 5px solid var(--green-line); background: var(--green); }
+    .unit.new-unit { box-shadow: inset 0 0 0 1px #8ebcff; }
+    .unit.merged-unit { border-right: 4px solid #8b5cc7; box-shadow: inset 0 0 0 1px #c8afe9; }
+    .unit .merged-label { color: #7544ad; font-weight: 900; }
+    .unit .name { flex: 1; font-size: var(--content-font-size); font-weight: 800; }
+    .unit .count { color: var(--muted); font-size: 11px; }
+    .mini-btn { border: 1px solid #9cb8d5; border-radius: 6px; padding: 5px 7px; color: #15549a; background: #eef6ff; font-size: 11px; font-weight: 800; }
+    .editor { display: flex; flex-direction: column; height: 100%; }
+    .editor-body { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; padding: 14px; }
+    .selected-title { display: flex; align-items: center; justify-content: space-between; }
+    .selected-title strong { font-size: 20px; }
+    .editor-flags { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 14px; }
+    .target-check { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+    .shift-picker { display: flex; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid #b9c8d7; border-radius: 6px; color: #31506e; background: #f4f8fc; font-size: 12px; font-weight: 800; }
+    .shift-picker select, .shift-picker input[type="date"], .target-check input[type="date"] {
+      border: 1px solid #9eb2c6; border-radius: 4px; padding: 2px 4px; color: #17324d; background: white; font-weight: 800; font-size: 12px;
+    }
+    .shift-picker input[type="date"], .target-check input[type="date"] { width: 128px; }
+    .editor-stack { position: relative; flex: 1; min-height: 210px; border-radius: 8px; background: #fbfcfd; }
+    #editText { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; min-height: 0; font-family: Consolas, "Malgun Gothic", monospace; }
+    #editOverlay { display: none; position: absolute; inset: 0; z-index: 1; overflow: hidden; border: 1px solid #c9d2dc; border-radius: 8px; padding: 12px; color: var(--ink); background: #fbfcfd; pointer-events: none; white-space: pre-wrap; overflow-wrap: break-word; font-family: Consolas, "Malgun Gothic", monospace; font-size: var(--content-font-size); line-height: 1.8; }
+    #editOverlayContent { min-height: 100%; }
+    .editor-stack.highlight #editOverlay { display: block; }
+    .editor-stack.highlight #editText { color: transparent; -webkit-text-fill-color: transparent; caret-color: #111; background: transparent; }
+    .editor-stack.highlight #editText::selection { background: rgba(70, 135, 230, .28); }
+    .overlay-new { color: #0869c4; font-weight: 700; }
+    .overlay-yesterday { color: #7a4b00; background: #ffe99a; font-weight: 800; border-radius: 3px; }
+    .edit-actions { display: flex; justify-content: space-between; gap: 8px; }
+    .important { display: flex; flex-direction: column; height: 100%; }
+    .important-note { margin: 12px 12px 0; padding: 10px; border-left: 4px solid #e0a500; border-radius: 5px; color: #715800; background: #fff8dc; font-size: 12px; }
+    #importantText { flex: 1; margin: 12px; width: calc(100% - 24px); min-height: 180px; background: #fffdf5; }
+    .autosave-box { padding: 7px 9px; border: 1px solid #b8cbe0; border-radius: 8px; background: #f3f8fd; }
+    .autosave-box strong { display: block; margin-bottom: 5px; color: #264b70; font-size: 12px; }
+    .autosave-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .autosave-row select { height: 30px; border: 1px solid #b8c5d2; border-radius: 5px; background: white; }
+    .autosave-row button { height: 30px; border: 1px solid #91aecb; border-radius: 5px; color: #174e83; background: white; font-size: 11px; font-weight: 800; }
+    .autosave-check { display: flex; align-items: center; gap: 5px; margin-top: 7px; font-size: 11px; font-weight: 700; }
+    .autosave-status { margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+    .autosave-status.ok { color: #247744; }
+    .autosave-status.error { color: #b13535; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px 12px; color: var(--muted); font-size: 11px; }
+    .dot { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 50%; }
+    .top-autosave { display: grid; grid-template-columns: auto minmax(135px, 190px); align-items: center; gap: 2px 8px; padding: 5px 8px; }
+    .top-autosave strong { display: none; }
+    .top-autosave .autosave-row { grid-row: 1 / span 2; flex-wrap: nowrap; }
+    .top-autosave .autosave-check { margin: 0; color: #264b70; white-space: nowrap; }
+    .top-autosave .autosave-status { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-legend { max-width: 175px; padding: 0; color: #dce8f3; gap: 4px 10px; line-height: 1.5; }
+    .top-legend span { white-space: nowrap; }
+    @media (max-width: 1500px) {
+      header p, .top-autosave .autosave-status { display: none; }
+      .top-autosave { grid-template-columns: auto auto; }
+      .top-legend { max-width: 135px; }
+    }
+    .review { display: grid; grid-template-columns: var(--final-pane, 50%) 10px minmax(350px, 1fr); gap: 2px; height: calc(100vh - 120px); min-height: 610px; }
+    .review .panel { min-height: 0; overflow: hidden; }
+    .review-box { height: calc(100% - 54px); overflow: auto; padding: 14px; }
+    .review > .panel:first-child .review-box { overflow: hidden; }
+    #finalText { display: block; height: 100%; min-height: 500px; overflow: auto; font-family: Consolas, "Malgun Gothic", monospace; }
+    .check-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .stat { padding: 12px; border: 1px solid var(--line); border-radius: 8px; text-align: center; }
+    .stat b { display: block; font-size: 22px; }
+    .stat span { color: var(--muted); font-size: 11px; }
+    .change-card { margin-bottom: 8px; padding: 11px; border: 1px solid var(--line); border-left: 5px solid var(--yellow-line); border-radius: 7px; background: #fffdf5; }
+    .change-card.ok { border-left-color: var(--green-line); background: #f5fcf7; }
+    .change-card.current { box-shadow: 0 0 0 2px #75aaf0; }
+    .change-card strong { display: block; margin-bottom: 5px; }
+    .change-card p { margin: 3px 0; color: var(--muted); font-size: 12px; }
+    .jump-unit { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; margin: -3px 0 4px; padding: 5px 7px; border: 1px solid #a9c5e4; border-radius: 6px; color: #123f70; background: #eef6ff; text-align: left; font-weight: 900; }
+    .jump-unit:hover { border-color: #5796df; background: #dfeeff; }
+    .jump-unit small { color: #527395; font-size: 10px; font-weight: 700; }
+    dialog.merge-dialog { width: min(760px, calc(100vw - 40px)); border: 0; border-radius: 12px; padding: 0; color: var(--ink); box-shadow: 0 18px 60px rgba(0,0,0,.28); }
+    dialog.merge-dialog::backdrop { background: rgba(13,31,49,.58); }
+    .merge-dialog-head { padding: 16px 18px; color: white; background: var(--navy); }
+    .merge-dialog-head h3 { margin: 0 0 4px; font-size: 17px; }
+    .merge-dialog-head p { margin: 0; color: #cbd9e6; font-size: 11px; }
+    .merge-dialog-body { padding: 16px 18px; }
+    #mergeText { height: 360px; font-family: Consolas, "Malgun Gothic", monospace; font-size: 14px; }
+    .merge-notice { margin: 0 0 10px; padding: 9px 11px; border-radius: 6px; color: #6d5400; background: #fff5ce; font-size: 11px; }
+    .merge-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .diff-group { margin-top: 9px; }
+    .diff-label { margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 800; }
+    .diff-line { margin: 3px 0; padding: 6px 8px; border-radius: 5px; white-space: pre-wrap; word-break: break-word; font-size: var(--content-font-size); line-height: 1.65; }
+    .diff-line.add { color: #176b37; background: #ddf5e6; }
+    .diff-line.remove { color: #a03232; background: #ffe3e3; text-decoration: line-through; }
+    .empty { padding: 28px 12px; color: var(--muted); text-align: center; }
+    .toast { position: fixed; right: 22px; bottom: 22px; z-index: 5; padding: 12px 17px; border-radius: 8px; color: white; background: #23384b; box-shadow: var(--shadow); opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-title"><h1>라인 인폼 정리함</h1><p>전체 인폼을 챔버별로 나누고, 수정한 뒤 안전하게 다시 합칩니다.</p></div>
+    <div class="top-utilities">
+      <div class="autosave-box top-autosave">
+        <strong>TXT 자동저장</strong>
+        <div class="autosave-row"><select id="autosaveInterval" title="자동저장 간격"><option value="1">1분마다</option><option value="3">3분마다</option><option value="5" selected>5분마다</option><option value="10">10분마다</option><option value="15">15분마다</option></select><button id="chooseAutosaveBtn">저장 파일 선택</button><button id="saveNowBtn" disabled>지금 저장</button></div>
+        <label class="autosave-check"><input type="checkbox" id="autosaveEnabled" checked disabled> 설정한 간격으로 자동저장</label>
+        <div class="autosave-status" id="autosaveStatus">먼저 저장할 TXT 파일을 선택하세요.</div>
+      </div>
+      <div class="legend top-legend">
+        <span><i class="dot" style="background:#e2b93b"></i>내용 수정</span>
+        <span><i class="dot" style="background:#35a461"></i>작업 대상</span>
+        <span><i class="dot" style="background:#8ebcff"></i>현재 선택</span>
+        <span><i class="dot" style="background:#8b5cc7"></i>병합됨</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="font-control"><span>글자 크기</span><button id="fontDownBtn" title="글자 작게">−</button><output id="fontSizeLabel">15</output><button id="fontUpBtn" title="글자 크게">＋</button></div>
+      <button class="btn ghost-dark" id="newBtn">처음부터</button>
+      <button class="btn ghost-dark" id="backBtn" style="display:none">← 수정 화면</button>
+      <button class="btn primary" id="reviewBtn" style="display:none">최종 확인 →</button>
+    </div>
+  </header>
+
+  <main class="app">
+    <section id="inputStep" class="step active panel">
+      <div class="toolbar">
+        <div><h2>① 챔버별 인폼만 복사해서 넣어주세요.</h2><small>챔버를 자동 구분합니다.</small></div>
+        <div><button class="btn" id="sampleBtn">예시 넣기</button> <button class="btn primary" id="parseBtn">챔버별로 나누기</button></div>
+      </div>
+      <div class="input-wrap">
+        <textarea id="sourceText" spellcheck="false" placeholder="여기에 전체 인폼을 붙여넣으세요.&#10;&#10;예)&#10;17D 5검증 (1/5)&#10;&#10;&#10;17D&#10;■ 8/1 주간 더미 200매 진행&#10;■ 8/1 야간 더미 200매 추가 진행"></textarea>
+        <div class="hint"><b>현재 인식 규칙:</b> 1~99 + A~E·H/호기/기타 형식의 챔버명이 나오면 구역으로 인식합니다. 기본은 <b>빈 줄 2줄 뒤</b>에 챔버명이 와야 합니다. 챔버명만 단독으로 쓴 줄(예: <b>17D</b>)은 빈 줄 1줄 뒤여도 인식하고, 맨 첫 줄의 챔버명도 인식합니다. 제목 뒤에 설명·괄호가 있어도 됩니다(예: 17D 5검증, 17D(긴급)). 챔버명처럼 보이는데 나뉘지 않은 줄이 있으면 나누기 전에 알려드립니다. (내용 줄의 ■ 여부는 보지 않습니다.)</div>
+      </div>
+    </section>
+
+    <section id="workStep" class="step">
+      <div class="workspace">
+        <aside class="panel">
+          <div class="toolbar"><h2>② 챔버 선택</h2><div><small id="unitTotal"></small> <button class="mini-btn" id="addUnitBtn">+ 새 구역</button></div></div>
+          <div class="unit-list" id="unitList"></div>
+        </aside>
+        <div class="splitter" id="unitSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
+        <section class="panel editor">
+          <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
+          <div class="editor-body" id="editorBody">
+            <div class="selected-title"><strong id="selectedName">챔버를 선택하세요</strong><div class="editor-flags"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조 <input type="date" id="highlightDate" title="강조할 날짜"></label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label></div></div>
+            <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
+            <div class="edit-actions"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
+          </div>
+        </section>
+        <div class="splitter" id="importantSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
+        <aside class="panel important">
+          <div class="toolbar"><h2>중요 인폼</h2><small>여기에 작성한 건 최상단에 작성됩니다.</small></div>
+          <textarea id="importantText" spellcheck="false"></textarea>
+        </aside>
+      </div>
+    </section>
+
+    <section id="reviewStep" class="step">
+      <div class="review">
+        <section class="panel">
+          <div class="toolbar"><h2>③ 최종 전체 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn primary" id="copyBtn">전체 복사</button></div></div>
+          <div class="review-box"><textarea id="finalText" spellcheck="false"></textarea></div>
+        </section>
+        <div class="splitter" id="reviewSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
+        <aside class="panel">
+          <div class="toolbar"><h2>반영 확인</h2><small>챔버명을 누르면 왼쪽 위치로 이동</small></div>
+          <div class="review-box">
+            <div class="check-summary">
+              <div class="stat"><b id="statUnits">0</b><span>전체 챔버</span></div>
+              <div class="stat"><b id="statTargets">0</b><span>작업 대상</span></div>
+              <div class="stat"><b id="statChanged">0</b><span>내용 수정</span></div>
+            </div>
+            <div id="changes"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+  <dialog class="merge-dialog" id="mergeDialog">
+    <div class="merge-dialog-head"><h3>추가 인폼 병합</h3><p>인계받은 나머지 챔버 인폼을 붙여넣으세요. 병합 후 번호·챔버 순서로 자동 정렬합니다.</p></div>
+    <div class="merge-dialog-body">
+      <div class="merge-notice">이미 현재 작업에 있는 챔버는 건너뛰어 수정 내용을 보호합니다. 새 챔버만 추가됩니다.</div>
+      <textarea id="mergeText" spellcheck="false" placeholder="여기에 추가로 인계받은 챔버 인폼을 붙여넣으세요."></textarea>
+      <div class="merge-dialog-actions"><button type="button" class="btn" id="cancelMergeBtn">취소</button><button type="button" class="btn primary" id="applyMergeBtn">병합하기</button></div>
+    </div>
+  </dialog>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const state = { importantOriginal: '', units: [], selected: -1, lastBuiltFinal: '', reviewBaseline: [] };
+    let autosaveFileHandle = null;
+    let autosaveTimer = null;
+    let recoverySaveTimer = null;
+    let autosaveDirty = false;
+    const sample = `※ 전체 공유: 17D 5검증 (1/5)\n※ 25D 샘플 확인 필요\n\n1D\n■ 특이사항 없음\n\n\n17D\n■ 8/1 주간 더미 200매 진행\n■ 8/1 야간 더미 200매 추가 진행\n■ 8/2 주간 1차 MT 진행\n\n\n18D\n■ 설비 점검 진행 중\n\n\n25D\n■ 샘플 3매 측정 예정`;
+
+    /** 챔버명으로 시작하는 줄 (17D, 17D 설명, 17D(긴급), 17D: …). 17Dummy, 3호기에서 같은 건 제외 */
+    function isHeader(line) {
+      return /^(?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타)(?![A-Za-z0-9가-힣])/i.test(line.trim());
+    }
+    /** 챔버명만 단독으로 있는 줄 (17D, 3호기) */
+    function isPureHeader(line) {
+      return /^(?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타)$/i.test(line.trim());
+    }
+    function normalizeName(line) {
+      return line.trim().replace(/^(\d+)\s*([A-EH]|호기|기타)/i, (_, n, type) => n + (/^[A-EH]$/i.test(type) ? type.toUpperCase() : type));
+    }
+    function sectionKey(line) {
+      const m = line.trim().match(/^(\d+)\s*([A-EH]|호기|기타)/i);
+      return m ? m[1] + (/^[A-EH]$/i.test(m[2]) ? m[2].toUpperCase() : m[2]) : line.trim();
+    }
+    /** 바로 앞에 빈 줄이 연속 n줄 있는지 */
+    function hasBlankLinesBefore(lines, index, count) {
+      if (index < count) return false;
+      for (let i = 1; i <= count; i++) {
+        if (lines[index - i].trim() !== '') return false;
+      }
+      return true;
+    }
+    /**
+     * 빈 줄 2줄 뒤 챔버명 → 챔버 시작.
+     * 첫 챔버: 맨 첫 줄이거나, 챔버명만 단독으로 있는 줄이면 공백 없이도 인정 (상단 공지 속 "3호기 PM 일정" 같은 줄은 공지로 둠).
+     * 이후 챔버: 챔버명만 단독으로 있는 줄이면 빈 줄 1줄 뒤여도 인정.
+     * strictTop: 최종 텍스트 재해석용. 상단 공지가 있으면 첫 챔버도 빈 줄 2줄이 있어야 인정.
+     */
+    function isChamberStart(lines, index, unitCount, opts = {}) {
+      const line = lines[index];
+      if (!isHeader(line)) return false;
+      if (hasBlankLinesBefore(lines, index, 2)) return true;
+      if (unitCount === 0) {
+        if (opts.strictTop) return false;
+        return index === 0 || isPureHeader(line);
+      }
+      return isPureHeader(line) && hasBlankLinesBefore(lines, index, 1);
+    }
+    function cleanInformText(raw) {
+      return String(raw || '').replace(/\r/g, '').replace(/[​﻿]/g, '');
+    }
+    function showStep(id) {
+      document.querySelectorAll('.step').forEach(x => x.classList.toggle('active', x.id === id));
+      $('#backBtn').style.display = id === 'reviewStep' ? '' : 'none';
+      $('#reviewBtn').style.display = id === 'workStep' ? '' : 'none';
+    }
+    function toast(msg) {
+      $('#toast').textContent = msg; $('#toast').classList.add('show');
+      const duration = Math.min(7000, Math.max(1800, String(msg).length * 90));
+      clearTimeout(toast.timer); toast.timer = setTimeout(() => $('#toast').classList.remove('show'), duration);
+    }
+    function parseInformText(raw, opts = {}) {
+      raw = cleanInformText(raw).trim();
+      if (!raw) return { important: '', units: [] };
+      const lines = raw.split('\n');
+      const important = []; const units = []; let current = null;
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
+        if (isChamberStart(lines, lineIndex, units.length, opts)) {
+          current = { name: normalizeName(line), bodyLines: [], lineIndex };
+          units.push(current);
+        } else if (current) current.bodyLines.push(line);
+        else important.push(line);
+      }
+      // 맨 첫 줄이 "17D 5검증 (1/5)"처럼 내용 없는 제목이고 같은 챔버가 뒤에 또 나오면 → 상단 공지로 취급
+      const first = units[0];
+      if (first && first.lineIndex === 0 && !first.bodyLines.join('').trim() && units.slice(1).some(u => sectionKey(u.name) === sectionKey(first.name))) {
+        units.shift();
+        important.unshift(lines[0], '');
+      }
+      const parsedUnits = units.map(u => {
+        const body = u.bodyLines.join('\n').trim();
+        return { name: u.name, original: body, edited: body, target: false, isNew: false, merged: false };
+      });
+      parsedUnits.sort(compareUnits);
+      return { important: important.join('\n').trim(), units: parsedUnits };
+    }
+    /** 최종 텍스트 재해석: 상단 중요 인폼은 그대로 떼어내고 나머지만 챔버로 나눔 */
+    function parseFinalText(raw) {
+      const text = cleanInformText(raw).trim();
+      const imp = cleanInformText($('#importantText').value).trim();
+      if (imp && text.startsWith(imp)) {
+        const rest = text.slice(imp.length);
+        if (/^[ \t]*\n[ \t]*\n/.test(rest) || !rest.trim()) {
+          return { important: imp, units: parseInformText(rest).units };
+        }
+      }
+      return parseInformText(text, { strictTop: !!imp });
+    }
+    /** 챔버로 나누지 못한 '챔버명처럼 보이는 줄'과 중복 챔버를 찾음 */
+    function findSuspiciousLines(parsed, opts = {}) {
+      const list = [];
+      if (!opts.skipImportant) parsed.important.split('\n').forEach(line => { if (isHeader(line)) list.push(`[상단 공지 안] ${line.trim()}`); });
+      parsed.units.forEach(u => u.edited.split('\n').forEach(line => { if (isHeader(line)) list.push(`[${u.name} 내용 안] ${line.trim()}`); }));
+      const counts = new Map();
+      parsed.units.forEach(u => counts.set(sectionKey(u.name), (counts.get(sectionKey(u.name)) || 0) + 1));
+      counts.forEach((n, key) => { if (n > 1) list.push(`[중복 챔버] ${key} 가 ${n}번 나옵니다`); });
+      return list;
+    }
+    function confirmSuspicious(parsed, actionText) {
+      const list = findSuspiciousLines(parsed);
+      if (!list.length) return true;
+      const shown = list.slice(0, 15).join('\n') + (list.length > 15 ? `\n… 외 ${list.length - 15}줄` : '');
+      return confirm(`챔버명처럼 보이지만 챔버로 나누지 않은 줄이 있습니다.\n(빈 줄 개수가 부족하면 앞 챔버 내용에 붙어버립니다)\n\n${shown}\n\n이대로 ${actionText}할까요?\n[취소]를 누르면 원문을 고칠 수 있습니다.`);
+    }
+    function markDirty() { autosaveDirty = true; }
+    function parseSource() {
+      const raw = $('#sourceText').value;
+      if (!raw.trim()) return toast('전체 인폼을 먼저 붙여넣어 주세요.');
+      const parsed = parseInformText(raw);
+      if (!parsed.units.length) return toast('챔버 제목을 찾지 못했습니다. 챔버명(예: 17D)과, 두 번째부터는 빈 줄 2줄 구분을 확인해 주세요.');
+      if (!confirmSuspicious(parsed, '진행')) return;
+      markDirty();
+      state.importantOriginal = parsed.important;
+      state.units = parsed.units;
+      state.selected = 0;
+      $('#importantText').value = state.importantOriginal;
+      renderUnits(); selectUnit(0); showStep('workStep');
+      saveRecoverySnapshot();
+      toast(`${state.units.length}개 챔버로 나누고 순서대로 정렬했습니다.`);
+    }
+    function bulletCount(text) { return text.split('\n').filter(x => x.trim().startsWith('■')).length; }
+    function changed(u) { return u.original.trim() !== u.edited.trim(); }
+    function unitClassName(u, i) {
+      const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
+      return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '');
+    }
+    function unitButtonHtml(u) {
+      const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
+      return `<span class="name">${escapeHtml(u.name)}</span><span class="count">${u.merged && showMerged ? '<span class="merged-label">병합 · </span>' : ''}${u.isNew ? '신규 · ' : ''}${bulletCount(u.edited)}건</span>`;
+    }
+    function renderUnits() {
+      const list = $('#unitList');
+      const savedScrollTop = list.scrollTop;
+      list.innerHTML = '';
+      state.units.forEach((u, i) => {
+        const b = document.createElement('button');
+        b.className = unitClassName(u, i);
+        b.innerHTML = unitButtonHtml(u);
+        b.dataset.index = i;
+        b.onclick = () => { saveCurrent(); selectUnit(i); };
+        b.onkeydown = event => handleUnitArrowKey(event, i);
+        list.appendChild(b);
+      });
+      list.scrollTop = savedScrollTop;
+      $('#unitTotal').textContent = `${state.units.length}개`;
+    }
+    function updateUnitButton(i) {
+      if (i < 0 || i >= state.units.length) return;
+      const b = $('#unitList').children[i];
+      if (!b) return;
+      b.className = unitClassName(state.units[i], i);
+      b.innerHTML = unitButtonHtml(state.units[i]);
+    }
+    function handleUnitArrowKey(event, i) {
+      if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      saveCurrent();
+      let next = event.key === 'Home' ? 0 : event.key === 'End' ? state.units.length - 1 : i + (event.key === 'ArrowDown' ? 1 : -1);
+      next = Math.max(0, Math.min(state.units.length - 1, next));
+      selectUnit(next);
+      const nextButton = $('#unitList').children[next];
+      if (nextButton) {
+        try { nextButton.focus({ preventScroll: true }); } catch { nextButton.focus(); }
+        nextButton.scrollIntoView({ block: 'nearest' });
+      }
+    }
+    function selectUnit(i) {
+      if (i < 0 || i >= state.units.length) return;
+      const previous = state.selected;
+      state.selected = i; const u = state.units[i];
+      $('#selectedName').textContent = u.name;
+      $('#editText').disabled = false; $('#editText').value = u.edited;
+      $('#targetCheck').checked = u.target;
+      $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false;
+      updateUnitButton(previous);
+      updateUnitButton(i);
+      updateLiveDiff();
+    }
+    function saveCurrent() {
+      if (state.selected < 0) return;
+      const u = state.units[state.selected];
+      const edited = $('#editText').value.trim(), target = $('#targetCheck').checked;
+      if (u.edited !== edited || u.target !== target) markDirty();
+      u.edited = edited; u.target = target;
+      updateUnitButton(state.selected);
+      updateLiveDiff();
+      scheduleRecoverySnapshot();
+    }
+    function handleEditorEnter(event) {
+      if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+      event.preventDefault();
+      const area = event.currentTarget;
+      const start = area.selectionStart, end = area.selectionEnd;
+      const dateText = entryDateText();
+      const prefix = `■ ${dateText} ${$('#shiftSelect').value} `;
+      const insertion = area.value.length === 0 && start === 0 && end === 0 ? prefix : '\n' + prefix;
+      insertTextWithUndo(area, insertion);
+      saveCurrent();
+    }
+    /** Ctrl+Z 되돌리기 기록이 끊기지 않도록 브라우저 입력 방식으로 글자를 넣음 */
+    function insertTextWithUndo(area, text) {
+      area.focus();
+      let ok = false;
+      try { ok = text ? document.execCommand('insertText', false, text) : document.execCommand('delete'); } catch {}
+      if (!ok) {
+        const start = area.selectionStart, end = area.selectionEnd;
+        area.setRangeText(text, start, end, 'end');
+      }
+    }
+    function restoreCurrent() {
+      const u = state.units[state.selected];
+      if (!u || $('#editText').value.trim() === u.original.trim()) return toast('이미 원본과 같습니다.');
+      if (!confirm(`${u.name}의 수정 내용을 지우고 원본으로 되돌릴까요?\n(되돌린 뒤에도 입력창에서 Ctrl+Z로 다시 살릴 수 있습니다)`)) return;
+      const area = $('#editText');
+      area.focus(); area.select();
+      insertTextWithUndo(area, u.original);
+      saveCurrent(); toast('원본 내용으로 되돌렸습니다. 취소하려면 Ctrl+Z');
+    }
+    function unitOrder(name) {
+      const m = sectionKey(name).match(/^(\d+)([A-EH]|호기|기타)$/i);
+      if (!m) return 99999;
+      const ranks = { A: 1, B: 2, C: 3, D: 4, E: 5, H: 6, '호기': 7, '기타': 8 };
+      const type = /^[A-EH]$/i.test(m[2]) ? m[2].toUpperCase() : m[2];
+      return Number(m[1]) * 10 + ranks[type];
+    }
+    function compareUnits(a, b) {
+      const order = unitOrder(a.name) - unitOrder(b.name);
+      return order || sectionKey(a.name).localeCompare(sectionKey(b.name), 'ko', { numeric: true });
+    }
+    function addNewUnit() {
+      const entered = prompt('추가할 구역명을 입력하세요.\n예: 40A, 40D, 40H, 40기타');
+      if (entered === null) return;
+      const name = normalizeName(entered);
+      if (!isHeader(name)) return toast('1~99 + A~E·H/호기/기타 형식으로 입력해 주세요.');
+      if (state.units.some(u => sectionKey(u.name) === sectionKey(name))) {
+        const i = state.units.findIndex(u => sectionKey(u.name) === sectionKey(name)); saveCurrent(); selectUnit(i); return toast('이미 있는 구역으로 이동했습니다.');
+      }
+      const newUnit = { name, original: '', edited: '', target: true, isNew: true, merged: false };
+      const order = unitOrder(name);
+      let insertAt = state.units.findIndex(u => unitOrder(u.name) > order);
+      if (insertAt < 0) insertAt = state.units.length;
+      saveCurrent(); state.units.splice(insertAt, 0, newUnit); state.selected = insertAt; renderUnits(); selectUnit(insertAt);
+      markDirty(); scheduleRecoverySnapshot();
+      $('#editText').focus(); toast(`${name} 구역을 새로 추가했습니다.`);
+    }
+    function openMergeDialog() {
+      $('#mergeText').value = '';
+      $('#mergeDialog').showModal();
+      setTimeout(() => $('#mergeText').focus(), 0);
+    }
+    function closeMergeDialog() {
+      $('#mergeDialog').close();
+    }
+    function mergeAdditionalInform() {
+      const raw = $('#mergeText').value.trim();
+      if (!raw) return toast('병합할 인폼을 붙여넣어 주세요.');
+      const parsed = parseInformText(raw);
+      if (!parsed.units.length) return toast('병합할 챔버 제목을 찾지 못했습니다.');
+      if (!confirmSuspicious(parsed, '병합')) return;
+
+      saveCurrent();
+      const selectedKey = state.selected >= 0 ? sectionKey(state.units[state.selected].name) : '';
+      const existing = new Map(state.units.map(u => [sectionKey(u.name), u]));
+      // 이미 있는 챔버 중 내용이 다른 것: 기존에 없는 줄만 뒤에 붙일지 물어봄
+      const conflicts = parsed.units.filter(unit => {
+        const old = existing.get(sectionKey(unit.name));
+        return old && lineDiff(old.edited, unit.edited).added.length > 0;
+      });
+      let appendConflicts = false;
+      if (conflicts.length) {
+        appendConflicts = confirm(`이미 있는 챔버인데 새 인폼에 다른 내용이 있습니다:\n${conflicts.map(u => u.name).join(', ')}\n\n[확인] 기존에 없는 줄만 기존 내용 아래에 추가\n[취소] 기존 내용 유지 (새 인폼 쪽은 버림)`);
+      }
+      const skipped = [], appended = [];
+      let added = 0;
+      parsed.units.forEach(unit => {
+        const key = sectionKey(unit.name);
+        const old = existing.get(key);
+        if (!old) {
+          unit.merged = true;
+          state.units.push(unit);
+          existing.set(key, unit);
+          added++;
+        } else if (conflicts.includes(unit) && appendConflicts) {
+          const newLines = lineDiff(old.edited, unit.edited).added;
+          old.edited = [old.edited, newLines.join('\n')].filter(Boolean).join('\n');
+          old.merged = true;
+          appended.push(old.name);
+        } else if (conflicts.includes(unit)) skipped.push(unit.name);
+      });
+      markDirty();
+      state.units.sort(compareUnits);
+
+      if (parsed.important) {
+        const current = $('#importantText').value.trim();
+        if (!current.includes(parsed.important)) $('#importantText').value = [current, parsed.important].filter(Boolean).join('\n');
+        const original = state.importantOriginal.trim();
+        if (!original.includes(parsed.important)) state.importantOriginal = [original, parsed.important].filter(Boolean).join('\n');
+      }
+      const source = $('#sourceText').value.trim();
+      $('#sourceText').value = [source, raw].filter(Boolean).join('\n\n\n');
+
+      const selectedIndex = state.units.findIndex(u => sectionKey(u.name) === selectedKey);
+      state.selected = selectedIndex >= 0 ? selectedIndex : (state.units.length ? 0 : -1);
+      renderUnits();
+      if (state.selected >= 0) selectUnit(state.selected);
+      saveRecoverySnapshot();
+      closeMergeDialog();
+      const appendedText = appended.length ? ` · 내용 추가: ${appended.join(', ')}` : '';
+      const duplicateText = skipped.length ? ` · 새 내용 버림: ${skipped.join(', ')}` : '';
+      toast(`${added}개 챔버를 추가하고 1~99 순서로 정렬했습니다${appendedText}${duplicateText}.`);
+    }
+    function buildFinal() {
+      saveCurrent();
+      const parts = [];
+      const imp = $('#importantText').value.trim(); if (imp) parts.push(imp);
+      state.units.forEach(u => parts.push(u.name + (u.edited ? '\n' + u.edited : '')));
+      return parts.join('\n\n\n');
+    }
+    function renderReview(preserveFinalText = false) {
+      const final = preserveFinalText ? $('#finalText').value : buildFinal();
+      if (!preserveFinalText) {
+        $('#finalText').value = final;
+        state.lastBuiltFinal = final;
+        state.finalTouched = false;
+        state.reviewBaseline = state.units.map(u => ({ ...u }));
+      }
+      const targets = state.units.filter(u => u.target); const changedUnits = state.units.filter(changed);
+      $('#statUnits').textContent = state.units.length; $('#statTargets').textContent = targets.length; $('#statChanged').textContent = changedUnits.length;
+      const box = $('#changes'); box.innerHTML = '';
+      // 최종 텍스트를 실제로 다시 나눠 보고, 확인 화면을 열 때 있던 챔버가 그대로 나오는지 검사
+      const check = parseFinalText(final);
+      const finalKeys = new Set(check.units.map(u => sectionKey(u.name)));
+      const missing = state.reviewBaseline.filter(u => !finalKeys.has(sectionKey(u.name)));
+      if (missing.length) {
+        const d = document.createElement('div'); d.className = 'change-card';
+        d.innerHTML = `<strong style="color:#b52f2f">챔버 누락 발견</strong><p>${escapeHtml(missing.map(x => x.name).join(', '))}</p><p>최종 텍스트에서 챔버 제목 앞 빈 줄 2줄이 지워졌거나 제목이 바뀌었는지 확인하세요.</p>`; box.appendChild(d);
+      }
+      const suspicious = findSuspiciousLines(check, { skipImportant: true });
+      if (suspicious.length) {
+        const d = document.createElement('div'); d.className = 'change-card';
+        d.innerHTML = `<strong style="color:#b52f2f">챔버로 나뉘지 않은 줄</strong>${suspicious.slice(0, 15).map(x => `<p>${escapeHtml(x)}</p>`).join('')}`; box.appendChild(d);
+      }
+      if ($('#importantText').value.trim() !== state.importantOriginal.trim()) addCard('중요 인폼', '상단 중요 인폼이 수정되었습니다.', false);
+      changedUnits.forEach(u => {
+        const before = bulletCount(u.original), after = bulletCount(u.edited);
+        const diff = lineDiff(u.original, u.edited);
+        addDiffCard(u.name, `수정 내용 반영 완료 · 항목 ${before}건 → ${after}건`, diff);
+      });
+      targets.filter(u => !changed(u)).forEach(u => addCard(u.name, '작업 대상으로 선택했지만 내용은 원본과 같습니다.', false));
+      if (!box.children.length) box.innerHTML = '<div class="empty">수정된 내용이 없습니다.<br>최종본은 원본과 동일합니다.</div>';
+      showStep('reviewStep');
+    }
+    function addCard(title, text, ok) {
+      const d = document.createElement('div'); d.className = 'change-card' + (ok ? ' ok' : '');
+      d.innerHTML = jumpTitleHtml(title) + `<p>${escapeHtml(text)}</p>`;
+      wireJumpButton(d, title);
+      $('#changes').appendChild(d);
+    }
+    function lineDiff(before, after) {
+      const oldLines = before.split('\n').map(x => x.trim()).filter(Boolean);
+      const newLines = after.split('\n').map(x => x.trim()).filter(Boolean);
+      const oldCounts = new Map(), newCounts = new Map();
+      oldLines.forEach(x => oldCounts.set(x, (oldCounts.get(x) || 0) + 1));
+      newLines.forEach(x => newCounts.set(x, (newCounts.get(x) || 0) + 1));
+      const removed = [], added = [], seenOld = new Map(), seenNew = new Map();
+      oldLines.forEach(x => { const n = (seenOld.get(x) || 0) + 1; seenOld.set(x, n); if (n > (newCounts.get(x) || 0)) removed.push(x); });
+      newLines.forEach(x => { const n = (seenNew.get(x) || 0) + 1; seenNew.set(x, n); if (n > (oldCounts.get(x) || 0)) added.push(x); });
+      return { added, removed };
+    }
+    function updateLiveDiff() {
+      const highlightNew = $('#highlightNewCheck').checked;
+      const highlightYesterday = $('#highlightYesterdayCheck').checked;
+      const enabled = (highlightNew || highlightYesterday) && state.selected >= 0 && state.units[state.selected];
+      $('#editorStack').classList.toggle('highlight', !!enabled);
+      if (!enabled) { $('#editOverlayContent').innerHTML = ''; return; }
+      const unit = state.units[state.selected];
+      const added = highlightNew ? lineDiff(unit.original, unit.edited).added : [];
+      const counts = new Map();
+      added.forEach(line => counts.set(line, (counts.get(line) || 0) + 1));
+      const highlightDay = highlightDateText();
+      $('#editOverlayContent').innerHTML = unit.edited.split('\n').map(raw => {
+        const line = raw.trim();
+        const isNew = highlightNew && !!line && (counts.get(line) || 0) > 0;
+        if (isNew) counts.set(line, counts.get(line) - 1);
+        const isYesterday = highlightYesterday && !isNew && lineHasDate(line, highlightDay);
+        const className = isNew ? 'overlay-new' : isYesterday ? 'overlay-yesterday' : '';
+        return `<span class="${className}">${raw ? escapeHtml(raw) : ' '}</span>`;
+      }).join('\n');
+      syncEditorOverlay();
+    }
+    function formatDateMD(date) {
+      return `${date.getMonth() + 1}/${date.getDate()}`;
+    }
+    function toInputDateValue(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    function parseInputDate(value) {
+      if (!value) return null;
+      const parts = value.split('-').map(Number);
+      if (parts.length !== 3 || parts.some(n => !n && n !== 0)) return null;
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    function defaultToday() { return new Date(); }
+    function defaultYesterday() {
+      const date = new Date();
+      date.setDate(date.getDate() - 1);
+      return date;
+    }
+    function entryDateText() {
+      const date = parseInputDate($('#entryDate').value) || defaultToday();
+      return formatDateMD(date);
+    }
+    function highlightDateText() {
+      const date = parseInputDate($('#highlightDate').value) || defaultYesterday();
+      return formatDateMD(date);
+    }
+    function lineHasDate(line, dateText) {
+      const escaped = dateText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`).test(line);
+    }
+    function syncEditorOverlay() {
+      const overlay = $('#editOverlay'), editor = $('#editText');
+      overlay.scrollTop = editor.scrollTop;
+      overlay.scrollLeft = editor.scrollLeft;
+    }
+    function recoveryPayload() {
+      return {
+        version: 1,
+        savedAt: Date.now(),
+        sourceText: $('#sourceText').value,
+        importantOriginal: state.importantOriginal,
+        importantEdited: $('#importantText').value,
+        selected: state.selected,
+        units: state.units.map(u => ({ name: u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew }))
+      };
+    }
+    function saveRecoverySnapshot() {
+      if (!state.units.length) return;
+      try {
+        localStorage.setItem('informRecoveryV1', JSON.stringify(recoveryPayload()));
+      } catch (error) {
+        const status = $('#autosaveStatus');
+        if (status) { status.textContent = '브라우저 복구본 저장 실패: 입력 내용이 너무 크거나 저장 공간이 부족합니다.'; status.className = 'autosave-status error'; }
+      }
+    }
+    function scheduleRecoverySnapshot() {
+      clearTimeout(recoverySaveTimer);
+      recoverySaveTimer = setTimeout(saveRecoverySnapshot, 800);
+    }
+    function checkRecoverySnapshot() {
+      try {
+        const raw = localStorage.getItem('informRecoveryV1');
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!saved.units || !saved.units.length) return;
+        const when = new Date(saved.savedAt).toLocaleString();
+        if (!confirm(`${when}에 자동 보관된 작업이 있습니다.\n이전 작업을 복구할까요?`)) return;
+        state.importantOriginal = saved.importantOriginal || '';
+        state.units = saved.units.map(u => ({ name: u.name, original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew }));
+        state.selected = Math.max(0, Math.min(Number(saved.selected) || 0, state.units.length - 1));
+        $('#sourceText').value = saved.sourceText || '';
+        $('#importantText').value = saved.importantEdited || state.importantOriginal;
+        renderUnits(); selectUnit(state.selected); showStep('workStep');
+        toast('이전 작업을 복구했습니다.');
+      } catch {}
+    }
+    function setAutosaveStatus(text, kind) {
+      const status = $('#autosaveStatus');
+      status.textContent = text;
+      status.className = 'autosave-status' + (kind ? ' ' + kind : '');
+    }
+    async function chooseAutosaveFile(writeImmediately = true) {
+      if (!window.showSaveFilePicker) {
+        setAutosaveStatus('이 브라우저는 같은 TXT 파일 자동저장을 지원하지 않습니다. 최신 Edge 또는 Chrome으로 열어주세요.', 'error');
+        return false;
+      }
+      try {
+        autosaveFileHandle = await window.showSaveFilePicker({
+          suggestedName: `라인인폼_${$('#entryDate').value || toInputDateValue(new Date())}_${$('#shiftSelect').value}.txt`,
+          types: [{ description: '텍스트 파일', accept: { 'text/plain': ['.txt'] } }]
+        });
+        $('#autosaveEnabled').disabled = false;
+        $('#autosaveEnabled').checked = true;
+        $('#saveNowBtn').disabled = false;
+        $('#chooseAutosaveBtn').textContent = '저장 파일 변경';
+        updateAutosaveTimer();
+        if (writeImmediately) await writeAutosaveFile(true);
+        return true;
+      } catch (error) {
+        if (error && error.name !== 'AbortError') setAutosaveStatus('자동저장 파일을 선택하지 못했습니다: ' + error.message, 'error');
+        return false;
+      }
+    }
+    function updateAutosaveTimer() {
+      clearInterval(autosaveTimer);
+      autosaveTimer = null;
+      if (!autosaveFileHandle || !$('#autosaveEnabled').checked) {
+        if (autosaveFileHandle) setAutosaveStatus('자동저장이 일시정지되었습니다.', '');
+        return;
+      }
+      const minutes = Number($('#autosaveInterval').value) || 5;
+      autosaveTimer = setInterval(() => writeAutosaveFile(false), minutes * 60 * 1000);
+      setAutosaveStatus(`${minutes}분 간격 자동저장 설정됨 · 브라우저 복구본은 10초 이내 갱신`, 'ok');
+    }
+    async function writeAutosaveFile(manual, textOverride = null, saveLabel = '') {
+      if (!autosaveFileHandle) return false;
+      if (!state.units.length) { setAutosaveStatus('인폼을 챔버별로 나눈 뒤 자동저장할 수 있습니다.', 'error'); return false; }
+      // 자동저장은 바뀐 내용이 있을 때만 (최종 저장한 파일을 그대로 다시 덮어쓰지 않도록)
+      if (!manual && !autosaveDirty) return true;
+      try {
+        const inReview = $('#reviewStep').classList.contains('active');
+        const text = typeof textOverride === 'string' ? textOverride : inReview ? $('#finalText').value : buildFinal();
+        autosaveDirty = false;
+        const writable = await autosaveFileHandle.createWritable();
+        await writable.write('\ufeff' + text);
+        await writable.close();
+        saveRecoverySnapshot();
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setAutosaveStatus(`${saveLabel || (manual ? '직접 저장' : '자동저장')} 완료: ${time}`, 'ok');
+        return true;
+      } catch (error) {
+        autosaveDirty = true;
+        setAutosaveStatus('TXT 저장 실패: ' + error.message, 'error');
+        return false;
+      }
+    }
+    function addDiffCard(title, text, diff) {
+      const d = document.createElement('div'); d.className = 'change-card ok';
+      let html = jumpTitleHtml(title) + `<p>${escapeHtml(text)}</p>`;
+      if (diff.added.length) html += `<div class="diff-group"><div class="diff-label">추가된 내용</div>${diff.added.map(x => `<div class="diff-line add">+ ${escapeHtml(x)}</div>`).join('')}</div>`;
+      if (diff.removed.length) html += `<div class="diff-group"><div class="diff-label">삭제되거나 변경 전 내용</div>${diff.removed.map(x => `<div class="diff-line remove">− ${escapeHtml(x)}</div>`).join('')}</div>`;
+      d.innerHTML = html; wireJumpButton(d, title); $('#changes').appendChild(d);
+    }
+    function syncFinalEdits() {
+      state.finalTouched = true;
+      clearTimeout(syncFinalEdits.timer);
+      syncFinalEdits.timer = setTimeout(applyFinalEdits, 180);
+    }
+    function applyFinalEdits() {
+      const raw = $('#finalText').value;
+      // 최종 확인 화면에서 아무것도 안 고쳤으면 다시 나누지 않음 (구조가 바뀌는 것 방지)
+      if (!state.finalTouched) return;
+      const parsed = parseFinalText(raw);
+      if (!parsed.units.length) return;
+      markDirty();
+
+      const selectedKey = state.selected >= 0 ? sectionKey(state.units[state.selected].name) : '';
+      // 입력 중 잠깐 사라졌다 다시 생긴 챔버도 원본·작업대상 정보를 잃지 않도록 확인 화면을 열 때 상태도 같이 참고
+      const previous = new Map(state.reviewBaseline.map(unit => [sectionKey(unit.name), unit]));
+      state.units.forEach(unit => previous.set(sectionKey(unit.name), unit));
+      state.units = parsed.units.map(unit => {
+        const old = previous.get(sectionKey(unit.name));
+        return {
+          name: unit.name,
+          original: old ? old.original : '',
+          edited: unit.edited,
+          target: old ? old.target : true,
+          isNew: old ? old.isNew : true,
+          merged: old ? !!old.merged : false
+        };
+      });
+      $('#importantText').value = parsed.important;
+      const selectedIndex = state.units.findIndex(unit => sectionKey(unit.name) === selectedKey);
+      state.selected = selectedIndex >= 0 ? selectedIndex : 0;
+      renderUnits();
+      selectUnit(state.selected);
+      renderReview(true);
+      scheduleRecoverySnapshot();
+    }
+    function jumpTitleHtml(title) {
+      const jumpable = state.units.some(u => u.name === title);
+      return jumpable
+        ? `<button type="button" class="jump-unit"><span>${escapeHtml(title)}</span><small>최종 인폼 위치로 이동 →</small></button>`
+        : `<strong>${escapeHtml(title)}</strong>`;
+    }
+    function wireJumpButton(card, title) {
+      const button = card.querySelector('.jump-unit');
+      if (button) button.onclick = () => jumpToFinal(title, card);
+    }
+    function jumpToFinal(title, card) {
+      const area = $('#finalText');
+      const lines = area.value.split('\n');
+      let index = 0, lineNumber = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() === title.trim()) { lineNumber = i; break; }
+        index += lines[i].length + 1;
+      }
+      if (lineNumber < 0) return toast(`${title} 위치를 찾지 못했습니다.`);
+      area.focus();
+      area.setSelectionRange(index, index + lines[lineNumber].length);
+      const style = getComputedStyle(area);
+      const lineHeight = parseFloat(style.lineHeight) || (parseFloat(style.fontSize) || 15) * 1.8;
+      area.scrollTop = Math.max(0, lineNumber * lineHeight - area.clientHeight * 0.3);
+      document.querySelectorAll('.change-card.current').forEach(x => x.classList.remove('current'));
+      if (card) card.classList.add('current');
+      toast(`${title} 위치로 이동했습니다.`);
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    async function copyFinal() {
+      try { await navigator.clipboard.writeText($('#finalText').value); toast('최종 인폼을 복사했습니다.'); }
+      catch { $('#finalText').select(); document.execCommand('copy'); toast('최종 인폼을 복사했습니다.'); }
+    }
+    async function downloadFinal() {
+      clearTimeout(syncFinalEdits.timer);
+      applyFinalEdits();
+      if (!autosaveFileHandle) {
+        const selected = await chooseAutosaveFile(false);
+        if (!selected) return;
+      }
+      const ok = await writeAutosaveFile(true, $('#finalText').value, '최종 저장');
+      if (ok) toast('자동저장과 같은 TXT 파일에 최종 저장했습니다.');
+      else toast('최종 저장에 실패했습니다. 상단 저장 상태 메시지를 확인하고 다시 시도해 주세요.');
+    }
+    function resetAll() {
+      if ((state.units.length || $('#sourceText').value) && !confirm('현재 작업을 지우고 처음부터 시작할까요?')) return;
+      state.units = []; state.selected = -1; state.importantOriginal = '';
+      $('#sourceText').value = ''; $('#importantText').value = ''; $('#editText').value = ''; $('#finalText').value = '';
+      $('#editOverlayContent').innerHTML = ''; $('#editorStack').classList.remove('highlight');
+      try { localStorage.removeItem('informRecoveryV1'); } catch {}
+      // 새 작업이 이전 근무 TXT 파일을 덮어쓰지 않도록 저장 파일 연결도 끊음
+      state.lastBuiltFinal = ''; state.reviewBaseline = []; state.finalTouched = false;
+      autosaveFileHandle = null; clearInterval(autosaveTimer); autosaveTimer = null; autosaveDirty = false;
+      $('#saveNowBtn').disabled = true; $('#autosaveEnabled').disabled = true; $('#autosaveEnabled').checked = true;
+      $('#chooseAutosaveBtn').textContent = '저장 파일 선택';
+      setAutosaveStatus('새 작업입니다. 저장할 TXT 파일을 다시 선택하세요.', '');
+      showStep('inputStep'); $('#reviewBtn').style.display = 'none'; $('#backBtn').style.display = 'none';
+    }
+    function setFontSize(size) {
+      const value = Math.max(8, Math.min(24, Number(size) || 15));
+      document.documentElement.style.setProperty('--content-font-size', value + 'px');
+      $('#fontSizeLabel').textContent = value;
+      try { localStorage.setItem('informFontSize', value); } catch {}
+    }
+    function initDatePickers() {
+      const entry = $('#entryDate');
+      const highlight = $('#highlightDate');
+      if (!entry.value) entry.value = toInputDateValue(defaultToday());
+      if (!highlight.value) highlight.value = toInputDateValue(defaultYesterday());
+    }
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+    function savePaneSizes() {
+      try {
+        const work = $('#workStep .workspace'), review = $('#reviewStep .review');
+        localStorage.setItem('informPaneSizes', JSON.stringify({
+          unit: work.style.getPropertyValue('--unit-pane'),
+          important: work.style.getPropertyValue('--important-pane'),
+          final: review.style.getPropertyValue('--final-pane')
+        }));
+      } catch {}
+    }
+    function restorePaneSizes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('informPaneSizes') || '{}');
+        if (saved.unit) $('#workStep .workspace').style.setProperty('--unit-pane', saved.unit);
+        if (saved.important) $('#workStep .workspace').style.setProperty('--important-pane', saved.important);
+        if (saved.final) $('#reviewStep .review').style.setProperty('--final-pane', saved.final);
+      } catch {}
+    }
+    function setupSplitter(handle, onMove, onReset) {
+      handle.addEventListener('pointerdown', event => {
+        event.preventDefault(); handle.classList.add('dragging'); handle.setPointerCapture(event.pointerId);
+        const move = e => onMove(e.clientX);
+        const stop = () => { handle.classList.remove('dragging'); handle.removeEventListener('pointermove', move); savePaneSizes(); };
+        handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', stop, { once: true });
+      });
+      handle.addEventListener('dblclick', () => { onReset(); savePaneSizes(); toast('창 크기를 기본값으로 되돌렸습니다.'); });
+    }
+    function setupPaneResizing() {
+      const work = $('#workStep .workspace'), review = $('#reviewStep .review');
+      setupSplitter($('#unitSplitter'), x => {
+        const r = work.getBoundingClientRect();
+        const right = work.querySelector('.important').getBoundingClientRect().width;
+        work.style.setProperty('--unit-pane', clamp(x - r.left, 165, r.width - right - 390) + 'px');
+      }, () => work.style.setProperty('--unit-pane', '235px'));
+      setupSplitter($('#importantSplitter'), x => {
+        const r = work.getBoundingClientRect();
+        const left = work.querySelector('aside.panel').getBoundingClientRect().width;
+        work.style.setProperty('--important-pane', clamp(r.right - x, 260, r.width - left - 390) + 'px');
+      }, () => work.style.setProperty('--important-pane', '34%'));
+      setupSplitter($('#reviewSplitter'), x => {
+        const r = review.getBoundingClientRect();
+        review.style.setProperty('--final-pane', clamp(x - r.left, 360, r.width - 370) + 'px');
+      }, () => review.style.setProperty('--final-pane', '50%'));
+    }
+
+    $('#sampleBtn').onclick = () => { $('#sourceText').value = sample; };
+    $('#parseBtn').onclick = parseSource;
+    $('#editText').oninput = saveCurrent;
+    $('#editText').onkeydown = handleEditorEnter;
+    $('#editText').onscroll = syncEditorOverlay;
+    $('#finalText').oninput = syncFinalEdits;
+    $('#targetCheck').onchange = saveCurrent;
+    $('#highlightNewCheck').onchange = () => { try { localStorage.setItem('informHighlightNew', $('#highlightNewCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
+    $('#highlightYesterdayCheck').onchange = () => { try { localStorage.setItem('informHighlightYesterday', $('#highlightYesterdayCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
+    $('#showMergedCheck').onchange = () => { try { localStorage.setItem('informShowMerged', $('#showMergedCheck').checked ? '1' : '0'); } catch {} renderUnits(); };
+    $('#highlightDate').onchange = () => updateLiveDiff();
+    $('#shiftSelect').onchange = () => { try { localStorage.setItem('informShift', $('#shiftSelect').value); } catch {} };
+    $('#importantText').oninput = () => { markDirty(); scheduleRecoverySnapshot(); };
+    $('#restoreBtn').onclick = restoreCurrent;
+    $('#addUnitBtn').onclick = addNewUnit;
+    $('#mergeInformBtn').onclick = openMergeDialog;
+    $('#cancelMergeBtn').onclick = closeMergeDialog;
+    $('#applyMergeBtn').onclick = mergeAdditionalInform;
+    $('#mergeDialog').onclick = event => { if (event.target === $('#mergeDialog')) closeMergeDialog(); };
+    $('#saveNextBtn').onclick = () => { saveCurrent(); if (state.selected < state.units.length - 1) selectUnit(state.selected + 1); else toast('마지막 챔버입니다.'); };
+    $('#reviewBtn').onclick = () => renderReview();
+    $('#backBtn').onclick = () => { clearTimeout(syncFinalEdits.timer); applyFinalEdits(); showStep('workStep'); };
+    $('#copyBtn').onclick = copyFinal;
+    $('#downloadBtn').onclick = downloadFinal;
+    $('#newBtn').onclick = resetAll;
+    $('#chooseAutosaveBtn').onclick = () => chooseAutosaveFile(true);
+    $('#saveNowBtn').onclick = () => writeAutosaveFile(true);
+    $('#autosaveEnabled').onchange = updateAutosaveTimer;
+    $('#autosaveInterval').onchange = updateAutosaveTimer;
+    $('#fontDownBtn').onclick = () => setFontSize(Number($('#fontSizeLabel').textContent) - 1);
+    $('#fontUpBtn').onclick = () => setFontSize(Number($('#fontSizeLabel').textContent) + 1);
+    try { setFontSize(localStorage.getItem('informFontSize') || 15); } catch { setFontSize(15); }
+    try { $('#highlightNewCheck').checked = localStorage.getItem('informHighlightNew') === '1'; } catch {}
+    try { $('#highlightYesterdayCheck').checked = localStorage.getItem('informHighlightYesterday') === '1'; } catch {}
+    try { $('#showMergedCheck').checked = localStorage.getItem('informShowMerged') !== '0'; } catch { $('#showMergedCheck').checked = true; }
+    try { $('#shiftSelect').value = localStorage.getItem('informShift') || '주간'; } catch { $('#shiftSelect').value = '주간'; }
+    initDatePickers();
+    restorePaneSizes();
+    setupPaneResizing();
+    window.addEventListener('beforeunload', saveRecoverySnapshot);
+    setInterval(saveRecoverySnapshot, 10000);
+    setTimeout(checkRecoverySnapshot, 100);
+  </script>
+</body>
+</html>

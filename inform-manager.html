@@ -60,6 +60,10 @@
     .unit.new-unit { box-shadow: inset 0 0 0 1px #8ebcff; }
     .unit.merged-unit { border-right: 4px solid #8b5cc7; box-shadow: inset 0 0 0 1px #c8afe9; }
     .unit .merged-label { color: #7544ad; font-weight: 900; }
+    .unit.done { border-left: 5px solid #b6bec7; background: #eceff2; color: #8a949e; opacity: .6; }
+    .unit.done .name { text-decoration: line-through; text-decoration-color: rgba(120,130,140,.6); }
+    .unit.done.active { opacity: .85; border-color: #8ebcff; }
+    .unit .done-label { color: #6b7785; font-weight: 900; }
     .unit .name { flex: 1; font-size: var(--content-font-size); font-weight: 800; }
     .unit .count { color: var(--muted); font-size: 11px; }
     .mini-btn { border: 1px solid #9cb8d5; border-radius: 6px; padding: 5px 7px; color: #15549a; background: #eef6ff; font-size: 11px; font-weight: 800; }
@@ -84,6 +88,7 @@
     .overlay-new { color: #0869c4; font-weight: 700; }
     .overlay-yesterday { color: #7a4b00; background: #ffe99a; font-weight: 800; border-radius: 3px; }
     .edit-actions { display: flex; justify-content: space-between; gap: 8px; }
+    .edit-actions-left { display: flex; gap: 8px; }
     .important { display: flex; flex-direction: column; height: 100%; }
     .important-note { margin: 12px 12px 0; padding: 10px; border-left: 4px solid #e0a500; border-radius: 5px; color: #715800; background: #fff8dc; font-size: 12px; }
     #importantText { flex: 1; margin: 12px; width: calc(100% - 24px); min-height: 180px; background: #fffdf5; }
@@ -161,6 +166,7 @@
         <span><i class="dot" style="background:#35a461"></i>작업 대상</span>
         <span><i class="dot" style="background:#8ebcff"></i>현재 선택</span>
         <span><i class="dot" style="background:#8b5cc7"></i>병합됨</span>
+        <span><i class="dot" style="background:#b6bec7"></i>오늘 완료</span>
       </div>
     </div>
     <div class="header-actions">
@@ -193,9 +199,9 @@
         <section class="panel editor">
           <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
           <div class="editor-body" id="editorBody">
-            <div class="selected-title"><strong id="selectedName">챔버를 선택하세요</strong><div class="editor-flags"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조 <input type="date" id="highlightDate" title="강조할 날짜"></label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label></div></div>
+            <div class="selected-title"><strong id="selectedName">챔버를 선택하세요</strong><div class="editor-flags"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조 <input type="date" id="highlightDate" title="강조할 날짜"></label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
             <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
-            <div class="edit-actions"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
+            <div class="edit-actions"><div class="edit-actions-left"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn danger" id="deleteUnitBtn" disabled title="목록에서 선택한 챔버를 삭제합니다 (목록에서 Delete 키로도 가능)">이 챔버 삭제</button></div><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
           </div>
         </section>
         <div class="splitter" id="importantSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
@@ -239,7 +245,7 @@
 
   <script>
     const $ = s => document.querySelector(s);
-    const state = { importantOriginal: '', units: [], selected: -1, lastBuiltFinal: '', reviewBaseline: [] };
+    const state = { importantOriginal: '', units: [], selected: -1, lastBuiltFinal: '', reviewBaseline: [], deletedUnits: [] };
     let autosaveFileHandle = null;
     let autosaveTimer = null;
     let recoverySaveTimer = null;
@@ -321,7 +327,7 @@
       }
       const parsedUnits = units.map(u => {
         const body = u.bodyLines.join('\n').trim();
-        return { name: u.name, original: body, edited: body, target: false, isNew: false, merged: false };
+        return { name: u.name, original: body, edited: body, target: false, isNew: false, merged: false, done: false };
       });
       parsedUnits.sort(compareUnits);
       return { important: important.join('\n').trim(), units: parsedUnits };
@@ -365,6 +371,7 @@
       if (!parsed.units.length) return toast('챔버 제목을 찾지 못했습니다. 챔버명(예: 17D)과, 두 번째부터는 빈 줄 2줄 구분을 확인해 주세요.');
       if (!confirmSuspicious(parsed, '진행')) return;
       markDirty();
+      state.deletedUnits = [];
       state.importantOriginal = parsed.important;
       state.units = parsed.units;
       state.selected = 0;
@@ -377,11 +384,11 @@
     function changed(u) { return u.original.trim() !== u.edited.trim(); }
     function unitClassName(u, i) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
-      return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '');
+      return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '') + (u.done ? ' done' : '');
     }
     function unitButtonHtml(u) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
-      return `<span class="name">${escapeHtml(u.name)}</span><span class="count">${u.merged && showMerged ? '<span class="merged-label">병합 · </span>' : ''}${u.isNew ? '신규 · ' : ''}${bulletCount(u.edited)}건</span>`;
+      return `<span class="name">${escapeHtml(u.name)}</span><span class="count">${u.merged && showMerged ? '<span class="merged-label">병합 · </span>' : ''}${u.isNew ? '신규 · ' : ''}${u.done ? '<span class="done-label">완료 · </span>' : ''}${bulletCount(u.edited)}건</span>`;
     }
     function renderUnits() {
       const list = $('#unitList');
@@ -407,6 +414,7 @@
       b.innerHTML = unitButtonHtml(state.units[i]);
     }
     function handleUnitArrowKey(event, i) {
+      if (event.key === 'Delete') { event.preventDefault(); return deleteUnit(i); }
       if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
       saveCurrent();
@@ -426,17 +434,46 @@
       $('#selectedName').textContent = u.name;
       $('#editText').disabled = false; $('#editText').value = u.edited;
       $('#targetCheck').checked = u.target;
-      $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false;
+      $('#doneCheck').checked = !!u.done;
+      $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false; $('#deleteUnitBtn').disabled = false;
       updateUnitButton(previous);
       updateUnitButton(i);
       updateLiveDiff();
+    }
+    function clearEditor() {
+      $('#selectedName').textContent = '챔버를 선택하세요';
+      $('#editText').value = ''; $('#editText').disabled = true;
+      $('#targetCheck').checked = false; $('#doneCheck').checked = false;
+      ['#restoreBtn', '#saveNextBtn', '#deleteUnitBtn'].forEach(id => { $(id).disabled = true; });
+      updateLiveDiff();
+    }
+    function deleteUnit(i) {
+      if (i < 0 || i >= state.units.length) return;
+      saveCurrent();
+      const u = state.units[i];
+      const lines = u.edited ? u.edited.split('\n').filter(x => x.trim()).length : 0;
+      if (!confirm(`${u.name} 챔버를 삭제할까요?\n(내용 ${lines}줄도 최종 인폼에서 같이 빠집니다)`)) return;
+      state.units.splice(i, 1);
+      state.deletedUnits.push({ name: u.name, edited: u.edited });
+      markDirty();
+      if (!state.units.length) { state.selected = -1; renderUnits(); clearEditor(); }
+      else {
+        state.selected = -1;
+        renderUnits();
+        const next = Math.min(i, state.units.length - 1);
+        selectUnit(next);
+        const b = $('#unitList').children[next];
+        if (b) { try { b.focus({ preventScroll: true }); } catch { b.focus(); } b.scrollIntoView({ block: 'nearest' }); }
+      }
+      saveRecoverySnapshot();
+      toast(`${u.name} 챔버를 삭제했습니다.`);
     }
     function saveCurrent() {
       if (state.selected < 0) return;
       const u = state.units[state.selected];
       const edited = $('#editText').value.trim(), target = $('#targetCheck').checked;
       if (u.edited !== edited || u.target !== target) markDirty();
-      u.edited = edited; u.target = target;
+      u.edited = edited; u.target = target; u.done = $('#doneCheck').checked;
       updateUnitButton(state.selected);
       updateLiveDiff();
       scheduleRecoverySnapshot();
@@ -490,7 +527,7 @@
       if (state.units.some(u => sectionKey(u.name) === sectionKey(name))) {
         const i = state.units.findIndex(u => sectionKey(u.name) === sectionKey(name)); saveCurrent(); selectUnit(i); return toast('이미 있는 구역으로 이동했습니다.');
       }
-      const newUnit = { name, original: '', edited: '', target: true, isNew: true, merged: false };
+      const newUnit = { name, original: '', edited: '', target: true, isNew: true, merged: false, done: false };
       const order = unitOrder(name);
       let insertAt = state.units.findIndex(u => unitOrder(u.name) > order);
       if (insertAt < 0) insertAt = state.units.length;
@@ -595,6 +632,10 @@
         const d = document.createElement('div'); d.className = 'change-card';
         d.innerHTML = `<strong style="color:#b52f2f">챔버로 나뉘지 않은 줄</strong>${suspicious.slice(0, 15).map(x => `<p>${escapeHtml(x)}</p>`).join('')}`; box.appendChild(d);
       }
+      if (state.deletedUnits.length) {
+        const d = document.createElement('div'); d.className = 'change-card';
+        d.innerHTML = `<strong>삭제한 챔버</strong><p>${escapeHtml(state.deletedUnits.map(u => u.name).join(', '))}</p><p>최종 인폼에서 빠졌습니다. 잘못 지웠다면 수정 화면에서 "+ 새 구역"으로 다시 추가하세요.</p>`; box.appendChild(d);
+      }
       if ($('#importantText').value.trim() !== state.importantOriginal.trim()) addCard('중요 인폼', '상단 중요 인폼이 수정되었습니다.', false);
       changedUnits.forEach(u => {
         const before = bulletCount(u.original), after = bulletCount(u.edited);
@@ -690,7 +731,8 @@
         importantOriginal: state.importantOriginal,
         importantEdited: $('#importantText').value,
         selected: state.selected,
-        units: state.units.map(u => ({ name: u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew }))
+        deletedUnits: state.deletedUnits.map(u => ({ name: u.name, edited: u.edited })),
+        units: state.units.map(u => ({ name: u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }))
       };
     }
     function saveRecoverySnapshot() {
@@ -715,7 +757,8 @@
         const when = new Date(saved.savedAt).toLocaleString();
         if (!confirm(`${when}에 자동 보관된 작업이 있습니다.\n이전 작업을 복구할까요?`)) return;
         state.importantOriginal = saved.importantOriginal || '';
-        state.units = saved.units.map(u => ({ name: u.name, original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew }));
+        state.units = saved.units.map(u => ({ name: u.name, original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }));
+        state.deletedUnits = Array.isArray(saved.deletedUnits) ? saved.deletedUnits : [];
         state.selected = Math.max(0, Math.min(Number(saved.selected) || 0, state.units.length - 1));
         $('#sourceText').value = saved.sourceText || '';
         $('#importantText').value = saved.importantEdited || state.importantOriginal;
@@ -815,7 +858,8 @@
           edited: unit.edited,
           target: old ? old.target : true,
           isNew: old ? old.isNew : true,
-          merged: old ? !!old.merged : false
+          merged: old ? !!old.merged : false,
+          done: old ? !!old.done : false
         };
       });
       $('#importantText').value = parsed.important;
@@ -877,7 +921,8 @@
       $('#editOverlayContent').innerHTML = ''; $('#editorStack').classList.remove('highlight');
       try { localStorage.removeItem('informRecoveryV1'); } catch {}
       // 새 작업이 이전 근무 TXT 파일을 덮어쓰지 않도록 저장 파일 연결도 끊음
-      state.lastBuiltFinal = ''; state.reviewBaseline = []; state.finalTouched = false;
+      state.lastBuiltFinal = ''; state.reviewBaseline = []; state.finalTouched = false; state.deletedUnits = [];
+      clearEditor();
       autosaveFileHandle = null; clearInterval(autosaveTimer); autosaveTimer = null; autosaveDirty = false;
       $('#saveNowBtn').disabled = true; $('#autosaveEnabled').disabled = true; $('#autosaveEnabled').checked = true;
       $('#chooseAutosaveBtn').textContent = '저장 파일 선택';
@@ -949,6 +994,8 @@
     $('#editText').onscroll = syncEditorOverlay;
     $('#finalText').oninput = syncFinalEdits;
     $('#targetCheck').onchange = saveCurrent;
+    $('#doneCheck').onchange = saveCurrent;
+    $('#deleteUnitBtn').onclick = () => deleteUnit(state.selected);
     $('#highlightNewCheck').onchange = () => { try { localStorage.setItem('informHighlightNew', $('#highlightNewCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
     $('#highlightYesterdayCheck').onchange = () => { try { localStorage.setItem('informHighlightYesterday', $('#highlightYesterdayCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
     $('#showMergedCheck').onchange = () => { try { localStorage.setItem('informShowMerged', $('#showMergedCheck').checked ? '1' : '0'); } catch {} renderUnits(); };

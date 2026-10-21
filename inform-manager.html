@@ -185,8 +185,8 @@
         <div><button class="btn" id="sampleBtn">예시 넣기</button> <button class="btn primary" id="parseBtn">챔버별로 나누기</button></div>
       </div>
       <div class="input-wrap">
-        <textarea id="sourceText" spellcheck="false" placeholder="여기에 전체 인폼을 붙여넣으세요.&#10;&#10;예)&#10;17D 5검증 (1/5)&#10;&#10;&#10;17D&#10;■ 8/1 주간 더미 200매 진행&#10;■ 8/1 야간 더미 200매 추가 진행"></textarea>
-        <div class="hint"><b>현재 인식 규칙:</b> 1~99 + A~E·H/호기/기타 형식의 챔버명이 나오면 구역으로 인식합니다. 기본은 <b>빈 줄 2줄 뒤</b>에 챔버명이 와야 합니다. 챔버명만 단독으로 쓴 줄(예: <b>17D</b>)은 빈 줄 1줄 뒤여도 인식하고, 맨 첫 줄의 챔버명도 인식합니다. 제목 뒤에 설명·괄호가 있어도 됩니다(예: 17D 5검증, 17D(긴급)). 챔버명처럼 보이는데 나뉘지 않은 줄이 있으면 나누기 전에 알려드립니다. (내용 줄의 ■ 여부는 보지 않습니다.)</div>
+        <textarea id="sourceText" spellcheck="false" placeholder="여기에 전체 인폼을 붙여넣으세요.&#10;&#10;예)&#10;※ 전체 공유: 17D 5검증 (1/5)&#10;&#10;&#10;[[17D]]&#10;■ 8/1 주간 더미 200매 진행&#10;■ 8/1 야간 더미 200매 추가 진행&#10;&#10;&#10;[[18기타]]&#10;■ 설비 점검 진행 중"></textarea>
+        <div class="hint"><b>현재 인식 규칙:</b> 줄 맨 앞에 <b>[[17A]]</b>, <b>[[18기타]]</b>처럼 대괄호 두 개로 감싼 챔버명(1~99 + A~E·H/호기/기타)이 있으면 그 줄부터 새 챔버입니다. 빈 줄 개수는 상관없고, 제목 뒤에 설명이 있어도 됩니다(예: [[17D]] 5검증). 첫 챔버 위쪽은 중요 인폼(상단 공지)으로 들어갑니다. <b>[[ ]]가 하나도 없는 예전 형식</b>(빈 줄 2줄 + 17D)은 예전 규칙으로 나누고 [[17D]] 형식으로 바꿔 드립니다. [17A], [[17A]처럼 잘못 쓴 줄은 나누기 전에 알려드립니다.</div>
       </div>
     </section>
 
@@ -256,7 +256,7 @@
     const TAB_LOCK_KEY = 'informTabLock';
     const TAB_LOCK_STALE_MS = 150000; // 백그라운드 탭은 타이머가 1분 단위로 느려지므로 넉넉하게
     let isRecoveryOwner = true;
-    const sample = `※ 전체 공유: 17D 5검증 (1/5)\n※ 25D 샘플 확인 필요\n\n1D\n■ 특이사항 없음\n\n\n17D\n■ 8/1 주간 더미 200매 진행\n■ 8/1 야간 더미 200매 추가 진행\n■ 8/2 주간 1차 MT 진행\n\n\n18D\n■ 설비 점검 진행 중\n\n\n25D\n■ 샘플 3매 측정 예정`;
+    const sample = `※ 전체 공유: 17D 5검증 (1/5)\n※ 25D 샘플 확인 필요\n\n[[1D]]\n■ 특이사항 없음\n\n\n[[17D]]\n■ 8/1 주간 더미 200매 진행\n■ 8/1 야간 더미 200매 추가 진행\n■ 8/2 주간 1차 MT 진행\n\n\n[[18기타]]\n■ 설비 점검 진행 중\n\n\n[[25A]]\n■ 샘플 3매 측정 예정`;
 
     /** 챔버명으로 시작하는 줄 (17D, 17D 설명, 17D(긴급), 17D: …). 17Dummy, 3호기에서 같은 건 제외 */
     function isHeader(line) {
@@ -266,12 +266,35 @@
     function isPureHeader(line) {
       return /^(?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타)$/i.test(line.trim());
     }
+    /** [[17A]], [[ 18 기타 ]] 처럼 대괄호 두 개로 감싼 챔버 제목 줄 → [전체, 챔버명, 뒤 설명] */
+    function bracketMatch(line) {
+      return line.trim().match(/^\[\[\s*((?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타))\s*\]\](.*)$/i);
+    }
+    function isBracketHeader(line) { return !!bracketMatch(line); }
+    /** 17a, 17 A, 18 기타 → 17A, 18기타 */
+    function canonicalChamber(core) {
+      const m = core.trim().match(/^(\d+)\s*([A-EH]|호기|기타)$/i);
+      return m ? m[1] + (/^[A-EH]$/i.test(m[2]) ? m[2].toUpperCase() : m[2]) : core.trim();
+    }
+    /** 제목 줄을 [[17A]] 형식으로 통일 (예전 형식 17A 설명 → [[17A]] 설명) */
     function normalizeName(line) {
-      return line.trim().replace(/^(\d+)\s*([A-EH]|호기|기타)/i, (_, n, type) => n + (/^[A-EH]$/i.test(type) ? type.toUpperCase() : type));
+      const b = bracketMatch(line);
+      if (b) return `[[${canonicalChamber(b[1])}]]` + (b[2].trim() ? ' ' + b[2].trim() : '');
+      const m = line.trim().match(/^((?:\d+)\s*(?:[A-EH]|호기|기타))(.*)$/i);
+      if (m) return `[[${canonicalChamber(m[1])}]]` + (m[2].trim() ? ' ' + m[2].trim() : '');
+      return line.trim();
     }
     function sectionKey(line) {
-      const m = line.trim().match(/^(\d+)\s*([A-EH]|호기|기타)/i);
-      return m ? m[1] + (/^[A-EH]$/i.test(m[2]) ? m[2].toUpperCase() : m[2]) : line.trim();
+      const b = bracketMatch(line);
+      if (b) return canonicalChamber(b[1]);
+      const m = line.trim().match(/^(\d+\s*(?:[A-EH]|호기|기타))/i);
+      return m ? canonicalChamber(m[1]) : line.trim();
+    }
+    /** [[ ]] 형식으로 쓰려다 잘못 쓴 것 같은 줄 ([17A], [[17A], 17A]], [[100D]], [[17Z]] 등) */
+    function looksLikeBrokenBracket(line) {
+      const t = line.trim();
+      if (isBracketHeader(t)) return false;
+      return /^\[{1,3}\s*\d/.test(t) || /^\d{1,3}\s*\S{0,2}\s*\]{1,3}/.test(t);
     }
     /** 바로 앞에 빈 줄이 연속 n줄 있는지 */
     function hasBlankLinesBefore(lines, index, count) {
@@ -289,6 +312,8 @@
      */
     function isChamberStart(lines, index, unitCount, opts = {}) {
       const line = lines[index];
+      // [[ ]] 형식: 줄 맨 앞의 [[17A]]만 보면 됨 (빈 줄 개수 상관없음)
+      if (opts.bracket) return isBracketHeader(line);
       if (!isHeader(line)) return false;
       if (hasBlankLinesBefore(lines, index, 2)) return true;
       if (unitCount === 0) {
@@ -312,10 +337,13 @@
       const duration = Math.min(7000, Math.max(1800, String(msg).length * 90));
       clearTimeout(toast.timer); toast.timer = setTimeout(() => $('#toast').classList.remove('show'), duration);
     }
+    /** [[ ]] 제목이 하나라도 있으면 [[ ]] 형식, 없으면 예전 형식(빈 줄 2줄 + 17A)으로 나눔 */
     function parseInformText(raw, opts = {}) {
       raw = cleanInformText(raw).trim();
-      if (!raw) return { important: '', units: [] };
+      if (!raw) return { important: '', units: [], bracket: true };
       const lines = raw.split('\n');
+      const bracket = typeof opts.bracket === 'boolean' ? opts.bracket : lines.some(isBracketHeader);
+      opts = { ...opts, bracket };
       const important = []; const units = []; let current = null;
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
         const line = lines[lineIndex];
@@ -327,7 +355,7 @@
       }
       // 맨 첫 줄이 "17D 5검증 (1/5)"처럼 내용 없는 제목이고 같은 챔버가 뒤에 또 나오면 → 상단 공지로 취급
       const first = units[0];
-      if (first && first.lineIndex === 0 && !first.bodyLines.join('').trim() && units.slice(1).some(u => sectionKey(u.name) === sectionKey(first.name))) {
+      if (!bracket && first && first.lineIndex === 0 && !first.bodyLines.join('').trim() && units.slice(1).some(u => sectionKey(u.name) === sectionKey(first.name))) {
         units.shift();
         important.unshift(lines[0], '');
       }
@@ -336,7 +364,7 @@
         return { name: u.name, original: body, edited: body, target: false, isNew: false, merged: false, done: false };
       });
       parsedUnits.sort(compareUnits);
-      return { important: important.join('\n').trim(), units: parsedUnits };
+      return { important: important.join('\n').trim(), units: parsedUnits, bracket };
     }
     /** 최종 텍스트 재해석: 상단 중요 인폼은 그대로 떼어내고 나머지만 챔버로 나눔 */
     function parseFinalText(raw) {
@@ -345,9 +373,10 @@
       if (imp && text.startsWith(imp)) {
         const rest = text.slice(imp.length);
         if (/^[ \t]*\n[ \t]*\n/.test(rest) || !rest.trim()) {
-          return { important: imp, units: parseInformText(rest).units };
+          return { important: imp, units: parseInformText(rest).units, bracket: true };
         }
       }
+      if (text.split('\n').some(isBracketHeader)) return parseInformText(text, { bracket: true });
       if (imp) return parseInformText(text, { strictTop: true });
       const knownNames = new Set();
       [...state.reviewBaseline, ...state.units].forEach(u => { knownNames.add(u.name); knownNames.add(sectionKey(u.name)); });
@@ -356,8 +385,10 @@
     /** 챔버로 나누지 못한 '챔버명처럼 보이는 줄'과 중복 챔버를 찾음 */
     function findSuspiciousLines(parsed, opts = {}) {
       const list = [];
-      if (!opts.skipImportant) parsed.important.split('\n').forEach(line => { if (isHeader(line)) list.push(`[상단 공지 안] ${line.trim()}`); });
-      parsed.units.forEach(u => u.edited.split('\n').forEach(line => { if (isHeader(line)) list.push(`[${u.name} 내용 안] ${line.trim()}`); }));
+      // [[ ]] 형식: 잘못 쓴 대괄호나, 대괄호 없이 챔버명만 덩그러니 있는 줄을 알려줌
+      const suspicious = parsed.bracket === false ? isHeader : line => looksLikeBrokenBracket(line) || isPureHeader(line);
+      if (!opts.skipImportant) parsed.important.split('\n').forEach(line => { if (suspicious(line)) list.push(`[상단 공지 안] ${line.trim()}`); });
+      parsed.units.forEach(u => u.edited.split('\n').forEach(line => { if (suspicious(line)) list.push(`[${sectionKey(u.name)} 내용 안] ${line.trim()}`); }));
       const counts = new Map();
       parsed.units.forEach(u => counts.set(sectionKey(u.name), (counts.get(sectionKey(u.name)) || 0) + 1));
       counts.forEach((n, key) => { if (n > 1) list.push(`[중복 챔버] ${key} 가 ${n}번 나옵니다`); });
@@ -367,14 +398,15 @@
       const list = findSuspiciousLines(parsed);
       if (!list.length) return true;
       const shown = list.slice(0, 15).join('\n') + (list.length > 15 ? `\n… 외 ${list.length - 15}줄` : '');
-      return confirm(`챔버명처럼 보이지만 챔버로 나누지 않은 줄이 있습니다.\n(빈 줄 개수가 부족하면 앞 챔버 내용에 붙어버립니다)\n\n${shown}\n\n이대로 ${actionText}할까요?\n[취소]를 누르면 원문을 고칠 수 있습니다.`);
+      const why = parsed.bracket === false ? '(빈 줄 개수가 부족하면 앞 챔버 내용에 붙어버립니다)' : '(챔버는 줄 맨 앞에 [[17A]]처럼 대괄호 두 개로 적어야 나뉩니다)';
+      return confirm(`챔버명처럼 보이지만 챔버로 나누지 않은 줄이 있습니다.\n${why}\n\n${shown}\n\n이대로 ${actionText}할까요?\n[취소]를 누르면 원문을 고칠 수 있습니다.`);
     }
     function markDirty() { autosaveDirty = true; }
     function parseSource() {
       const raw = $('#sourceText').value;
       if (!raw.trim()) return toast('전체 인폼을 먼저 붙여넣어 주세요.');
       const parsed = parseInformText(raw);
-      if (!parsed.units.length) return toast('챔버 제목을 찾지 못했습니다. 챔버명(예: 17D)과, 두 번째부터는 빈 줄 2줄 구분을 확인해 주세요.');
+      if (!parsed.units.length) return toast('챔버 제목을 찾지 못했습니다. 챔버는 줄 맨 앞에 [[17A]], [[18기타]]처럼 적어 주세요.');
       if (!confirmSuspicious(parsed, '진행')) return;
       markDirty();
       state.deletedUnits = [];
@@ -384,7 +416,7 @@
       $('#importantText').value = state.importantOriginal;
       renderUnits(); selectUnit(0); showStep('workStep');
       saveRecoverySnapshot();
-      toast(`${state.units.length}개 챔버로 나누고 순서대로 정렬했습니다.`);
+      toast(`${state.units.length}개 챔버로 나누고 순서대로 정렬했습니다.` + (parsed.bracket ? '' : ' (예전 형식이라 [[ ]] 형식으로 바꿨습니다)'));
     }
     function bulletCount(text) { return text.split('\n').filter(x => x.trim().startsWith('■')).length; }
     function changed(u) { return u.original.trim() !== u.edited.trim(); }
@@ -547,10 +579,10 @@
       return order || sectionKey(a.name).localeCompare(sectionKey(b.name), 'ko', { numeric: true });
     }
     function addNewUnit() {
-      const entered = prompt('추가할 구역명을 입력하세요.\n예: 40A, 40D, 40H, 40기타');
+      const entered = prompt('추가할 구역명을 입력하세요.\n예: 40A, 40D, 40H, 40기타 (자동으로 [[40A]] 형식이 됩니다)');
       if (entered === null) return;
       const name = normalizeName(entered);
-      if (!isHeader(name)) return toast('1~99 + A~E·H/호기/기타 형식으로 입력해 주세요.');
+      if (!isBracketHeader(name)) return toast('1~99 + A~E·H/호기/기타 형식으로 입력해 주세요. 예: 40A, [[40기타]]');
       if (state.units.some(u => sectionKey(u.name) === sectionKey(name))) {
         const i = state.units.findIndex(u => sectionKey(u.name) === sectionKey(name)); saveCurrent(); selectUnit(i); return toast('이미 있는 구역으로 이동했습니다.');
       }
@@ -652,7 +684,7 @@
       const missing = state.reviewBaseline.filter(u => !finalKeys.has(sectionKey(u.name)));
       if (missing.length) {
         const d = document.createElement('div'); d.className = 'change-card';
-        d.innerHTML = `<strong style="color:#b52f2f">챔버 누락 발견</strong><p>${escapeHtml(missing.map(x => x.name).join(', '))}</p><p>최종 텍스트에서 챔버 제목 앞 빈 줄 2줄이 지워졌거나 제목이 바뀌었는지 확인하세요.</p>`; box.appendChild(d);
+        d.innerHTML = `<strong style="color:#b52f2f">챔버 누락 발견</strong><p>${escapeHtml(missing.map(x => x.name).join(', '))}</p><p>최종 텍스트에서 챔버 제목의 [[ ]]가 지워졌거나 제목이 바뀌었는지 확인하세요.</p>`; box.appendChild(d);
       }
       const suspicious = findSuspiciousLines(check, { skipImportant: true });
       if (suspicious.length) {
@@ -832,7 +864,7 @@
         const when = new Date(saved.savedAt).toLocaleString();
         if (!confirm(`${when}에 자동 보관된 작업이 있습니다.\n이전 작업을 복구할까요?`)) return;
         state.importantOriginal = saved.importantOriginal || '';
-        state.units = saved.units.map(u => ({ name: u.name, original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }));
+        state.units = saved.units.map(u => ({ name: normalizeName(u.name), original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }));
         state.deletedUnits = Array.isArray(saved.deletedUnits) ? saved.deletedUnits : [];
         state.selected = Math.max(0, Math.min(Number(saved.selected) || 0, state.units.length - 1));
         $('#sourceText').value = saved.sourceText || '';

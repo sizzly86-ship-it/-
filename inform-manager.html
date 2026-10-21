@@ -69,9 +69,12 @@
     .mini-btn { border: 1px solid #9cb8d5; border-radius: 6px; padding: 5px 7px; color: #15549a; background: #eef6ff; font-size: 11px; font-weight: 800; }
     .editor { display: flex; flex-direction: column; height: 100%; }
     .editor-body { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; padding: 14px; }
-    .selected-title { display: flex; align-items: center; justify-content: space-between; }
+    .selected-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
     .selected-title strong { font-size: 20px; }
-    .editor-flags { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 14px; }
+    .title-wrap { display: flex; flex: 1 0 auto; align-items: center; gap: 8px; min-width: 220px; max-width: 100%; }
+    .title-wrap strong { overflow-wrap: break-word; min-width: 0; }
+    .title-wrap .mini-btn { flex: 0 0 auto; white-space: nowrap; }
+    .editor-flags { display: flex; flex: 1 1 360px; min-width: 0; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 14px; }
     .target-check { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
     .shift-picker { display: flex; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid #b9c8d7; border-radius: 6px; color: #31506e; background: #f4f8fc; font-size: 12px; font-weight: 800; }
     .shift-picker select, .shift-picker input[type="date"], .target-check input[type="date"] {
@@ -186,7 +189,7 @@
       </div>
       <div class="input-wrap">
         <textarea id="sourceText" spellcheck="false" placeholder="여기에 전체 인폼을 붙여넣으세요.&#10;&#10;예)&#10;※ 전체 공유: 17D 5검증 (1/5)&#10;&#10;&#10;[[17D]]&#10;■ 8/1 주간 더미 200매 진행&#10;■ 8/1 야간 더미 200매 추가 진행&#10;&#10;&#10;[[18기타]]&#10;■ 설비 점검 진행 중"></textarea>
-        <div class="hint"><b>현재 인식 규칙:</b> 줄 맨 앞에 <b>[[17A]]</b>, <b>[[18기타]]</b>처럼 대괄호 두 개로 감싼 챔버명(1~99 + A~E·H/호기/기타)이 있으면 그 줄부터 새 챔버입니다. 빈 줄 개수는 상관없고, 제목 뒤에 설명이 있어도 됩니다(예: [[17D]] 5검증). 첫 챔버 위쪽은 중요 인폼(상단 공지)으로 들어갑니다. <b>[[ ]]가 하나도 없는 예전 형식</b>(빈 줄 2줄 + 17D)은 예전 규칙으로 나누고 [[17D]] 형식으로 바꿔 드립니다. [17A], [[17A]처럼 잘못 쓴 줄은 나누기 전에 알려드립니다.</div>
+        <div class="hint"><b>현재 인식 규칙:</b> 줄 맨 앞에 <b>[[17A]]</b>, <b>[[18기타]]</b>처럼 대괄호 두 개로 감싼 챔버명(1~99 + A~E·H/호기/기타)이 있으면 그 줄부터 새 챔버입니다. 빈 줄 개수는 상관없습니다. 괄호 안 챔버명 뒤에 띄어쓰고 인폼을 적어도 되고(예: <b>[[3A w2]]</b>), 괄호 뒤에 설명이 있어도 됩니다(예: [[17D]] 5검증). 챔버 구분은 앞의 챔버명(3A)으로만 합니다. 첫 챔버 위쪽은 중요 인폼(상단 공지)으로 들어갑니다. <b>[[ ]]가 하나도 없는 예전 형식</b>(빈 줄 2줄 + 17D)은 예전 규칙으로 나누고 [[17D]] 형식으로 바꿔 드립니다. [17A], [[17A]처럼 잘못 쓴 줄은 나누기 전에 알려드립니다.</div>
       </div>
     </section>
 
@@ -200,7 +203,7 @@
         <section class="panel editor">
           <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
           <div class="editor-body" id="editorBody">
-            <div class="selected-title"><strong id="selectedName">챔버를 선택하세요</strong><div class="editor-flags"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조 <input type="date" id="highlightDate" title="강조할 날짜"></label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
+            <div class="selected-title"><div class="title-wrap"><strong id="selectedName">챔버를 선택하세요</strong><button type="button" class="mini-btn" id="renameUnitBtn" disabled title="[[3A w2]]처럼 제목 안 인폼을 고칩니다">제목 수정</button></div><div class="editor-flags"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조 <input type="date" id="highlightDate" title="강조할 날짜"></label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
             <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
             <div class="edit-actions"><div class="edit-actions-left"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn danger" id="deleteUnitBtn" disabled title="목록에서 선택한 챔버를 삭제합니다 (목록에서 Delete 키로도 가능)">이 챔버 삭제</button></div><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
           </div>
@@ -266,9 +269,12 @@
     function isPureHeader(line) {
       return /^(?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타)$/i.test(line.trim());
     }
-    /** [[17A]], [[ 18 기타 ]] 처럼 대괄호 두 개로 감싼 챔버 제목 줄 → [전체, 챔버명, 뒤 설명] */
+    /**
+     * [[17A]], [[ 18 기타 ]], [[3A w2]] 처럼 대괄호 두 개로 감싼 챔버 제목 줄 → [전체, 챔버명, 괄호 안 추가 인폼, 괄호 뒤 설명]
+     * 챔버명 바로 뒤에 영문·숫자·한글이 붙으면(3Aw2) 챔버명으로 보지 않음 → 띄어쓰기나 기호로 구분
+     */
     function bracketMatch(line) {
-      return line.trim().match(/^\[\[\s*((?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타))\s*\]\](.*)$/i);
+      return line.trim().match(/^\[\[\s*((?:[1-9]|[1-9]\d)\s*(?:[A-EH]|호기|기타))(?![A-Za-z0-9가-힣])([^\]]*)\]\](.*)$/i);
     }
     function isBracketHeader(line) { return !!bracketMatch(line); }
     /** 17a, 17 A, 18 기타 → 17A, 18기타 */
@@ -279,10 +285,17 @@
     /** 제목 줄을 [[17A]] 형식으로 통일 (예전 형식 17A 설명 → [[17A]] 설명) */
     function normalizeName(line) {
       const b = bracketMatch(line);
-      if (b) return `[[${canonicalChamber(b[1])}]]` + (b[2].trim() ? ' ' + b[2].trim() : '');
+      // 괄호 안·뒤 글자는 띄어쓰기 여부를 그대로 둠 ([[3호기/2차]], [[3A w2]], [[17D]](긴급))
+      const keepGap = text => text.trim() ? text.replace(/^\s+/, ' ').trimEnd() : '';
+      if (b) return `[[${canonicalChamber(b[1])}${keepGap(b[2])}]]` + keepGap(b[3]);
       const m = line.trim().match(/^((?:\d+)\s*(?:[A-EH]|호기|기타))(.*)$/i);
       if (m) return `[[${canonicalChamber(m[1])}]]` + (m[2].trim() ? ' ' + m[2].trim() : '');
       return line.trim();
+    }
+    /** 사용자가 입력한 제목: [[ ]] 없이 "5A w3"만 써도 [[5A w3]]로 */
+    function titleFromInput(entered) {
+      const t = String(entered || '').trim();
+      return normalizeName(t.startsWith('[') ? t : `[[${t}]]`);
     }
     function sectionKey(line) {
       const b = bracketMatch(line);
@@ -361,7 +374,7 @@
       }
       const parsedUnits = units.map(u => {
         const body = u.bodyLines.join('\n').trim();
-        return { name: u.name, original: body, edited: body, target: false, isNew: false, merged: false, done: false };
+        return { name: u.name, originalName: u.name, original: body, edited: body, target: false, isNew: false, merged: false, done: false };
       });
       parsedUnits.sort(compareUnits);
       return { important: important.join('\n').trim(), units: parsedUnits, bracket };
@@ -419,7 +432,8 @@
       toast(`${state.units.length}개 챔버로 나누고 순서대로 정렬했습니다.` + (parsed.bracket ? '' : ' (예전 형식이라 [[ ]] 형식으로 바꿨습니다)'));
     }
     function bulletCount(text) { return text.split('\n').filter(x => x.trim().startsWith('■')).length; }
-    function changed(u) { return u.original.trim() !== u.edited.trim(); }
+    function nameChanged(u) { return !!u.originalName && u.name !== u.originalName; }
+    function changed(u) { return u.original.trim() !== u.edited.trim() || nameChanged(u); }
     function unitClassName(u, i) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
       return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '') + (u.done ? ' done' : '');
@@ -473,7 +487,7 @@
       $('#editText').disabled = false; $('#editText').value = u.edited;
       $('#targetCheck').checked = u.target;
       $('#doneCheck').checked = !!u.done;
-      $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false; $('#deleteUnitBtn').disabled = false;
+      $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false; $('#deleteUnitBtn').disabled = false; $('#renameUnitBtn').disabled = false;
       updateUnitButton(previous);
       updateUnitButton(i);
       updateLiveDiff();
@@ -482,8 +496,25 @@
       $('#selectedName').textContent = '챔버를 선택하세요';
       $('#editText').value = ''; $('#editText').disabled = true;
       $('#targetCheck').checked = false; $('#doneCheck').checked = false;
-      ['#restoreBtn', '#saveNextBtn', '#deleteUnitBtn'].forEach(id => { $(id).disabled = true; });
+      ['#restoreBtn', '#saveNextBtn', '#deleteUnitBtn', '#renameUnitBtn'].forEach(id => { $(id).disabled = true; });
       updateLiveDiff();
+    }
+    function renameUnit() {
+      if (state.selected < 0) return;
+      saveCurrent();
+      const u = state.units[state.selected];
+      const entered = prompt('챔버 제목을 수정하세요.\n예: [[3A w2]] → [[3A w3]]  (앞의 챔버명으로 챔버를 구분합니다)', u.name);
+      if (entered === null) return;
+      const name = titleFromInput(entered);
+      if (!isBracketHeader(name)) return toast('제목은 [[3A w2]]처럼 1~99 + A~E·H/호기/기타로 시작해야 합니다.');
+      if (name === u.name) return;
+      if (state.units.some(x => x !== u && sectionKey(x.name) === sectionKey(name))) return toast(`${sectionKey(name)} 챔버가 이미 있습니다. 다른 챔버명을 쓰거나 기존 챔버를 수정하세요.`);
+      u.name = name;
+      state.units.sort(compareUnits);
+      state.selected = -1;
+      renderUnits(); selectUnit(state.units.indexOf(u));
+      markDirty(); scheduleRecoverySnapshot();
+      toast(`제목을 ${name}(으)로 바꿨습니다.`);
     }
     function deleteUnit(i) {
       if (i < 0 || i >= state.units.length) return;
@@ -579,14 +610,14 @@
       return order || sectionKey(a.name).localeCompare(sectionKey(b.name), 'ko', { numeric: true });
     }
     function addNewUnit() {
-      const entered = prompt('추가할 구역명을 입력하세요.\n예: 40A, 40D, 40H, 40기타 (자동으로 [[40A]] 형식이 됩니다)');
+      const entered = prompt('추가할 구역명을 입력하세요.\n예: 40A, 40기타, [[40A w2]] (자동으로 [[40A]] 형식이 됩니다)');
       if (entered === null) return;
-      const name = normalizeName(entered);
+      const name = titleFromInput(entered);
       if (!isBracketHeader(name)) return toast('1~99 + A~E·H/호기/기타 형식으로 입력해 주세요. 예: 40A, [[40기타]]');
       if (state.units.some(u => sectionKey(u.name) === sectionKey(name))) {
         const i = state.units.findIndex(u => sectionKey(u.name) === sectionKey(name)); saveCurrent(); selectUnit(i); return toast('이미 있는 구역으로 이동했습니다.');
       }
-      const newUnit = { name, original: '', edited: '', target: true, isNew: true, merged: false, done: false };
+      const newUnit = { name, originalName: name, original: '', edited: '', target: true, isNew: true, merged: false, done: false };
       const order = unitOrder(name);
       let insertAt = state.units.findIndex(u => unitOrder(u.name) > order);
       if (insertAt < 0) insertAt = state.units.length;
@@ -615,11 +646,11 @@
       // 이미 있는 챔버 중 내용이 다른 것: 기존에 없는 줄만 뒤에 붙일지 물어봄
       const conflicts = parsed.units.filter(unit => {
         const old = existing.get(sectionKey(unit.name));
-        return old && lineDiff(old.edited, unit.edited).added.length > 0;
+        return old && (lineDiff(old.edited, unit.edited).added.length > 0 || old.name !== unit.name);
       });
       let appendConflicts = false;
       if (conflicts.length) {
-        appendConflicts = confirm(`이미 있는 챔버인데 새 인폼에 다른 내용이 있습니다:\n${conflicts.map(u => u.name).join(', ')}\n\n[확인] 기존에 없는 줄만 기존 내용 아래에 추가\n[취소] 기존 내용 유지 (새 인폼 쪽은 버림)`);
+        appendConflicts = confirm(`이미 있는 챔버인데 새 인폼에 다른 내용(또는 제목)이 있습니다:\n${conflicts.map(u => { const old = existing.get(sectionKey(u.name)); return old.name !== u.name ? `${old.name} → ${u.name}` : u.name; }).join('\n')}\n\n[확인] 새 제목으로 바꾸고, 기존에 없는 줄만 기존 내용 아래에 추가\n[취소] 기존 제목·내용 유지 (새 인폼 쪽은 버림)`);
       }
       const skipped = [], appended = [];
       let added = 0;
@@ -634,6 +665,7 @@
         } else if (conflicts.includes(unit) && appendConflicts) {
           const newLines = lineDiff(old.edited, unit.edited).added;
           old.edited = [old.edited, newLines.join('\n')].filter(Boolean).join('\n');
+          old.name = unit.name;
           old.merged = true;
           appended.push(old.name);
         } else if (conflicts.includes(unit)) skipped.push(unit.name);
@@ -699,7 +731,8 @@
       changedUnits.forEach(u => {
         const before = bulletCount(u.original), after = bulletCount(u.edited);
         const diff = lineDiff(u.original, u.edited);
-        addDiffCard(u.name, `수정 내용 반영 완료 · 항목 ${before}건 → ${after}건`, diff);
+        const titleText = nameChanged(u) ? `제목 ${u.originalName} → ${u.name} · ` : '';
+        addDiffCard(u.name, `${titleText}수정 내용 반영 완료 · 항목 ${before}건 → ${after}건`, diff);
       });
       targets.filter(u => !changed(u)).forEach(u => addCard(u.name, '작업 대상으로 선택했지만 내용은 원본과 같습니다.', false));
       if (!box.children.length) box.innerHTML = '<div class="empty">수정된 내용이 없습니다.<br>최종본은 원본과 동일합니다.</div>';
@@ -796,7 +829,7 @@
         importantEdited: $('#importantText').value,
         selected: state.selected,
         deletedUnits: state.deletedUnits.map(u => ({ name: u.name, edited: u.edited })),
-        units: state.units.map(u => ({ name: u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }))
+        units: state.units.map(u => ({ name: u.name, originalName: u.originalName || u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }))
       };
     }
     function readTabLock() {
@@ -864,7 +897,7 @@
         const when = new Date(saved.savedAt).toLocaleString();
         if (!confirm(`${when}에 자동 보관된 작업이 있습니다.\n이전 작업을 복구할까요?`)) return;
         state.importantOriginal = saved.importantOriginal || '';
-        state.units = saved.units.map(u => ({ name: normalizeName(u.name), original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }));
+        state.units = saved.units.map(u => ({ name: normalizeName(u.name), originalName: normalizeName(u.originalName || u.name), original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }));
         state.deletedUnits = Array.isArray(saved.deletedUnits) ? saved.deletedUnits : [];
         state.selected = Math.max(0, Math.min(Number(saved.selected) || 0, state.units.length - 1));
         $('#sourceText').value = saved.sourceText || '';
@@ -961,6 +994,7 @@
         const old = previous.get(sectionKey(unit.name));
         return {
           name: unit.name,
+          originalName: old ? (old.originalName || old.name) : unit.name,
           original: old ? old.original : '',
           edited: unit.edited,
           target: old ? old.target : true,
@@ -1118,6 +1152,7 @@
     $('#targetCheck').onchange = saveCurrent;
     $('#doneCheck').onchange = saveCurrent;
     $('#deleteUnitBtn').onclick = () => deleteUnit(state.selected);
+    $('#renameUnitBtn').onclick = renameUnit;
     $('#highlightNewCheck').onchange = () => { try { localStorage.setItem('informHighlightNew', $('#highlightNewCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
     $('#highlightYesterdayCheck').onchange = () => { try { localStorage.setItem('informHighlightYesterday', $('#highlightYesterdayCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
     $('#showMergedCheck').onchange = () => { try { localStorage.setItem('informShowMerged', $('#showMergedCheck').checked ? '1' : '0'); } catch {} renderUnits(); };

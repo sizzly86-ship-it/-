@@ -1,12 +1,18 @@
-﻿// ClipCheck - Ctrl+C 를 눌렀을 때 클립보드에 실제로 복사됐는지 화면 우상단에 표시해 주는 프로그램.
+﻿// ClipCheck - Ctrl+C 를 눌렀을 때 클립보드에 실제로 글자가 들어갔는지 화면에 표시하고,
+// 안 들어갔으면 Ctrl+C 를 자동으로 다시 눌러 주는 프로그램.
 // C# 5 문법만 사용 (Windows 기본 내장 csc.exe / PowerShell Add-Type 로 컴파일 가능).
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Media;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace ClipCheck
 {
@@ -40,6 +46,11 @@ namespace ClipCheck
         public const int VK_C = 0x43;
         public const int VK_X = 0x58;
         public const int VK_INSERT = 0x2D;
+        public const uint CF_UNICODETEXT = 13;
+        public const uint KEYEVENTF_KEYUP = 0x0002;
+
+        // 이 프로그램이 직접 보낸 키 입력에 붙이는 표시 ("CLIP")
+        public static readonly IntPtr OurInputMark = new IntPtr(0x434C4950);
 
         public const int WS_EX_TOPMOST = 0x00000008;
         public const int WS_EX_TRANSPARENT = 0x00000020;
@@ -80,6 +91,12 @@ namespace ClipCheck
         [DllImport("user32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
 
+        [DllImport("user32.dll")]
+        public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, IntPtr dwExtraInfo);
+
+        [DllImport("user32.dll")]
+        public static extern uint MapVirtualKey(uint uCode, uint uMapType);
+
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool AddClipboardFormatListener(IntPtr hwnd);
 
@@ -88,6 +105,10 @@ namespace ClipCheck
 
         [DllImport("user32.dll")]
         public static extern uint GetClipboardSequenceNumber();
+
+        // 클립보드를 열지 않고 형식만 확인 (MES 쪽 복사를 방해하지 않음)
+        [DllImport("user32.dll")]
+        public static extern bool IsClipboardFormatAvailable(uint format);
 
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
@@ -98,6 +119,147 @@ namespace ClipCheck
         public static bool IsDown(int vk)
         {
             return (GetAsyncKeyState(vk) & 0x8000) != 0;
+        }
+
+        public static bool ClipboardHasText()
+        {
+            return IsClipboardFormatAvailable(CF_UNICODETEXT);
+        }
+
+        private static void Key(int vk, bool up)
+        {
+            byte scan = (byte)MapVirtualKey((uint)vk, 0);
+            keybd_event((byte)vk, scan, up ? KEYEVENTF_KEYUP : 0, OurInputMark);
+        }
+
+        // Ctrl+C 를 대신 눌러 줌. 사용자가 Ctrl 을 누르고 있으면 C 만 보낸다.
+        public static void SendCtrlC()
+        {
+            bool ctrlHeld = IsDown(VK_CONTROL);
+            if (!ctrlHeld) Key(VK_CONTROL, false);
+            Key(VK_C, false);
+            Key(VK_C, true);
+            if (!ctrlHeld) Key(VK_CONTROL, true);
+        }
+    }
+
+    // 설정: %APPDATA%\ClipCheck\settings.ini 에 설정값만 저장 (복사 내용은 저장하지 않음)
+    internal class Settings
+    {
+        public int RetryCount = 3;        // 자동 재시도 횟수 (0 = 끄기)
+        public int WaitMs = 300;          // Ctrl+C 한 번마다 기다리는 시간
+        public bool AtCursor = false;     // 알림 위치: false = 화면 우상단, true = 마우스 커서 옆
+        public int OkShowMs = 1000;       // 성공 알림 표시 시간
+        public int FailShowMs = 2000;     // 실패 알림 표시 시간
+        public bool Preview = true;       // 복사 내용 미리보기
+        public bool Sound = true;         // 실패 시 소리
+        public bool ShowMouseCopy = true; // Ctrl+C 없이 복사돼도 표시
+
+        private static string FilePath
+        {
+            get
+            {
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "ClipCheck", "settings.ini");
+            }
+        }
+
+        public static Settings Load()
+        {
+            Settings s = new Settings();
+            try
+            {
+                if (!File.Exists(FilePath)) return s;
+                Dictionary<string, string> d = new Dictionary<string, string>();
+                foreach (string line in File.ReadAllLines(FilePath, Encoding.UTF8))
+                {
+                    int eq = line.IndexOf('=');
+                    if (eq > 0) d[line.Substring(0, eq).Trim()] = line.Substring(eq + 1).Trim();
+                }
+                s.RetryCount = GetInt(d, "RetryCount", s.RetryCount);
+                s.WaitMs = GetInt(d, "WaitMs", s.WaitMs);
+                s.AtCursor = GetInt(d, "AtCursor", s.AtCursor ? 1 : 0) != 0;
+                s.OkShowMs = GetInt(d, "OkShowMs", s.OkShowMs);
+                s.FailShowMs = GetInt(d, "FailShowMs", s.FailShowMs);
+                s.Preview = GetInt(d, "Preview", s.Preview ? 1 : 0) != 0;
+                s.Sound = GetInt(d, "Sound", s.Sound ? 1 : 0) != 0;
+                s.ShowMouseCopy = GetInt(d, "ShowMouseCopy", s.ShowMouseCopy ? 1 : 0) != 0;
+            }
+            catch (Exception) { }
+            return s;
+        }
+
+        public void Save()
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
+                File.WriteAllLines(FilePath, new string[] {
+                    "RetryCount=" + RetryCount,
+                    "WaitMs=" + WaitMs,
+                    "AtCursor=" + (AtCursor ? 1 : 0),
+                    "OkShowMs=" + OkShowMs,
+                    "FailShowMs=" + FailShowMs,
+                    "Preview=" + (Preview ? 1 : 0),
+                    "Sound=" + (Sound ? 1 : 0),
+                    "ShowMouseCopy=" + (ShowMouseCopy ? 1 : 0),
+                }, Encoding.UTF8);
+            }
+            catch (Exception) { }
+        }
+
+        private static int GetInt(Dictionary<string, string> d, string key, int def)
+        {
+            string v;
+            int n;
+            return d.TryGetValue(key, out v) && int.TryParse(v, out n) ? n : def;
+        }
+    }
+
+    // 윈도우 시작 시 자동 실행 (현재 사용자 레지스트리의 Run 항목)
+    internal static class AutoStart
+    {
+        private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const string Name = "ClipCheck";
+
+        // exe 로 실행했을 때만 가능 (run.bat 으로 실행하면 exe 경로가 없음)
+        public static bool Available
+        {
+            get { return Assembly.GetEntryAssembly() == typeof(Program).Assembly; }
+        }
+
+        private static string Command
+        {
+            get { return "\"" + Application.ExecutablePath + "\""; }
+        }
+
+        public static bool IsOn()
+        {
+            try
+            {
+                using (RegistryKey k = Registry.CurrentUser.OpenSubKey(RunKey))
+                    return k != null && k.GetValue(Name) != null;
+            }
+            catch (Exception) { return false; }
+        }
+
+        public static void Set(bool on)
+        {
+            try
+            {
+                using (RegistryKey k = Registry.CurrentUser.CreateSubKey(RunKey))
+                {
+                    if (on) k.SetValue(Name, Command);
+                    else if (k.GetValue(Name) != null) k.DeleteValue(Name);
+                }
+            }
+            catch (Exception) { }
+        }
+
+        // exe 를 다른 폴더로 옮긴 경우 경로를 새로 고침
+        public static void RefreshPath()
+        {
+            if (Available && IsOn()) Set(true);
         }
     }
 
@@ -131,10 +293,16 @@ namespace ClipCheck
         }
     }
 
+    internal class CopyKeyEventArgs : EventArgs
+    {
+        public bool IsCut;
+        public CopyKeyEventArgs(bool isCut) { IsCut = isCut; }
+    }
+
     // 키보드 전역 후킹: Ctrl+C / Ctrl+X / Ctrl+Insert 감지
     internal class CopyKeyHook : IDisposable
     {
-        public event EventHandler CopyPressed;
+        public event EventHandler<CopyKeyEventArgs> CopyPressed;
 
         private readonly Native.LowLevelKeyboardProc proc; // GC 되지 않도록 필드로 보관
         private IntPtr hook = IntPtr.Zero;
@@ -154,11 +322,13 @@ namespace ClipCheck
                 {
                     Native.KBDLLHOOKSTRUCT k = (Native.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Native.KBDLLHOOKSTRUCT));
                     int vk = (int)k.vkCode;
-                    if ((vk == Native.VK_C || vk == Native.VK_X || vk == Native.VK_INSERT)
+                    // 자동 재시도로 이 프로그램이 보낸 키는 무시
+                    if (k.dwExtraInfo != Native.OurInputMark
+                        && (vk == Native.VK_C || vk == Native.VK_X || vk == Native.VK_INSERT)
                         && Native.IsDown(Native.VK_CONTROL) && !Native.IsDown(Native.VK_MENU))
                     {
                         if (CopyPressed != null)
-                            CopyPressed(this, EventArgs.Empty);
+                            CopyPressed(this, new CopyKeyEventArgs(vk == Native.VK_X));
                     }
                 }
             }
@@ -175,10 +345,12 @@ namespace ClipCheck
         }
     }
 
-    // 우상단에 잠깐 떴다 사라지는 알림 창 (포커스를 뺏지 않고, 마우스 클릭도 통과)
+    internal enum ToastKind { Ok, Retry, Fail }
+
+    // 잠깐 떴다 사라지는 알림 창 (포커스를 뺏지 않고, 마우스 클릭도 통과)
     internal class Toast : Form
     {
-        private bool success;
+        private ToastKind kind;
         private string title = "";
         private string detail = "";
         private int remainMs;
@@ -213,16 +385,28 @@ namespace ClipCheck
             }
         }
 
-        public void ShowResult(bool ok, string titleText, string detailText, int durationMs)
+        public void ShowResult(ToastKind k, string titleText, string detailText, int durationMs, bool atCursor)
         {
-            success = ok;
+            kind = k;
             title = titleText;
             detail = detailText ?? "";
 
-            // 지금 작업 중인 창이 있는 모니터의 우상단
-            Screen scr = Screen.FromHandle(Native.GetForegroundWindow());
-            Rectangle wa = scr.WorkingArea;
-            Location = new Point(wa.Right - Width - 16, wa.Top + 16);
+            if (atCursor)
+            {
+                // 마우스 커서 오른쪽 아래, 화면 밖으로 나가지 않게
+                Point c = Cursor.Position;
+                Rectangle wa = Screen.FromPoint(c).WorkingArea;
+                int x = c.X + 18, y = c.Y + 22;
+                if (x + Width > wa.Right) x = c.X - Width - 8;
+                if (y + Height > wa.Bottom) y = c.Y - Height - 8;
+                Location = new Point(Math.Max(wa.Left, x), Math.Max(wa.Top, y));
+            }
+            else
+            {
+                // 지금 작업 중인 창이 있는 모니터의 우상단
+                Rectangle wa = Screen.FromHandle(Native.GetForegroundWindow()).WorkingArea;
+                Location = new Point(wa.Right - Width - 16, wa.Top + 16);
+            }
 
             remainMs = durationMs;
             Opacity = 0.95;
@@ -237,8 +421,8 @@ namespace ClipCheck
         {
             remainMs -= tick.Interval;
             if (remainMs > 0) return;
-            // 서서히 사라지기
-            Opacity -= 0.08;
+            // 빠르게 사라지기 (약 0.15초)
+            Opacity -= 0.2;
             if (Opacity <= 0.05)
             {
                 tick.Stop();
@@ -252,10 +436,12 @@ namespace ClipCheck
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            Color bg = success ? Color.FromArgb(22, 128, 61) : Color.FromArgb(200, 30, 30);
+            Color bg = kind == ToastKind.Ok ? Color.FromArgb(22, 128, 61)
+                     : kind == ToastKind.Retry ? Color.FromArgb(214, 120, 0)
+                     : Color.FromArgb(200, 30, 30);
             g.Clear(bg);
 
-            // 아이콘 (원 + 체크 / X)
+            // 아이콘 (원 + 체크 / 느낌표 / X)
             Rectangle ic = new Rectangle(14, 15, 36, 36);
             using (SolidBrush white = new SolidBrush(Color.White))
                 g.FillEllipse(white, ic);
@@ -263,10 +449,15 @@ namespace ClipCheck
             {
                 p.StartCap = LineCap.Round;
                 p.EndCap = LineCap.Round;
-                if (success)
+                if (kind == ToastKind.Ok)
                 {
                     g.DrawLines(p, new Point[] {
                         new Point(ic.X + 9, ic.Y + 19), new Point(ic.X + 15, ic.Y + 25), new Point(ic.X + 27, ic.Y + 12) });
+                }
+                else if (kind == ToastKind.Retry)
+                {
+                    g.DrawLine(p, ic.X + 18, ic.Y + 9, ic.X + 18, ic.Y + 20);
+                    g.DrawLine(p, ic.X + 18, ic.Y + 27, ic.X + 18, ic.Y + 27.5f);
                 }
                 else
                 {
@@ -300,21 +491,25 @@ namespace ClipCheck
 
     internal class App : ApplicationContext
     {
-        // Ctrl+C 를 누른 뒤 이 시간 안에 클립보드가 바뀌지 않으면 "복사 실패"
-        private const int WaitMs = 1000;
-
+        private readonly Settings settings = Settings.Load();
         private readonly CopyKeyHook keyHook;
         private readonly ClipboardWatcher watcher;
         private readonly Toast toast = new Toast();
         private readonly NotifyIcon tray = new NotifyIcon();
         private readonly System.Windows.Forms.Timer waitTimer = new System.Windows.Forms.Timer();
         private readonly System.Windows.Forms.Timer readTimer = new System.Windows.Forms.Timer();
-        private readonly ToolStripMenuItem soundItem;
-        private readonly ToolStripMenuItem showAllItem;
 
+        // 지금 확인 중인 복사 시도
         private bool waiting;
+        private bool isCut;
+        private int attempt;         // 1 = 사용자가 누른 것, 2 이상 = 자동 재시도
+        private bool sawUpdate;      // 클립보드가 바뀌긴 했는지 (글자 없이)
         private uint seqAtPress;
+        private IntPtr targetWindow;
+        private int successAttempt;  // 성공 알림에 "재시도 n번" 표시용
+
         private int okCount;
+        private int retryOkCount;
         private int failCount;
 
         public App()
@@ -327,108 +522,257 @@ namespace ClipCheck
             watcher = new ClipboardWatcher();
             watcher.ClipboardChanged += OnClipboardChanged;
 
-            waitTimer.Interval = WaitMs;
             waitTimer.Tick += OnWaitTimeout;
 
-            // 클립보드 내용은 복사한 프로그램이 다 쓰고 난 뒤 살짝 늦게 읽는다 (MES 쪽 복사 방해 방지)
-            readTimer.Interval = 120;
+            // 미리보기용 글자는 복사한 프로그램이 다 쓰고 난 뒤 아주 살짝 늦게 읽는다
+            readTimer.Interval = 30;
             readTimer.Tick += OnReadClipboard;
 
-            soundItem = new ToolStripMenuItem("실패 시 소리 내기");
-            soundItem.Checked = true;
-            soundItem.CheckOnClick = true;
-
-            showAllItem = new ToolStripMenuItem("마우스로 복사해도 표시");
-            showAllItem.Checked = true;
-            showAllItem.CheckOnClick = true;
-
-            ContextMenuStrip menu = new ContextMenuStrip();
-            menu.Items.Add(soundItem);
-            menu.Items.Add(showAllItem);
-            menu.Items.Add(new ToolStripMenuItem("통계 초기화", null, delegate { okCount = 0; failCount = 0; UpdateTray(); }));
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add(new ToolStripMenuItem("종료", null, delegate { ExitThread(); }));
+            AutoStart.RefreshPath();
 
             tray.Icon = SystemIcons.Information;
-            tray.ContextMenuStrip = menu;
+            tray.ContextMenuStrip = BuildMenu();
             tray.Visible = true;
             UpdateTray();
-            tray.ShowBalloonTip(2500, "ClipCheck 실행 중", "Ctrl+C 를 누르면 화면 우상단에 복사 성공/실패가 표시됩니다.", ToolTipIcon.Info);
+            tray.ShowBalloonTip(2500, "ClipCheck 실행 중", "Ctrl+C 를 누르면 복사 성공/실패가 표시됩니다.\n설정은 이 아이콘을 우클릭하세요.", ToolTipIcon.Info);
         }
 
-        private void OnCopyPressed(object sender, EventArgs e)
+        // ---------- 메뉴 ----------
+
+        private ContextMenuStrip BuildMenu()
+        {
+            ContextMenuStrip menu = new ContextMenuStrip();
+
+            menu.Items.Add(Choice("자동 재시도 (Ctrl+C 다시 누르기)",
+                new string[] { "끄기", "2번까지", "3번까지", "5번까지" },
+                new int[] { 0, 2, 3, 5 },
+                settings.RetryCount, delegate(int v) { settings.RetryCount = v; }));
+
+            menu.Items.Add(Choice("확인 속도 (한 번에 기다리는 시간)",
+                new string[] { "아주 빠르게 (0.2초)", "빠르게 (0.3초)", "보통 (0.5초)", "느긋하게 (0.8초)" },
+                new int[] { 200, 300, 500, 800 },
+                settings.WaitMs, delegate(int v) { settings.WaitMs = v; }));
+
+            menu.Items.Add(Choice("알림 위치",
+                new string[] { "화면 우상단", "마우스 커서 옆" },
+                new int[] { 0, 1 },
+                settings.AtCursor ? 1 : 0, delegate(int v) { settings.AtCursor = v != 0; }));
+
+            menu.Items.Add(Choice("성공 알림 보이는 시간",
+                new string[] { "0.5초", "1초", "1.5초", "2초", "3초" },
+                new int[] { 500, 1000, 1500, 2000, 3000 },
+                settings.OkShowMs, delegate(int v) { settings.OkShowMs = v; }));
+
+            menu.Items.Add(Choice("실패 알림 보이는 시간",
+                new string[] { "1초", "2초", "3초", "5초" },
+                new int[] { 1000, 2000, 3000, 5000 },
+                settings.FailShowMs, delegate(int v) { settings.FailShowMs = v; }));
+
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(Toggle("복사 내용 미리보기", settings.Preview, delegate(bool v) { settings.Preview = v; }));
+            menu.Items.Add(Toggle("실패 시 소리 내기", settings.Sound, delegate(bool v) { settings.Sound = v; }));
+            menu.Items.Add(Toggle("마우스로 복사해도 표시", settings.ShowMouseCopy, delegate(bool v) { settings.ShowMouseCopy = v; }));
+
+            ToolStripMenuItem auto = new ToolStripMenuItem("윈도우 시작 시 자동 실행");
+            if (AutoStart.Available)
+            {
+                auto.Checked = AutoStart.IsOn();
+                auto.Click += delegate { AutoStart.Set(!auto.Checked); auto.Checked = AutoStart.IsOn(); };
+            }
+            else
+            {
+                auto.Text += " (exe 로 실행할 때만 가능)";
+                auto.Enabled = false;
+            }
+            menu.Items.Add(auto);
+
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(new ToolStripMenuItem("통계 초기화", null, delegate { okCount = 0; retryOkCount = 0; failCount = 0; UpdateTray(); }));
+            menu.Items.Add(new ToolStripMenuItem("종료", null, delegate { ExitThread(); }));
+            return menu;
+        }
+
+        private ToolStripMenuItem Choice(string text, string[] labels, int[] values, int current, Action<int> apply)
+        {
+            ToolStripMenuItem parent = new ToolStripMenuItem(text);
+            List<ToolStripMenuItem> items = new List<ToolStripMenuItem>();
+            for (int i = 0; i < labels.Length; i++)
+            {
+                int value = values[i];
+                ToolStripMenuItem item = new ToolStripMenuItem(labels[i]);
+                item.Checked = value == current;
+                item.Click += delegate
+                {
+                    foreach (ToolStripMenuItem other in items) other.Checked = false;
+                    item.Checked = true;
+                    apply(value);
+                    settings.Save();
+                };
+                items.Add(item);
+                parent.DropDownItems.Add(item);
+            }
+            return parent;
+        }
+
+        private ToolStripMenuItem Toggle(string text, bool current, Action<bool> apply)
+        {
+            ToolStripMenuItem item = new ToolStripMenuItem(text);
+            item.Checked = current;
+            item.CheckOnClick = true;
+            item.CheckedChanged += delegate { apply(item.Checked); settings.Save(); };
+            return item;
+        }
+
+        // ---------- 복사 확인 ----------
+
+        private void OnCopyPressed(object sender, CopyKeyEventArgs e)
         {
             // 후킹 콜백은 이 프로그램의 UI 스레드에서 불리므로 바로 처리해도 됨 (가볍게만)
-            seqAtPress = Native.GetClipboardSequenceNumber();
+            isCut = e.IsCut;
+            attempt = 1;
+            targetWindow = Native.GetForegroundWindow();
+            StartAttempt();
+        }
+
+        private void StartAttempt()
+        {
             waiting = true;
+            sawUpdate = false;
+            seqAtPress = Native.GetClipboardSequenceNumber();
             waitTimer.Stop();
+            waitTimer.Interval = settings.WaitMs;
             waitTimer.Start();
         }
 
         private void OnClipboardChanged(object sender, EventArgs e)
         {
-            if (!waiting && !showAllItem.Checked) return;
-            if (waiting) okCount++;
-            waiting = false;
-            waitTimer.Stop();
-            readTimer.Stop();
-            readTimer.Start();
+            if (waiting)
+            {
+                if (!Native.ClipboardHasText())
+                {
+                    // 바뀌긴 했는데 글자가 없음 → 곧 글자가 들어올 수도 있으니 대기 시간 끝까지 기다림
+                    sawUpdate = true;
+                    return;
+                }
+                Succeed();
+                return;
+            }
+
+            // Ctrl+C 없이 바뀐 경우 (마우스 우클릭 복사 등)
+            if (!settings.ShowMouseCopy) return;
+            if (Native.ClipboardHasText())
+            {
+                successAttempt = 1;
+                readTimer.Stop();
+                readTimer.Start();
+            }
+            else
+            {
+                toast.ShowResult(ToastKind.Retry, "글자가 아닌 것이 복사됨", NonTextDetail(), settings.OkShowMs, settings.AtCursor);
+            }
         }
 
         private void OnWaitTimeout(object sender, EventArgs e)
         {
             waitTimer.Stop();
             if (!waiting) return;
-            waiting = false;
 
-            // 혹시 알림을 놓쳤더라도 순번이 바뀌었으면 성공으로 본다
-            if (Native.GetClipboardSequenceNumber() != seqAtPress)
+            // 혹시 알림을 놓쳤더라도 순번이 바뀌었고 글자가 있으면 성공
+            if (Native.GetClipboardSequenceNumber() != seqAtPress && Native.ClipboardHasText())
             {
-                okCount++;
-                readTimer.Stop();
-                readTimer.Start();
+                Succeed();
                 return;
             }
 
+            // 잘라내기(Ctrl+X)는 다시 누르면 위험하므로 재시도하지 않음.
+            // 그 사이 다른 창으로 옮겨 갔으면 엉뚱한 걸 복사하지 않게 재시도하지 않음.
+            bool canRetry = !isCut && attempt <= settings.RetryCount
+                            && Native.GetForegroundWindow() == targetWindow;
+            if (canRetry)
+            {
+                attempt++;
+                toast.ShowResult(ToastKind.Retry, "다시 복사 중… (" + (attempt - 1) + "/" + settings.RetryCount + ")",
+                    sawUpdate ? "글자가 안 들어와서 Ctrl+C 다시 누름" : "반응이 없어서 Ctrl+C 다시 누름",
+                    settings.WaitMs + 500, settings.AtCursor);
+                StartAttempt();
+                Native.SendCtrlC();
+                return;
+            }
+
+            waiting = false;
             failCount++;
             UpdateTray();
-            toast.ShowResult(false, "복사 안 됨!", "다시 Ctrl+C 를 눌러 주세요", 2500);
-            if (soundItem.Checked) SystemSounds.Hand.Play();
+            string detail = sawUpdate ? "글자가 안 들어옴 (" + NonTextDetail() + ")" : "클립보드 변화 없음";
+            if (attempt > 1) detail = (attempt - 1) + "번 다시 시도했지만 실패 · " + detail;
+            toast.ShowResult(ToastKind.Fail, "복사 안 됨!", detail, settings.FailShowMs, settings.AtCursor);
+            if (settings.Sound) SystemSounds.Hand.Play();
+        }
+
+        private void Succeed()
+        {
+            waiting = false;
+            waitTimer.Stop();
+            if (attempt > 1) retryOkCount++; else okCount++;
+            successAttempt = attempt;
+            if (settings.Preview)
+            {
+                readTimer.Stop();
+                readTimer.Start();
+            }
+            else
+            {
+                ShowSuccess(null);
+            }
         }
 
         private void OnReadClipboard(object sender, EventArgs e)
         {
             readTimer.Stop();
-            UpdateTray();
-
-            string detail;
-            try
+            string detail = null;
+            if (settings.Preview)
             {
-                if (Clipboard.ContainsText())
+                try
                 {
                     string text = Clipboard.GetText();
                     text = text.Replace("\r\n", " | ").Replace("\n", " | ").Replace("\t", "  ").Trim();
-                    detail = text.Length == 0 ? "(빈 텍스트)" : text;
+                    detail = text.Length == 0 ? "(빈 칸)" : text;
                 }
-                else if (Clipboard.ContainsImage())
-                    detail = "(이미지)";
-                else if (Clipboard.ContainsFileDropList())
-                    detail = "(파일 " + Clipboard.GetFileDropList().Count + "개)";
-                else
-                    detail = "(텍스트 아님)";
+                catch (Exception)
+                {
+                    detail = "(내용 미리보기 불가)";
+                }
+            }
+            ShowSuccess(detail);
+        }
+
+        private void ShowSuccess(string detail)
+        {
+            UpdateTray();
+            string title = successAttempt > 1 ? "복사됨 (재시도 " + (successAttempt - 1) + "번)" : "복사됨";
+            toast.ShowResult(ToastKind.Ok, title, detail ?? "", settings.OkShowMs, settings.AtCursor);
+        }
+
+        private static string NonTextDetail()
+        {
+            try
+            {
+                if (Clipboard.ContainsImage()) return "이미지";
+                if (Clipboard.ContainsFileDropList()) return "파일";
+                IDataObject d = Clipboard.GetDataObject();
+                if (d == null || d.GetFormats().Length == 0) return "클립보드 비어 있음";
+                return "형식: " + string.Join(", ", d.GetFormats());
             }
             catch (Exception)
             {
-                detail = "(내용 미리보기 불가)";
+                return "텍스트 아님";
             }
-
-            toast.ShowResult(true, "복사됨", detail, 1300);
         }
 
         private void UpdateTray()
         {
             // NotifyIcon.Text 는 63자 제한
-            tray.Text = "ClipCheck - 성공 " + okCount + " / 실패 " + failCount;
+            string t = "ClipCheck - 성공 " + okCount + " / 재시도 성공 " + retryOkCount + " / 실패 " + failCount;
+            tray.Text = t.Length > 63 ? t.Substring(0, 63) : t;
         }
 
         protected override void ExitThreadCore()

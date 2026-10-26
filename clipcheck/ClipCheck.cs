@@ -549,8 +549,8 @@ namespace ClipCheck
                 settings.RetryCount, delegate(int v) { settings.RetryCount = v; }));
 
             menu.Items.Add(Choice("확인 속도 (한 번에 기다리는 시간)",
-                new string[] { "아주 빠르게 (0.2초)", "빠르게 (0.3초)", "보통 (0.5초)", "느긋하게 (0.8초)" },
-                new int[] { 200, 300, 500, 800 },
+                new string[] { "최고 속도 (0.1초)", "아주 빠르게 (0.2초)", "빠르게 (0.3초)", "보통 (0.5초)", "느긋하게 (0.8초)" },
+                new int[] { 100, 200, 300, 500, 800 },
                 settings.WaitMs, delegate(int v) { settings.WaitMs = v; }));
 
             menu.Items.Add(Choice("알림 위치",

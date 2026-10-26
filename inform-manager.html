@@ -55,7 +55,14 @@
     .splitter::after { content: ''; position: absolute; top: 45%; bottom: 45%; left: 4px; width: 2px; min-height: 34px; border-radius: 2px; background: #aab8c5; transition: .15s; }
     .splitter:hover, .splitter.dragging { background: #dceaff; }
     .splitter:hover::after, .splitter.dragging::after { background: var(--blue); }
-    .unit-list { height: calc(100% - 55px); overflow: auto; padding: 7px; }
+    .unit-pane { display: flex; flex-direction: column; }
+    .unit-list { flex: 1; min-height: 0; overflow: auto; padding: 7px; }
+    /* 오늘 진행만 보기 */
+    .today-filter { display: flex; align-items: center; gap: 6px; margin: 0; padding: 7px 12px; border-bottom: 1px solid var(--line); color: #31506e; background: #f6f8fa; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .today-filter.on { color: #0f4c8a; background: #e3efff; box-shadow: inset 4px 0 0 var(--blue); }
+    .unit.filtered-out { display: none; }
+    .unit-empty { padding: 20px 10px; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+    .unit-empty[hidden] { display: none; }
     .unit { display: flex; align-items: center; gap: 9px; width: 100%; margin: 3px 0; padding: 10px; border: 1px solid transparent; border-radius: 7px; text-align: left; background: transparent; }
     .unit:hover { background: #f3f6f9; }
     .unit.active { border-color: #8ebcff; background: var(--blue2); }
@@ -231,9 +238,11 @@
 
     <section id="workStep" class="step">
       <div class="workspace">
-        <aside class="panel">
+        <aside class="panel unit-pane">
           <div class="toolbar"><h2>② 챔버 선택</h2><div><small id="unitTotal"></small> <button class="mini-btn" id="addUnitBtn">+ 새 구역</button></div></div>
+          <label class="today-filter" id="todayFilterBar" title="Enter 입력 날짜(보통 오늘)가 적힌 줄이 있거나, 지금 내용을 고친 챔버만 목록에 보여줍니다. 날짜는 위 'Enter 입력' 날짜를 따릅니다. 최종 인폼에는 영향이 없습니다."><input type="checkbox" id="todayOnlyCheck"> <span id="todayFilterLabel">오늘 진행만 보기</span></label>
           <div class="unit-list" id="unitList"></div>
+          <div class="unit-empty" id="unitEmpty" hidden></div>
         </aside>
         <div class="splitter" id="unitSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
         <section class="panel editor">
@@ -502,7 +511,45 @@
     function changed(u) { return u.original.trim() !== u.edited.trim() || nameChanged(u); }
     function unitClassName(u, i) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
-      return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '') + (u.done ? ' done' : '');
+      return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '') + (u.done ? ' done' : '') + (isUnitVisible(u, i) ? '' : ' filtered-out');
+    }
+    /** 오늘 진행만 보기: Enter 입력 날짜(보통 오늘)가 적힌 줄이 있거나, 이번에 내용을 고쳤거나 새로 만든 챔버 */
+    function todayOnly() { return $('#todayOnlyCheck').checked; }
+    function isTodayUnit(u) {
+      const day = entryDateText();
+      if (isTodayUnit.day !== day) {
+        isTodayUnit.day = day;
+        // 날짜 앞뒤가 띄어쓰기·괄호·줄 끝이면 인정 ([[12E 10/26]], (10/26), 10/26~ 포함, 2026/10/26·110/26은 제외)
+        isTodayUnit.re = new RegExp(`(?:^|[\\s(\\[~,])${day.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s)\\],~])`, 'm');
+      }
+      return changed(u) || u.isNew || isTodayUnit.re.test(u.name + '\n' + u.edited);
+    }
+    // 보고 있는 챔버는 조건에서 벗어나도(날짜 줄을 지우는 중 등) 다른 챔버로 옮길 때까지 보이게 둠
+    function isUnitVisible(u, i) { return !todayOnly() || i === state.selected || isTodayUnit(u); }
+    function visibleUnitIndexes() { return state.units.map((u, i) => i).filter(i => isUnitVisible(state.units[i], i)); }
+    function updateUnitCount() {
+      const total = state.units.length, on = todayOnly();
+      const shown = on ? state.units.filter(isTodayUnit).length : total;
+      $('#unitTotal').textContent = on ? `${shown}/${total}개` : `${total}개`;
+      const isToday = !$('#entryDate').value || $('#entryDate').value === toInputDateValue(defaultToday());
+      $('#todayFilterLabel').textContent = isToday ? `오늘(${entryDateText()}) 진행만 보기` : `${entryDateText()} 진행만 보기`;
+      $('#todayFilterBar').classList.toggle('on', on);
+      const empty = $('#unitEmpty');
+      const noneVisible = on && !visibleUnitIndexes().length;
+      empty.hidden = !noneVisible || !state.units.length;
+      if (noneVisible) empty.innerHTML = `${escapeHtml(entryDateText())} 날짜가 적힌 챔버가 없습니다.<br>위 체크를 끄면 전체 챔버가 보입니다.`;
+    }
+    function setTodayOnly(on) {
+      $('#todayOnlyCheck').checked = on;
+      try { localStorage.setItem('informTodayOnly', on ? '1' : '0'); } catch {}
+      saveCurrent();
+      renderUnits();
+      // 켰을 때 보고 있던 챔버가 오늘 진행이 아니면 오늘 진행 첫 챔버로 이동
+      if (on && state.selected >= 0 && !isTodayUnit(state.units[state.selected])) {
+        const first = state.units.findIndex(isTodayUnit);
+        if (first >= 0) selectUnit(first);
+      }
+      updateUnitCount();
     }
     function unitButtonHtml(u) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
@@ -522,7 +569,7 @@
         list.appendChild(b);
       });
       list.scrollTop = savedScrollTop;
-      $('#unitTotal').textContent = `${state.units.length}개`;
+      updateUnitCount();
     }
     function updateUnitButton(i) {
       if (i < 0 || i >= state.units.length) return;
@@ -530,14 +577,19 @@
       if (!b) return;
       b.className = unitClassName(state.units[i], i);
       b.innerHTML = unitButtonHtml(state.units[i]);
+      updateUnitCount();
     }
     function handleUnitArrowKey(event, i) {
       if (event.key === 'Delete') { event.preventDefault(); return deleteUnit(i); }
       if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
       saveCurrent();
-      let next = event.key === 'Home' ? 0 : event.key === 'End' ? state.units.length - 1 : i + (event.key === 'ArrowDown' ? 1 : -1);
-      next = Math.max(0, Math.min(state.units.length - 1, next));
+      // 목록에 보이는 챔버(오늘 진행만 보기면 그 챔버들) 사이에서만 이동
+      const visible = visibleUnitIndexes();
+      const pos = Math.max(0, visible.indexOf(i));
+      let to = event.key === 'Home' ? 0 : event.key === 'End' ? visible.length - 1 : pos + (event.key === 'ArrowDown' ? 1 : -1);
+      to = Math.max(0, Math.min(visible.length - 1, to));
+      const next = visible[to] ?? i;
       selectUnit(next);
       const nextButton = $('#unitList').children[next];
       if (nextButton) {
@@ -598,7 +650,8 @@
       else {
         state.selected = -1;
         renderUnits();
-        const next = Math.min(i, state.units.length - 1);
+        const visible = visibleUnitIndexes();
+        const next = visible.find(x => x >= i) ?? visible[visible.length - 1] ?? Math.min(i, state.units.length - 1);
         selectUnit(next);
         const b = $('#unitList').children[next];
         if (b) { try { b.focus({ preventScroll: true }); } catch { b.focus(); } b.scrollIntoView({ block: 'nearest' }); }
@@ -1399,7 +1452,17 @@
     $('#cancelMergeBtn').onclick = closeMergeDialog;
     $('#applyMergeBtn').onclick = mergeAdditionalInform;
     $('#mergeDialog').onclick = event => { if (event.target === $('#mergeDialog')) closeMergeDialog(); };
-    $('#saveNextBtn').onclick = () => { saveCurrent(); if (state.selected < state.units.length - 1) selectUnit(state.selected + 1); else toast('마지막 챔버입니다.'); };
+    $('#saveNextBtn').onclick = () => {
+      saveCurrent();
+      const visible = visibleUnitIndexes();
+      const next = visible.find(i => i > state.selected);
+      if (next !== undefined) return selectUnit(next);
+      // 오늘 진행만 보기에서는 마지막 다음에 처음으로 돌아가서 계속 돌려 볼 수 있게
+      if (todayOnly() && visible.length > 1) { selectUnit(visible[0]); return toast('오늘 진행 챔버를 한 바퀴 다 봤습니다. 처음으로 돌아왔습니다.'); }
+      toast('마지막 챔버입니다.');
+    };
+    $('#todayOnlyCheck').onchange = () => setTodayOnly($('#todayOnlyCheck').checked);
+    $('#entryDate').addEventListener('change', () => { if (state.units.length) renderUnits(); else updateUnitCount(); });
     $('#reviewBtn').onclick = () => renderReview();
     $('#backBtn').onclick = () => { clearTimeout(syncFinalEdits.timer); applyFinalEdits(); showStep('workStep'); };
     $('#copyBtn').onclick = copyFinal;
@@ -1417,8 +1480,10 @@
     try { $('#highlightNewCheck').checked = localStorage.getItem('informHighlightNew') === '1'; } catch {}
     try { $('#highlightYesterdayCheck').checked = localStorage.getItem('informHighlightYesterday') === '1'; } catch {}
     try { $('#showMergedCheck').checked = localStorage.getItem('informShowMerged') !== '0'; } catch { $('#showMergedCheck').checked = true; }
+    try { $('#todayOnlyCheck').checked = localStorage.getItem('informTodayOnly') === '1'; } catch {}
     try { $('#shiftSelect').value = localStorage.getItem('informShift') || '주간'; } catch { $('#shiftSelect').value = '주간'; }
     initDatePickers();
+    updateUnitCount();
     restorePaneSizes();
     fitPaneSizes();
     window.addEventListener('resize', fitPaneSizes);

@@ -3,6 +3,7 @@
 // C# 5 문법만 사용 (Windows 기본 내장 csc.exe / PowerShell Add-Type 로 컴파일 가능).
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
@@ -124,6 +125,9 @@ namespace ClipCheck
         public static extern IntPtr GetForegroundWindow();
 
         [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [DllImport("user32.dll")]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
         public static bool IsDown(int vk)
@@ -145,6 +149,24 @@ namespace ClipCheck
         public static bool ClipboardHasFiles()
         {
             return IsClipboardFormatAvailable(CF_HDROP);
+        }
+
+        public static bool ClipboardIsFilesOnly()
+        {
+            return ClipboardHasFiles() && !ClipboardHasText() && !ClipboardHasImage();
+        }
+
+        // 지금 앞에 있는 창이 윈도우 탐색기(또는 바탕화면)인지
+        public static bool ForegroundIsExplorer()
+        {
+            try
+            {
+                uint pid;
+                GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+                using (Process p = Process.GetProcessById((int)pid))
+                    return string.Equals(p.ProcessName, "explorer", StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception) { return false; }
         }
 
         // 글자 · 이미지(픽픽, 그림판 등) · 파일 중 하나라도 들어 있으면 제대로 복사된 것으로 봄
@@ -181,6 +203,7 @@ namespace ClipCheck
         public bool Preview = true;       // 복사 내용 미리보기
         public bool Sound = true;         // 실패 시 소리
         public bool ShowMouseCopy = true; // Ctrl+C 없이 복사돼도 표시
+        public bool ShowFileCopy = false; // 파일 복사(탐색기 등)도 표시
 
         private static string FilePath
         {
@@ -211,6 +234,7 @@ namespace ClipCheck
                 s.Preview = GetInt(d, "Preview", s.Preview ? 1 : 0) != 0;
                 s.Sound = GetInt(d, "Sound", s.Sound ? 1 : 0) != 0;
                 s.ShowMouseCopy = GetInt(d, "ShowMouseCopy", s.ShowMouseCopy ? 1 : 0) != 0;
+                s.ShowFileCopy = GetInt(d, "ShowFileCopy", s.ShowFileCopy ? 1 : 0) != 0;
             }
             catch (Exception) { }
             return s;
@@ -230,6 +254,7 @@ namespace ClipCheck
                     "Preview=" + (Preview ? 1 : 0),
                     "Sound=" + (Sound ? 1 : 0),
                     "ShowMouseCopy=" + (ShowMouseCopy ? 1 : 0),
+                    "ShowFileCopy=" + (ShowFileCopy ? 1 : 0),
                 }, Encoding.UTF8);
             }
             catch (Exception) { }
@@ -600,6 +625,7 @@ namespace ClipCheck
             menu.Items.Add(Toggle("복사 내용 미리보기", settings.Preview, delegate(bool v) { settings.Preview = v; }));
             menu.Items.Add(Toggle("실패 시 소리 내기", settings.Sound, delegate(bool v) { settings.Sound = v; }));
             menu.Items.Add(Toggle("마우스로 복사해도 표시", settings.ShowMouseCopy, delegate(bool v) { settings.ShowMouseCopy = v; }));
+            menu.Items.Add(Toggle("파일 복사도 표시 (탐색기 등)", settings.ShowFileCopy, delegate(bool v) { settings.ShowFileCopy = v; }));
 
             ToolStripMenuItem auto = new ToolStripMenuItem("윈도우 시작 시 자동 실행");
             if (AutoStart.Available)
@@ -656,6 +682,13 @@ namespace ClipCheck
         private void OnCopyPressed(object sender, CopyKeyEventArgs e)
         {
             // 후킹 콜백은 이 프로그램의 UI 스레드에서 불리므로 바로 처리해도 됨 (가볍게만)
+            // 탐색기는 파일 복사가 잘 되고, 선택한 게 없을 때 실패·재시도가 뜨면 성가시므로 확인하지 않음
+            if (Native.ForegroundIsExplorer())
+            {
+                waiting = false;
+                waitTimer.Stop();
+                return;
+            }
             isCut = e.IsCut;
             attempt = 1;
             targetWindow = Native.GetForegroundWindow();
@@ -690,6 +723,7 @@ namespace ClipCheck
             // 글자·이미지·파일이 없는 변화는 복사가 아니라 정리하는 것이므로 표시하지 않음
             // (예: 엑셀에서 복사 후 ESC 를 누르면 엑셀이 클립보드를 비움)
             if (!settings.ShowMouseCopy || !Native.ClipboardHasContent()) return;
+            if (Native.ClipboardIsFilesOnly() && !settings.ShowFileCopy) return;
             successAttempt = 1;
             readTimer.Stop();
             readTimer.Start();
@@ -737,6 +771,11 @@ namespace ClipCheck
             waitTimer.Stop();
             if (attempt > 1) retryOkCount++; else okCount++;
             successAttempt = attempt;
+            if (Native.ClipboardIsFilesOnly() && !settings.ShowFileCopy)
+            {
+                UpdateTray();
+                return;
+            }
             if (settings.Preview)
             {
                 readTimer.Stop();

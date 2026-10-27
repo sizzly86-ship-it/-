@@ -30,6 +30,9 @@ namespace ClipCheck
                     return;
                 }
                 Application.EnableVisualStyles();
+                // 혹시 예기치 못한 오류가 나도 오류 창을 띄우지 않고 그 알림 한 번만 건너뜀
+                Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+                Application.ThreadException += delegate { };
                 Application.Run(new App());
             }
         }
@@ -357,6 +360,7 @@ namespace ClipCheck
         private readonly System.Windows.Forms.Timer tick = new System.Windows.Forms.Timer();
         private readonly Font titleFont = new Font("맑은 고딕", 14f, FontStyle.Bold);
         private readonly Font detailFont = new Font("맑은 고딕", 9f);
+        private readonly StringFormat detailFormat = new StringFormat(StringFormatFlags.NoWrap);
 
         public Toast()
         {
@@ -368,6 +372,7 @@ namespace ClipCheck
             Opacity = 0.95; // 반투명 → WinForms 가 레이어드 창으로 만들어 줌 (클릭 통과에 필요)
             using (GraphicsPath path = RoundRect(new Rectangle(0, 0, Width, Height), 12))
                 Region = new Region(path);
+            detailFormat.Trimming = StringTrimming.EllipsisCharacter;
             tick.Interval = 30;
             tick.Tick += OnTick;
         }
@@ -390,6 +395,7 @@ namespace ClipCheck
             kind = k;
             title = titleText;
             detail = detailText ?? "";
+            if (detail.Length > 200) detail = detail.Substring(0, 200);
 
             if (atCursor)
             {
@@ -470,9 +476,7 @@ namespace ClipCheck
             using (SolidBrush soft = new SolidBrush(Color.FromArgb(235, 255, 255, 255)))
             {
                 g.DrawString(title, titleFont, white, 60, 8);
-                StringFormat sf = new StringFormat(StringFormatFlags.NoWrap);
-                sf.Trimming = StringTrimming.EllipsisCharacter;
-                g.DrawString(detail, detailFont, soft, new RectangleF(62, 40, Width - 72, 20), sf);
+                g.DrawString(detail, detailFont, soft, new RectangleF(62, 40, Width - 72, 20), detailFormat);
             }
         }
 
@@ -734,6 +738,8 @@ namespace ClipCheck
                 try
                 {
                     string text = Clipboard.GetText();
+                    // 1000칸처럼 아주 많이 복사하면 수만 자가 되므로 앞부분만 사용 (GDI+ 는 너무 긴 글자를 못 그림)
+                    if (text.Length > 200) text = text.Substring(0, 200);
                     text = text.Replace("\r\n", " | ").Replace("\n", " | ").Replace("\t", "  ").Trim();
                     detail = text.Length == 0 ? "(빈 칸)" : text;
                 }

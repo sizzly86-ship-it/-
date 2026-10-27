@@ -686,18 +686,13 @@ namespace ClipCheck
                 return;
             }
 
-            // Ctrl+C 없이 바뀐 경우 (마우스 우클릭 복사 등)
-            if (!settings.ShowMouseCopy) return;
-            if (Native.ClipboardHasContent())
-            {
-                successAttempt = 1;
-                readTimer.Stop();
-                readTimer.Start();
-            }
-            else
-            {
-                toast.ShowResult(ToastKind.Retry, "알 수 없는 형식이 복사됨", NonTextDetail(), settings.OkShowMs, settings.AtCursor);
-            }
+            // Ctrl+C 없이 바뀐 경우 (마우스 우클릭 복사 등).
+            // 글자·이미지·파일이 없는 변화는 복사가 아니라 정리하는 것이므로 표시하지 않음
+            // (예: 엑셀에서 복사 후 ESC 를 누르면 엑셀이 클립보드를 비움)
+            if (!settings.ShowMouseCopy || !Native.ClipboardHasContent()) return;
+            successAttempt = 1;
+            readTimer.Stop();
+            readTimer.Start();
         }
 
         private void OnWaitTimeout(object sender, EventArgs e)

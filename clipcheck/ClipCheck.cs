@@ -46,7 +46,10 @@ namespace ClipCheck
         public const int WM_SYSKEYDOWN = 0x0104;
         public const int WM_CLIPBOARDUPDATE = 0x031D;
         public const int VK_CONTROL = 0x11;
+        public const int VK_SHIFT = 0x10;
         public const int VK_MENU = 0x12;
+        public const int VK_LWIN = 0x5B;
+        public const int VK_RWIN = 0x5C;
         public const int VK_C = 0x43;
         public const int VK_X = 0x58;
         public const int VK_INSERT = 0x2D;
@@ -374,10 +377,13 @@ namespace ClipCheck
                 {
                     Native.KBDLLHOOKSTRUCT k = (Native.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Native.KBDLLHOOKSTRUCT));
                     int vk = (int)k.vkCode;
-                    // 자동 재시도로 이 프로그램이 보낸 키는 무시
+                    // 자동 재시도로 이 프로그램이 보낸 키는 무시.
+                    // Shift/Alt/Win 이 같이 눌린 조합(예: 픽픽 캡처 Ctrl+Shift+C)은 복사가 아니므로 무시
                     if (k.dwExtraInfo != Native.OurInputMark
                         && (vk == Native.VK_C || vk == Native.VK_X || vk == Native.VK_INSERT)
-                        && Native.IsDown(Native.VK_CONTROL) && !Native.IsDown(Native.VK_MENU))
+                        && Native.IsDown(Native.VK_CONTROL) && !Native.IsDown(Native.VK_SHIFT)
+                        && !Native.IsDown(Native.VK_MENU)
+                        && !Native.IsDown(Native.VK_LWIN) && !Native.IsDown(Native.VK_RWIN))
                     {
                         if (CopyPressed != null)
                             CopyPressed(this, new CopyKeyEventArgs(vk == Native.VK_X));

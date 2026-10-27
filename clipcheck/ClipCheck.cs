@@ -49,7 +49,11 @@ namespace ClipCheck
         public const int VK_C = 0x43;
         public const int VK_X = 0x58;
         public const int VK_INSERT = 0x2D;
+        public const uint CF_BITMAP = 2;
+        public const uint CF_DIB = 8;
         public const uint CF_UNICODETEXT = 13;
+        public const uint CF_HDROP = 15;
+        public const uint CF_DIBV5 = 17;
         public const uint KEYEVENTF_KEYUP = 0x0002;
 
         // 이 프로그램이 직접 보낸 키 입력에 붙이는 표시 ("CLIP")
@@ -114,6 +118,9 @@ namespace ClipCheck
         public static extern bool IsClipboardFormatAvailable(uint format);
 
         [DllImport("user32.dll")]
+        public static extern int CountClipboardFormats();
+
+        [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
 
         [DllImport("user32.dll")]
@@ -127,6 +134,23 @@ namespace ClipCheck
         public static bool ClipboardHasText()
         {
             return IsClipboardFormatAvailable(CF_UNICODETEXT);
+        }
+
+        public static bool ClipboardHasImage()
+        {
+            return IsClipboardFormatAvailable(CF_BITMAP) || IsClipboardFormatAvailable(CF_DIB)
+                || IsClipboardFormatAvailable(CF_DIBV5);
+        }
+
+        public static bool ClipboardHasFiles()
+        {
+            return IsClipboardFormatAvailable(CF_HDROP);
+        }
+
+        // 글자 · 이미지(픽픽, 그림판 등) · 파일 중 하나라도 들어 있으면 제대로 복사된 것으로 봄
+        public static bool ClipboardHasContent()
+        {
+            return ClipboardHasText() || ClipboardHasImage() || ClipboardHasFiles();
         }
 
         private static void Key(int vk, bool up)
@@ -652,9 +676,9 @@ namespace ClipCheck
         {
             if (waiting)
             {
-                if (!Native.ClipboardHasText())
+                if (!Native.ClipboardHasContent())
                 {
-                    // 바뀌긴 했는데 글자가 없음 → 곧 글자가 들어올 수도 있으니 대기 시간 끝까지 기다림
+                    // 바뀌긴 했는데 글자·이미지가 없음 → 곧 들어올 수도 있으니 대기 시간 끝까지 기다림
                     sawUpdate = true;
                     return;
                 }
@@ -664,7 +688,7 @@ namespace ClipCheck
 
             // Ctrl+C 없이 바뀐 경우 (마우스 우클릭 복사 등)
             if (!settings.ShowMouseCopy) return;
-            if (Native.ClipboardHasText())
+            if (Native.ClipboardHasContent())
             {
                 successAttempt = 1;
                 readTimer.Stop();
@@ -672,7 +696,7 @@ namespace ClipCheck
             }
             else
             {
-                toast.ShowResult(ToastKind.Retry, "글자가 아닌 것이 복사됨", NonTextDetail(), settings.OkShowMs, settings.AtCursor);
+                toast.ShowResult(ToastKind.Retry, "알 수 없는 형식이 복사됨", NonTextDetail(), settings.OkShowMs, settings.AtCursor);
             }
         }
 
@@ -681,8 +705,8 @@ namespace ClipCheck
             waitTimer.Stop();
             if (!waiting) return;
 
-            // 혹시 알림을 놓쳤더라도 순번이 바뀌었고 글자가 있으면 성공
-            if (Native.GetClipboardSequenceNumber() != seqAtPress && Native.ClipboardHasText())
+            // 혹시 알림을 놓쳤더라도 순번이 바뀌었고 내용이 있으면 성공
+            if (Native.GetClipboardSequenceNumber() != seqAtPress && Native.ClipboardHasContent())
             {
                 Succeed();
                 return;
@@ -696,7 +720,7 @@ namespace ClipCheck
             {
                 attempt++;
                 toast.ShowResult(ToastKind.Retry, "다시 복사 중… (" + (attempt - 1) + "/" + settings.RetryCount + ")",
-                    sawUpdate ? "글자가 안 들어와서 Ctrl+C 다시 누름" : "반응이 없어서 Ctrl+C 다시 누름",
+                    sawUpdate ? "내용이 안 들어와서 Ctrl+C 다시 누름" : "반응이 없어서 Ctrl+C 다시 누름",
                     settings.WaitMs + 500, settings.AtCursor);
                 StartAttempt();
                 Native.SendCtrlC();
@@ -706,7 +730,7 @@ namespace ClipCheck
             waiting = false;
             failCount++;
             UpdateTray();
-            string detail = sawUpdate ? "글자가 안 들어옴 (" + NonTextDetail() + ")" : "클립보드 변화 없음";
+            string detail = sawUpdate ? "글자·이미지가 안 들어옴 (" + NonTextDetail() + ")" : "클립보드 변화 없음";
             if (attempt > 1) detail = (attempt - 1) + "번 다시 시도했지만 실패 · " + detail;
             toast.ShowResult(ToastKind.Fail, "복사 안 됨!", detail, settings.FailShowMs, settings.AtCursor);
             if (settings.Sound) SystemSounds.Hand.Play();
@@ -737,6 +761,12 @@ namespace ClipCheck
             {
                 try
                 {
+                    if (!Native.ClipboardHasText())
+                    {
+                        // 이미지는 크기가 클 수 있어서 읽지 않고 종류만 표시
+                        ShowSuccess(Native.ClipboardHasImage() ? "(이미지)" : "(파일)");
+                        return;
+                    }
                     string text = Clipboard.GetText();
                     // 1000칸처럼 아주 많이 복사하면 수만 자가 되므로 앞부분만 사용 (GDI+ 는 너무 긴 글자를 못 그림)
                     if (text.Length > 200) text = text.Substring(0, 200);
@@ -758,20 +788,11 @@ namespace ClipCheck
             toast.ShowResult(ToastKind.Ok, title, detail ?? "", settings.OkShowMs, settings.AtCursor);
         }
 
+        // 클립보드를 열지 않고 확인 (복사 중인 프로그램을 방해하지 않도록)
         private static string NonTextDetail()
         {
-            try
-            {
-                if (Clipboard.ContainsImage()) return "이미지";
-                if (Clipboard.ContainsFileDropList()) return "파일";
-                IDataObject d = Clipboard.GetDataObject();
-                if (d == null || d.GetFormats().Length == 0) return "클립보드 비어 있음";
-                return "형식: " + string.Join(", ", d.GetFormats());
-            }
-            catch (Exception)
-            {
-                return "텍스트 아님";
-            }
+            int n = Native.CountClipboardFormats();
+            return n == 0 ? "클립보드 비어 있음" : "알 수 없는 형식 " + n + "개";
         }
 
         private void UpdateTray()

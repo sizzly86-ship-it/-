@@ -662,6 +662,11 @@
       if (i < 0 || i >= state.units.length) return;
       saveCurrent();
       const u = state.units[i];
+      // 지운 뒤에는 목록에서 바로 아래(없으면 바로 위)에 보이던 챔버로 이동
+      const shownBefore = visibleUnitIndexes(), shownPos = shownBefore.indexOf(i);
+      // 완료한 챔버 아래로를 켰으면 남은(완료 안 한) 챔버를 먼저 고름
+      const around = [shownBefore[shownPos + 1], shownBefore[shownPos - 1]].filter(x => x !== undefined);
+      const after = (doneToBottom() && around.find(x => !state.units[x].done)) ?? around[0];
       const lines = u.edited ? u.edited.split('\n').filter(x => x.trim()).length : 0;
       if (!confirm(`${u.name} 챔버를 삭제할까요?\n(내용 ${lines}줄도 최종 인폼에서 같이 빠집니다)`)) return;
       state.units.splice(i, 1);
@@ -672,7 +677,8 @@
         state.selected = -1;
         renderUnits();
         const visible = visibleUnitIndexes();
-        const next = visible.find(x => x >= i) ?? visible[visible.length - 1] ?? Math.min(i, state.units.length - 1);
+        const shifted = after === undefined ? undefined : after > i ? after - 1 : after;
+        const next = visible.includes(shifted) ? shifted : visible[0] ?? Math.min(i, state.units.length - 1);
         selectUnit(next);
         const b = $('#unitList').children[next];
         if (b) { try { b.focus({ preventScroll: true }); } catch { b.focus(); } b.scrollIntoView({ block: 'nearest' }); }
@@ -1181,6 +1187,8 @@
     }
     function setAutosaveStatus(text, kind) {
       const status = $('#autosaveStatus');
+      // 이 탭이 복구본을 저장하지 않는 상태면 그 안내를 계속 붙여 둠
+      if (!isRecoveryOwner && !/다른 탭/.test(text)) { text += ' · 다른 탭에서 열려 있어 이 탭은 브라우저 복구본 저장 안 함'; kind = 'error'; }
       status.textContent = text;
       status.className = 'autosave-status' + (kind ? ' ' + kind : '');
       // 창이 좁아 상태 글이 숨겨져도 마우스를 올리면 보이게

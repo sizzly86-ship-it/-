@@ -56,7 +56,8 @@
     .splitter:hover, .splitter.dragging { background: #dceaff; }
     .splitter:hover::after, .splitter.dragging::after { background: var(--blue); }
     .unit-pane { display: flex; flex-direction: column; }
-    .unit-list { flex: 1; min-height: 0; overflow: auto; padding: 7px; }
+    .unit-list { display: flex; flex-direction: column; gap: 3px; flex: 1; min-height: 0; overflow: auto; padding: 7px; }
+    .unit-list > .unit { flex: 0 0 auto; margin: 0; }
     /* 오늘 진행만 보기 */
     .today-filter { display: flex; align-items: center; gap: 6px; margin: 0; padding: 7px 12px; border-bottom: 1px solid var(--line); color: #31506e; background: #f6f8fa; font-size: 12px; font-weight: 800; cursor: pointer; }
     .today-filter.on { color: #0f4c8a; background: #e3efff; box-shadow: inset 4px 0 0 var(--blue); }
@@ -241,6 +242,7 @@
         <aside class="panel unit-pane">
           <div class="toolbar"><h2>② 챔버 선택</h2><div><small id="unitTotal"></small> <button class="mini-btn" id="addUnitBtn">+ 새 구역</button></div></div>
           <label class="today-filter" id="todayFilterBar" title="Enter 입력 날짜(보통 오늘)가 적힌 줄이 있거나, 지금 내용을 고친 챔버만 목록에 보여줍니다. 날짜는 위 'Enter 입력' 날짜를 따릅니다. 최종 인폼에는 영향이 없습니다."><input type="checkbox" id="todayOnlyCheck"> <span id="todayFilterLabel">오늘 진행만 보기</span></label>
+          <label class="today-filter" id="doneBottomBar" title="'오늘 완료(회색)'를 누른 챔버를 목록 맨 아래로 내립니다. '저장 후 다음 챔버'도 완료 안 한 챔버만 돌아갑니다. 최종 인폼 순서에는 영향이 없습니다."><input type="checkbox" id="doneBottomCheck"> 완료한 챔버 아래로</label>
           <div class="unit-list" id="unitList"></div>
           <div class="unit-empty" id="unitEmpty" hidden></div>
         </aside>
@@ -249,7 +251,7 @@
           <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
           <div class="editor-body" id="editorBody">
             <div class="selected-title"><div class="title-wrap"><strong id="selectedName">챔버를 선택하세요</strong><button type="button" class="mini-btn" id="renameUnitBtn" disabled title="[[3A w2]]처럼 제목 안 인폼을 고칩니다">제목 수정</button></div><div class="unit-flags"><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
-            <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label></div>
+            <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜" autocomplete="off"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label></div>
             <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
             <div class="edit-actions"><div class="edit-actions-left"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn danger" id="deleteUnitBtn" disabled title="목록에서 선택한 챔버를 삭제합니다 (목록에서 Delete 키로도 가능)">이 챔버 삭제</button></div><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
           </div>
@@ -309,6 +311,7 @@
     let autosaveTimer = null;
     let recoverySaveTimer = null;
     let autosaveDirty = false;
+    let entryDateDay = '', entryDateManual = false;
     // 같은 파일을 여러 탭에서 열었을 때 복구본이 서로 덮어쓰지 않도록, 한 탭만 복구본을 저장함
     const TAB_ID = Date.now().toString(36) + Math.random().toString(36).slice(2);
     const TAB_LOCK_KEY = 'informTabLock';
@@ -526,7 +529,23 @@
     }
     // 보고 있는 챔버는 조건에서 벗어나도(날짜 줄을 지우는 중 등) 다른 챔버로 옮길 때까지 보이게 둠
     function isUnitVisible(u, i) { return !todayOnly() || i === state.selected || isTodayUnit(u); }
-    function visibleUnitIndexes() { return state.units.map((u, i) => i).filter(i => isUnitVisible(state.units[i], i)); }
+    /** 완료한 챔버 아래로: 목록 표시 순서만 바꿈 (최종 인폼 순서는 그대로) */
+    function doneToBottom() { return $('#doneBottomCheck').checked; }
+    function displayRank(u) { return doneToBottom() && u.done ? 1 : 0; }
+    /** 목록에 보이는 챔버 번호를 화면에 보이는 순서대로 */
+    function visibleUnitIndexes() {
+      return state.units.map((u, i) => i).filter(i => isUnitVisible(state.units[i], i))
+        .sort((a, b) => displayRank(state.units[a]) - displayRank(state.units[b]) || a - b);
+    }
+    function setDoneToBottom(on) {
+      $('#doneBottomCheck').checked = on;
+      try { localStorage.setItem('informDoneBottom', on ? '1' : '0'); } catch {}
+      saveCurrent();
+      renderUnits();
+      $('#doneBottomBar').classList.toggle('on', on);
+      const b = $('#unitList').children[state.selected];
+      if (b) b.scrollIntoView({ block: 'nearest' });
+    }
     function updateUnitCount() {
       const total = state.units.length, on = todayOnly();
       const shown = on ? state.units.filter(isTodayUnit).length : total;
@@ -546,8 +565,8 @@
       renderUnits();
       // 켰을 때 보고 있던 챔버가 오늘 진행이 아니면 오늘 진행 첫 챔버로 이동
       if (on && state.selected >= 0 && !isTodayUnit(state.units[state.selected])) {
-        const first = state.units.findIndex(isTodayUnit);
-        if (first >= 0) selectUnit(first);
+        const first = visibleUnitIndexes().find(i => isTodayUnit(state.units[i]) && !displayRank(state.units[i]));
+        if (first !== undefined) selectUnit(first);
       }
       updateUnitCount();
     }
@@ -562,6 +581,7 @@
       state.units.forEach((u, i) => {
         const b = document.createElement('button');
         b.className = unitClassName(u, i);
+        b.style.order = displayRank(u);
         b.innerHTML = unitButtonHtml(u);
         b.dataset.index = i;
         b.onclick = () => { saveCurrent(); selectUnit(i); };
@@ -576,6 +596,7 @@
       const b = $('#unitList').children[i];
       if (!b) return;
       b.className = unitClassName(state.units[i], i);
+      b.style.order = displayRank(state.units[i]);
       b.innerHTML = unitButtonHtml(state.units[i]);
       updateUnitCount();
     }
@@ -1162,6 +1183,9 @@
       const status = $('#autosaveStatus');
       status.textContent = text;
       status.className = 'autosave-status' + (kind ? ' ' + kind : '');
+      // 창이 좁아 상태 글이 숨겨져도 마우스를 올리면 보이게
+      status.title = text;
+      $('#saveNowBtn').title = text;
     }
     async function chooseAutosaveFile(writeImmediately = true) {
       if (!window.showSaveFilePicker) {
@@ -1196,11 +1220,16 @@
       autosaveTimer = setInterval(() => writeAutosaveFile(false), minutes * 60 * 1000);
       setAutosaveStatus(`${minutes}분 간격 자동저장 설정됨 · 브라우저 복구본은 10초 이내 갱신`, 'ok');
     }
+    let lastSavedTime = '';
+    function clockText() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
     async function writeAutosaveFile(manual, textOverride = null, saveLabel = '') {
       if (!autosaveFileHandle) return false;
       if (!state.started) { setAutosaveStatus('인폼을 챔버별로 나눈 뒤 자동저장할 수 있습니다.', 'error'); return false; }
-      // 자동저장은 바뀐 내용이 있을 때만 (최종 저장한 파일을 그대로 다시 덮어쓰지 않도록)
-      if (!manual && !autosaveDirty) return true;
+      // 자동저장은 바뀐 내용이 있을 때만 파일에 씀 (최종 저장한 파일을 그대로 다시 덮어쓰지 않도록). 시간은 매번 표시
+      if (!manual && !autosaveDirty) {
+        setAutosaveStatus(`자동저장 확인: ${clockText()} · 바뀐 내용 없음 (마지막 저장 ${lastSavedTime || '-'})`, 'ok');
+        return true;
+      }
       try {
         const inReview = $('#reviewStep').classList.contains('active');
         const text = typeof textOverride === 'string' ? textOverride : inReview ? $('#finalText').value : buildFinal();
@@ -1209,8 +1238,8 @@
         await writable.write('\ufeff' + text);
         await writable.close();
         saveRecoverySnapshot();
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        setAutosaveStatus(`${saveLabel || (manual ? '직접 저장' : '자동저장')} 완료: ${time}`, 'ok');
+        lastSavedTime = clockText();
+        setAutosaveStatus(`${saveLabel || (manual ? '직접 저장' : '자동저장')} 완료: ${lastSavedTime}`, 'ok');
         return true;
       } catch (error) {
         autosaveDirty = true;
@@ -1351,8 +1380,9 @@
       updateLiveDiff();
     }
     function initDatePickers() {
-      const entry = $('#entryDate');
-      if (!entry.value) entry.value = toInputDateValue(defaultToday());
+      // 브라우저가 어제 넣은 날짜를 되살려 두는 경우가 있어서, 열 때마다 오늘로 맞춤
+      $('#entryDate').value = toInputDateValue(defaultToday());
+      entryDateDay = $('#entryDate').value;
       loadHighlightDates();
       updateHighlightDatesButton();
     }
@@ -1430,7 +1460,10 @@
     if (window.ResizeObserver) new ResizeObserver(() => syncEditorOverlay()).observe($('#editText'));
     $('#finalText').oninput = syncFinalEdits;
     $('#targetCheck').onchange = saveCurrent;
-    $('#doneCheck').onchange = saveCurrent;
+    $('#doneCheck').onchange = () => {
+      saveCurrent();
+      if (doneToBottom() && $('#doneCheck').checked) toast('완료 표시한 챔버를 목록 아래로 옮겼습니다. "저장 후 다음 챔버"로 남은 챔버를 이어서 보세요.');
+    };
     $('#deleteUnitBtn').onclick = () => deleteUnit(state.selected);
     $('#renameUnitBtn').onclick = renameUnit;
     $('#highlightNewCheck').onchange = () => { try { localStorage.setItem('informHighlightNew', $('#highlightNewCheck').checked ? '1' : '0'); } catch {} updateLiveDiff(); };
@@ -1455,14 +1488,41 @@
     $('#saveNextBtn').onclick = () => {
       saveCurrent();
       const visible = visibleUnitIndexes();
-      const next = visible.find(i => i > state.selected);
-      if (next !== undefined) return selectUnit(next);
+      if (doneToBottom()) {
+        // 완료한 챔버 아래로: 완료 안 한 챔버만 차례로 돌고, 끝나면 처음으로
+        const todo = visible.filter(i => !state.units[i].done);
+        const next = todo.find(i => i > state.selected);
+        if (next !== undefined) return selectUnit(next);
+        const first = todo.find(i => i !== state.selected);
+        if (first !== undefined) { selectUnit(first); return toast('남은 챔버를 한 바퀴 다 봤습니다. 처음으로 돌아왔습니다.'); }
+        return toast(todo.length ? '남은 챔버가 이 챔버 하나입니다.' : '목록의 챔버를 모두 완료했습니다.');
+      }
+      const pos = visible.indexOf(state.selected);
+      const next = visible[pos + 1];
+      if (pos >= 0 && next !== undefined) return selectUnit(next);
       // 오늘 진행만 보기에서는 마지막 다음에 처음으로 돌아가서 계속 돌려 볼 수 있게
       if (todayOnly() && visible.length > 1) { selectUnit(visible[0]); return toast('오늘 진행 챔버를 한 바퀴 다 봤습니다. 처음으로 돌아왔습니다.'); }
       toast('마지막 챔버입니다.');
     };
     $('#todayOnlyCheck').onchange = () => setTodayOnly($('#todayOnlyCheck').checked);
-    $('#entryDate').addEventListener('change', () => { if (state.units.length) renderUnits(); else updateUnitCount(); });
+    $('#doneBottomCheck').onchange = () => setDoneToBottom($('#doneBottomCheck').checked);
+    $('#entryDate').addEventListener('change', () => {
+      // 직접 다른 날짜를 고르면 자정이 지나도 그 날짜를 유지 (오늘로 다시 고르면 다시 날짜를 따라감)
+      entryDateManual = $('#entryDate').value !== toInputDateValue(defaultToday());
+      if (state.units.length) renderUnits(); else updateUnitCount();
+    });
+    // 창을 켜둔 채 날짜가 바뀌면 Enter 입력 날짜도 오늘로 (직접 고른 날짜는 그대로)
+    function followToday() {
+      const today = toInputDateValue(defaultToday());
+      if (today === entryDateDay) return;
+      entryDateDay = today;
+      if (entryDateManual) return;
+      $('#entryDate').value = today;
+      if (state.units.length) renderUnits(); else updateUnitCount();
+      toast(`날짜가 바뀌어 Enter 입력 날짜를 ${entryDateText()}로 바꿨습니다. (야간이라 전날 날짜가 필요하면 직접 고르세요)`);
+    }
+    setInterval(followToday, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) followToday(); });
     $('#reviewBtn').onclick = () => renderReview();
     $('#backBtn').onclick = () => { clearTimeout(syncFinalEdits.timer); applyFinalEdits(); showStep('workStep'); };
     $('#copyBtn').onclick = copyFinal;
@@ -1481,6 +1541,8 @@
     try { $('#highlightYesterdayCheck').checked = localStorage.getItem('informHighlightYesterday') === '1'; } catch {}
     try { $('#showMergedCheck').checked = localStorage.getItem('informShowMerged') !== '0'; } catch { $('#showMergedCheck').checked = true; }
     try { $('#todayOnlyCheck').checked = localStorage.getItem('informTodayOnly') === '1'; } catch {}
+    try { $('#doneBottomCheck').checked = localStorage.getItem('informDoneBottom') === '1'; } catch {}
+    $('#doneBottomBar').classList.toggle('on', $('#doneBottomCheck').checked);
     try { $('#shiftSelect').value = localStorage.getItem('informShift') || '주간'; } catch { $('#shiftSelect').value = '주간'; }
     initDatePickers();
     updateUnitCount();

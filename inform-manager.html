@@ -267,7 +267,7 @@
     <section id="reviewStep" class="step">
       <div class="review">
         <section class="panel">
-          <div class="toolbar"><h2>③ 최종 전체 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn primary" id="copyBtn">전체 복사</button></div></div>
+          <div class="toolbar"><h2>③ 최종 전체 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn" id="copyMailBtn" title="메일(서식 모드)에 붙여 넣을 때 줄 사이가 벌어지지 않도록 '줄 넘김'으로 복사합니다">메일용 복사</button> <button class="btn primary" id="copyBtn">전체 복사</button></div></div>
           <div class="review-box"><textarea id="finalText" spellcheck="false"></textarea></div>
         </section>
         <div class="splitter" id="reviewSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
@@ -1350,6 +1350,36 @@
       return top;
     }
     function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    /**
+     * 메일용 복사: 메일 쓰기 창(서식 모드)은 그냥 텍스트를 붙여 넣으면 줄마다 문단으로 바꿔 줄 사이가 벌어짐.
+     * 그래서 줄바꿈을 문단이 아닌 줄 넘김(<br>)으로 만든 서식(HTML)도 같이 복사함. 텍스트 모드 메일은 그냥 텍스트를 받음
+     */
+    function mailHtml(text) {
+      const lines = String(text).replace(/\r/g, '').split('\n').map(line =>
+        // 앞쪽·연속 띄어쓰기가 메일에서 사라지지 않게
+        escapeHtml(line).replace(/^ +| {2,}/g, m => '&nbsp;'.repeat(m.length)).replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;'));
+      return `<div style="margin:0;padding:0;">${lines.join('<br>')}</div>`;
+    }
+    async function copyForMail() {
+      const text = $('#finalText').value.replace(/\r/g, '');
+      const html = mailHtml(text);
+      const done = () => toast('메일용으로 복사했습니다. 메일 쓰기 창에 바로 붙여 넣으세요.');
+      try {
+        if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) throw new Error('no clipboard api');
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' })
+        })]);
+        return done();
+      } catch {}
+      // 위 방식이 막힌 경우: 복사 이벤트에 직접 넣기
+      const onCopy = event => { event.clipboardData.setData('text/html', html); event.clipboardData.setData('text/plain', text); event.preventDefault(); };
+      document.addEventListener('copy', onCopy);
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch {}
+      document.removeEventListener('copy', onCopy);
+      if (ok) done(); else toast('복사하지 못했습니다. "전체 복사"를 써 주세요.');
+    }
     async function copyFinal() {
       try { await navigator.clipboard.writeText($('#finalText').value); toast('최종 인폼을 복사했습니다.'); }
       catch { $('#finalText').select(); document.execCommand('copy'); toast('최종 인폼을 복사했습니다.'); }
@@ -1534,6 +1564,7 @@
     $('#reviewBtn').onclick = () => renderReview();
     $('#backBtn').onclick = () => { clearTimeout(syncFinalEdits.timer); applyFinalEdits(); showStep('workStep'); };
     $('#copyBtn').onclick = copyFinal;
+    $('#copyMailBtn').onclick = copyForMail;
     $('#downloadBtn').onclick = downloadFinal;
     $('#newBtn').onclick = resetAll;
     $('#chooseAutosaveBtn').onclick = () => chooseAutosaveFile(true);

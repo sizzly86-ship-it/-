@@ -91,6 +91,8 @@
     /* 긴 챔버 이름은 단어 중간이 아니라 띄어쓰기에서 줄바꿈 */
     .unit .name { word-break: keep-all; overflow-wrap: anywhere; }
     .title-memo { cursor: pointer; font-size: 12px; }
+    /* 꼬리표에 display를 지정해서 hidden이 안 먹던 문제 → 메모 없을 때 빈 꼬리표가 보였음 */
+    .memo-tag[hidden] { display: none; }
     .title-memo:hover { border-color: #d97a2b; }
     .unit-menu { position: fixed; z-index: 50; width: 230px; padding: 6px; border: 1px solid var(--line); border-radius: 9px; background: white; box-shadow: 0 12px 34px rgba(0,0,0,.2); font-size: 13px; }
     .unit-menu[hidden] { display: none; }
@@ -145,8 +147,21 @@
     .editor-stack.highlight #editText { color: transparent; -webkit-text-fill-color: transparent; caret-color: #111; background: transparent; }
     .editor-stack.highlight #editText::selection { background: rgba(70, 135, 230, .28); }
     /* 굵게(bold)는 글자 폭이 달라져 실제 입력 위치와 어긋나므로 색·배경만 사용 */
-    .overlay-new { color: #0869c4; }
-    .overlay-yesterday { color: #7a4b00; background: #ffe99a; }
+    /* 강조 색은 '색 설정'에서 바꿀 수 있음 (굵게는 글자 폭이 달라져 쓰지 않음) */
+    :root { --new-fg: #0869c4; --new-bg: transparent; --old-fg: #7a4b00; --old-bg: #ffe99a; }
+    .overlay-new { color: var(--new-fg); background: var(--new-bg); }
+    .overlay-yesterday { color: var(--old-fg); background: var(--old-bg); }
+    .color-pop { width: 318px; }
+    .color-sec { margin-bottom: 12px; }
+    .color-sec h4 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; font-size: 12px; }
+    .color-sec h4 small { color: #b4500f; font-size: 10px; font-weight: 700; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+    .swatch { padding: 3px 8px; border: 2px solid #dfe5eb; border-radius: 5px; background: white; font-size: 12px; font-weight: 800; cursor: pointer; }
+    .swatch.on { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(31,111,235,.15); }
+    .color-custom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 7px; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .color-custom label { display: flex; align-items: center; gap: 4px; }
+    .color-custom input[type="color"] { width: 32px; height: 24px; padding: 0; border: 1px solid #b8c5d2; border-radius: 4px; background: white; cursor: pointer; }
+    .color-preview { margin: 4px 0 2px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 6px; background: #fbfcfd; font-family: Consolas, "Malgun Gothic", monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow: hidden; }
     .edit-actions { display: flex; justify-content: space-between; gap: 8px; }
     .edit-actions-left { display: flex; gap: 8px; }
     .important { display: flex; flex-direction: column; height: 100%; }
@@ -278,7 +293,7 @@
           <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
           <div class="editor-body" id="editorBody">
             <div class="selected-title"><div class="title-wrap"><strong id="selectedName">챔버를 선택하세요</strong><span class="memo-tag title-memo" id="selectedMemo" title="눌러서 메모 고치기" hidden></span><button type="button" class="mini-btn" id="renameUnitBtn" disabled title="[[3A w2]]처럼 제목 안 인폼을 고칩니다">제목 수정</button></div><div class="unit-flags"><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
-            <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜" autocomplete="off"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label></div>
+            <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜" autocomplete="off"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><button type="button" class="date-pick-btn" id="colorSettingsBtn" title="신규 작성 줄·인폼 강조 색 바꾸기">색 설정</button></div>
             <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
             <div class="edit-actions"><div class="edit-actions-left"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn danger" id="deleteUnitBtn" disabled title="목록에서 선택한 챔버를 삭제합니다 (목록에서 Delete 키로도 가능)">이 챔버 삭제</button></div><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
           </div>
@@ -319,6 +334,7 @@
   </main>
   <div class="toast" id="toast"></div>
   <div class="date-pop" id="highlightPop" hidden></div>
+  <div class="date-pop color-pop" id="colorPop" hidden></div>
   <div class="unit-menu" id="unitMenu" role="menu" hidden></div>
   <dialog class="merge-dialog txt-dialog" id="txtDialog">
     <div class="merge-dialog-head"><h3>TXT 저장 파일 만들기</h3><p>TXT 파일을 만들어 두면 정한 간격마다 그 파일에 자동으로 저장됩니다.</p></div>
@@ -1170,6 +1186,82 @@
       if (b.dataset.act === 'clear') { setHighlightDates([]); return renderCalendar(); }
       if (b.dataset.act === 'close') closeHighlightPop();
     }
+    /* ---------- 강조 색 설정 (신규 작성 줄 / 인폼 강조) ---------- */
+    const HIGHLIGHT_DEFAULTS = { newFg: '#0869c4', newBg: '', oldFg: '#7a4b00', oldBg: '#ffe99a' };
+    // [이름, 글자색, 배경색('' = 배경 없음)]
+    const COLOR_PRESETS = {
+      new: [['파란 글자', '#0869c4', ''], ['초록 글자', '#127a3a', ''], ['빨간 글자', '#c62828', ''], ['보라 글자', '#6a3fb5', ''], ['하늘 배경', '#0b3d91', '#d6e8ff'], ['연두 배경', '#1d5e2c', '#d9f5d0']],
+      old: [['노란 배경', '#7a4b00', '#ffe99a'], ['주황 배경', '#7a3300', '#ffd9b0'], ['분홍 배경', '#7a1f45', '#ffd6e6'], ['하늘 배경', '#0b3d91', '#d6e8ff'], ['회색 배경', '#333333', '#e2e6ea'], ['갈색 글자', '#8a5a00', '']]
+    };
+    let highlightColors = { ...HIGHLIGHT_DEFAULTS };
+    const isHexColor = v => /^#[0-9a-f]{6}$/i.test(v || '');
+    function loadHighlightColors() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('informHighlightColors') || 'null');
+        if (saved) for (const k of Object.keys(HIGHLIGHT_DEFAULTS)) {
+          if (saved[k] === '' && /Bg$/.test(k)) highlightColors[k] = '';
+          else if (isHexColor(saved[k])) highlightColors[k] = saved[k];
+        }
+      } catch {}
+      applyHighlightColors();
+    }
+    function applyHighlightColors() {
+      const root = document.documentElement.style, c = highlightColors;
+      root.setProperty('--new-fg', c.newFg); root.setProperty('--new-bg', c.newBg || 'transparent');
+      root.setProperty('--old-fg', c.oldFg); root.setProperty('--old-bg', c.oldBg || 'transparent');
+    }
+    function setHighlightColors(patch) {
+      highlightColors = { ...highlightColors, ...patch };
+      applyHighlightColors();
+      try { localStorage.setItem('informHighlightColors', JSON.stringify(highlightColors)); } catch {}
+      renderColorPop();
+    }
+    function colorSectionHtml(kind, title, checkId) {
+      const fg = highlightColors[kind + 'Fg'], bg = highlightColors[kind + 'Bg'];
+      const swatches = COLOR_PRESETS[kind].map(([name, f, b]) => `<button type="button" class="swatch${f === fg && b === bg ? ' on' : ''}" data-kind="${kind}" data-fg="${f}" data-bg="${b}" style="color:${f};background:${b || 'white'}">${name}</button>`).join('');
+      const off = !$(checkId).checked ? '<small>지금 꺼져 있음 (체크해야 보여요)</small>' : '';
+      return `<div class="color-sec"><h4>${title}${off}</h4><div class="swatches">${swatches}</div>`
+        + `<div class="color-custom">직접 고르기<label>글자 <input type="color" data-kind="${kind}" data-part="Fg" value="${fg}"></label>`
+        + `<label>배경 <input type="color" data-kind="${kind}" data-part="Bg" value="${bg || '#ffffff'}"${bg ? '' : ' disabled'}></label>`
+        + `<label><input type="checkbox" data-kind="${kind}" data-act="nobg"${bg ? '' : ' checked'}> 배경 없음</label></div></div>`;
+    }
+    function renderColorPop() {
+      const pop = $('#colorPop');
+      if (pop.hidden) return;
+      pop.innerHTML = colorSectionHtml('new', '신규 작성 줄 (오늘 새로 쓴 줄)', '#highlightNewCheck')
+        + colorSectionHtml('old', '인폼 강조 (고른 날짜의 줄)', '#highlightYesterdayCheck')
+        + `<div class="color-preview"><span class="overlay-yesterday">■ 10/31 야간 이전 인폼 강조 예시</span>\n<span class="overlay-new">■ 11/1 주간 오늘 새로 쓴 줄 예시</span>\n■ 강조 안 된 일반 줄</div>`
+        + `<div class="cal-foot"><button type="button" class="mini-btn" data-act="reset">기본 색으로</button><button type="button" class="mini-btn" data-act="close">닫기</button></div>`;
+    }
+    function openColorPop() {
+      closeHighlightPop();
+      const pop = $('#colorPop'), r = $('#colorSettingsBtn').getBoundingClientRect();
+      pop.hidden = false;
+      renderColorPop();
+      pop.style.top = Math.max(8, Math.min(r.bottom + 4, window.innerHeight - pop.offsetHeight - 8)) + 'px';
+      pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+    }
+    function closeColorPop() { $('#colorPop').hidden = true; }
+    function handleColorPop(event) {
+      const t = event.target;
+      // 색 고르는 창(input type=color)은 끄는 동안 input이 계속 와서 다시 그리지 않고 색만 바꿈
+      if (t.type === 'color') {
+        if (event.type !== 'input') return;
+        highlightColors = { ...highlightColors, [t.dataset.kind + t.dataset.part]: t.value };
+        applyHighlightColors();
+        try { localStorage.setItem('informHighlightColors', JSON.stringify(highlightColors)); } catch {}
+        $('#colorPop').querySelectorAll(`.swatch[data-kind="${t.dataset.kind}"]`).forEach(b => b.classList.remove('on'));
+        return;
+      }
+      if (t.dataset.act === 'nobg') {
+        if (event.type === 'change') setHighlightColors({ [t.dataset.kind + 'Bg']: t.checked ? '' : (t.dataset.kind === 'new' ? '#d6e8ff' : '#ffe99a') });
+        return;
+      }
+      if (event.type !== 'click') return;
+      if (t.classList.contains('swatch')) setHighlightColors({ [t.dataset.kind + 'Fg']: t.dataset.fg, [t.dataset.kind + 'Bg']: t.dataset.bg });
+      else if (t.dataset.act === 'reset') setHighlightColors({ ...HIGHLIGHT_DEFAULTS });
+      else if (t.dataset.act === 'close') closeColorPop();
+    }
     function lineHasDate(line, dateText) {
       const escaped = dateText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       return new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`).test(line);
@@ -1635,6 +1727,14 @@
     $('#showMergedCheck').onchange = () => { try { localStorage.setItem('informShowMerged', $('#showMergedCheck').checked ? '1' : '0'); } catch {} renderUnits(); };
     $('#highlightDatesBtn').onclick = () => { if ($('#highlightPop').hidden) openHighlightPop(); else closeHighlightPop(); };
     $('#highlightPop').onclick = handleCalendarClick;
+    $('#colorSettingsBtn').onclick = () => { if ($('#colorPop').hidden) openColorPop(); else closeColorPop(); };
+    ['click', 'input', 'change'].forEach(type => $('#colorPop').addEventListener(type, handleColorPop));
+    document.addEventListener('pointerdown', event => {
+      if ($('#colorPop').hidden || $('#colorPop').contains(event.target) || $('#colorSettingsBtn').contains(event.target)) return;
+      closeColorPop();
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeColorPop(); });
+    window.addEventListener('resize', closeColorPop);
     $('#unitMenu').onclick = handleUnitMenuClick;
     $('#unitMenu').addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); return closeUnitMenu(); }
@@ -1736,6 +1836,7 @@
     $('#doneBottomBar').classList.toggle('on', $('#doneBottomCheck').checked);
     try { $('#shiftSelect').value = localStorage.getItem('informShift') || '주간'; } catch { $('#shiftSelect').value = '주간'; }
     initDatePickers();
+    loadHighlightColors();
     updateUnitCount();
     restorePaneSizes();
     fitPaneSizes();

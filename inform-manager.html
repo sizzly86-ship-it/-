@@ -490,7 +490,7 @@
       state.units = parsed.units;
       state.selected = 0;
       $('#importantText').value = state.importantOriginal;
-      renderUnits(); selectUnit(0); showStep('workStep');
+      renderUnits(); selectUnit(0); showStep('workStep'); scrollEditorToEnd();
       saveRecoverySnapshot();
       toast(`${state.units.length}개 챔버로 나누고 순서대로 정렬했습니다.` + (parsed.bracket ? '' : ' (예전 형식이라 [[ ]] 형식으로 바꿨습니다)'));
       offerTxtFile();
@@ -624,6 +624,7 @@
       state.selected = i; const u = state.units[i];
       $('#selectedName').textContent = u.name;
       $('#editText').disabled = false; $('#editText').value = u.edited;
+      scrollEditorToEnd();
       $('#targetCheck').checked = u.target;
       $('#doneCheck').checked = !!u.done;
       $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false; $('#deleteUnitBtn').disabled = false; $('#renameUnitBtn').disabled = false;
@@ -633,6 +634,13 @@
       const button = $('#unitList').children[i];
       if (button) button.scrollIntoView({ block: 'nearest' });
       updateLiveDiff();
+    }
+    /** 최근 인폼은 보통 맨 아래에 있으니 챔버를 열면 맨 아래가 보이게 (커서도 끝으로. 목록 포커스는 그대로) */
+    function scrollEditorToEnd() {
+      const editor = $('#editText');
+      editor.setSelectionRange(editor.value.length, editor.value.length);
+      editor.scrollTop = editor.scrollHeight;
+      syncEditorOverlay();
     }
     function clearEditor() {
       $('#selectedName').textContent = '챔버를 선택하세요';
@@ -1182,6 +1190,7 @@
         renderUnits();
         if (state.selected >= 0) selectUnit(state.selected); else clearEditor();
         showStep('workStep');
+        if (state.selected >= 0) scrollEditorToEnd();
         toast('이전 작업을 복구했습니다.');
       } catch {}
     }

@@ -330,7 +330,7 @@
   <dialog class="merge-dialog" id="mergeDialog">
     <div class="merge-dialog-head"><h3>추가 인폼 병합</h3><p>인계받은 나머지 챔버 인폼을 붙여넣으세요. 병합 후 번호·챔버 순서로 자동 정렬합니다.</p></div>
     <div class="merge-dialog-body">
-      <div class="merge-notice">이미 현재 작업에 있는 챔버는 건너뛰어 수정 내용을 보호합니다. 새 챔버만 추가됩니다.</div>
+      <div class="merge-notice">새 챔버는 그대로 추가합니다. 이미 있는 챔버인데 내용(또는 제목)이 다르면, 기존에 없는 줄만 아래에 붙일지 물어봅니다. 지금까지 고친 내용은 지워지지 않습니다.</div>
       <textarea id="mergeText" spellcheck="false" placeholder="여기에 추가로 인계받은 챔버 인폼을 붙여넣으세요."></textarea>
       <div class="merge-dialog-actions"><button type="button" class="btn" id="cancelMergeBtn">취소</button><button type="button" class="btn primary" id="applyMergeBtn">병합하기</button></div>
     </div>
@@ -1370,6 +1370,8 @@
     function applyFinalEdits() {
       // 최종 확인 화면에서 아무것도 안 고쳤으면 다시 나누지 않음 (구조가 바뀌는 것 방지)
       if (!state.finalTouched) return;
+      // 늦게 도착한 반영 예약이 다른 화면(처음부터 누른 뒤 등)에서 돌지 않게
+      if (!$('#reviewStep').classList.contains('active')) return;
       const parsed = parseReviewText();
       // 챔버 제목을 고치는 중이라 잠깐 챔버가 하나도 안 보이는 경우는 무시 (처음부터 챔버가 없던 작업은 중요 인폼만 반영)
       if (!parsed.units.length && state.reviewBaseline.length) return;
@@ -1504,6 +1506,8 @@
     }
     function resetAll() {
       if ((state.units.length || $('#sourceText').value) && !confirm('현재 작업을 지우고 처음부터 시작할까요?')) return;
+      clearTimeout(syncFinalEdits.timer); clearTimeout(recoverySaveTimer);
+      closeUnitMenu(); closeHighlightPop();
       state.units = []; state.selected = -1; state.importantOriginal = ''; state.started = false;
       $('#sourceText').value = ''; $('#importantText').value = ''; $('#editText').value = ''; $('#finalText').value = ''; $('#finalImportant').value = '';
       $('#editOverlayContent').innerHTML = ''; $('#editorStack').classList.remove('highlight');
@@ -1691,6 +1695,16 @@
     function followToday() {
       const today = toInputDateValue(defaultToday());
       if (today === entryDateDay) return;
+      // 인폼 강조가 기본값(어제 하루)이었다면 새 날짜 기준 어제로 같이 옮김
+      const oldYesterday = parseInputDate(entryDateDay);
+      if (oldYesterday) oldYesterday.setDate(oldYesterday.getDate() - 1);
+      if (oldYesterday && highlightDates.size === 1 && highlightDates.has(toInputDateValue(oldYesterday))) {
+        // (setHighlightDates는 강조를 켜버리므로 쓰지 않음 — 꺼 둔 강조는 그대로 둠)
+        highlightDates = new Set([toInputDateValue(defaultYesterday())]);
+        try { localStorage.setItem('informHighlightDates', JSON.stringify({ day: today, dates: [...highlightDates] })); } catch {}
+        updateHighlightDatesButton();
+        updateLiveDiff();
+      }
       entryDateDay = today;
       if (entryDateManual) return;
       $('#entryDate').value = today;

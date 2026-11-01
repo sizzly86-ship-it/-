@@ -47,7 +47,7 @@
     textarea { width: 100%; resize: none; border: 1px solid #c9d2dc; border-radius: 8px; padding: 12px; line-height: 1.65; outline: none; background: #fbfcfd; }
     textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,111,235,.1); background: white; }
     #sourceText { height: calc(100vh - 215px); min-height: 450px; font-family: Consolas, "Malgun Gothic", monospace; }
-    #sourceText, #editText, #importantText, #finalText { font-size: var(--content-font-size); line-height: 1.8; }
+    #sourceText, #editText, #importantText, #finalText, #finalImportant { font-size: var(--content-font-size); line-height: 1.8; }
     .hint { margin-top: 10px; padding: 10px 12px; border-radius: 7px; color: #4b6073; background: #eef3f7; font-size: 12px; }
     .workspace { display: grid; grid-template-columns: var(--unit-pane, 235px) 10px minmax(360px, 1fr) 10px var(--important-pane, 34%); gap: 2px; height: 100%; min-height: 540px; }
     .workspace > .panel { min-height: 0; overflow: hidden; }
@@ -181,11 +181,14 @@
     @media (max-width: 1250px) {
       .top-autosave .autosave-check span, .font-control > span { display: none; }
     }
-    .review { display: grid; grid-template-columns: var(--final-pane, 50%) 10px minmax(350px, 1fr); gap: 2px; height: 100%; min-height: 540px; }
+    /* 최종 확인: 중요 인폼 | 챔버 인폼 | 반영 확인 (칸을 나눠서 중요 인폼에 [[25A]]처럼 써도 챔버와 섞이지 않음) */
+    .review { display: grid; grid-template-columns: var(--final-imp-pane, 26%) 10px minmax(360px, 1fr) 10px var(--check-pane, 28%); gap: 2px; height: 100%; min-height: 540px; }
     .review .panel { min-height: 0; overflow: hidden; }
     .review-box { height: calc(100% - 54px); overflow: auto; padding: 14px; }
-    .review > .panel:first-child .review-box { overflow: hidden; }
-    #finalText { display: block; height: 100%; min-height: 500px; overflow: auto; font-family: Consolas, "Malgun Gothic", monospace; }
+    .review > .panel.final-box .review-box { overflow: hidden; }
+    #finalText, #finalImportant { display: block; height: 100%; min-height: 500px; overflow: auto; font-family: Consolas, "Malgun Gothic", monospace; }
+    #finalImportant { background: #fffdf5; }
+    .final-box .toolbar small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .check-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
     .stat { padding: 12px; border: 1px solid var(--line); border-radius: 8px; text-align: center; }
     .stat b { display: block; font-size: 22px; }
@@ -291,13 +294,18 @@
 
     <section id="reviewStep" class="step">
       <div class="review">
-        <section class="panel">
-          <div class="toolbar"><h2>③ 최종 전체 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn" id="copyMailBtn" title="메일(서식 모드)에 붙여 넣을 때 줄 사이가 벌어지지 않도록 '줄 넘김'으로 복사합니다">메일용 복사</button> <button class="btn primary" id="copyBtn">전체 복사</button></div></div>
+        <section class="panel final-box">
+          <div class="toolbar"><h2>③ 중요 인폼</h2><small>최종 인폼 맨 위에 들어갑니다 · [[25A]]처럼 써도 됩니다</small></div>
+          <div class="review-box"><textarea id="finalImportant" spellcheck="false" placeholder="최종 인폼 맨 위에 넣을 중요 인폼&#10;&#10;예)&#10;[[25A]]&#10;■ 11/1 주간 결과 대기"></textarea></div>
+        </section>
+        <div class="splitter" id="finalSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
+        <section class="panel final-box">
+          <div class="toolbar"><h2>챔버 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn" id="copyMailBtn" title="메일(서식 모드)에 붙여 넣을 때 줄 사이가 벌어지지 않도록 '줄 넘김'으로 복사합니다">메일용 복사</button> <button class="btn primary" id="copyBtn">전체 복사</button></div></div>
           <div class="review-box"><textarea id="finalText" spellcheck="false"></textarea></div>
         </section>
         <div class="splitter" id="reviewSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
         <aside class="panel">
-          <div class="toolbar"><h2>반영 확인</h2><small>챔버명을 누르면 왼쪽 위치로 이동</small></div>
+          <div class="toolbar"><h2>반영 확인</h2><small>챔버명을 누르면 챔버 인폼 위치로 이동</small></div>
           <div class="review-box">
             <div class="check-summary">
               <div class="stat"><b id="statUnits">0</b><span>전체 챔버</span></div>
@@ -679,7 +687,7 @@
     }
     /* ---------- 나만 보는 챔버 메모 (오른쪽 클릭 메뉴) ---------- */
     const MEMO_PRESETS = ['결과 대기', '확인 필요', '보류'];
-    let menuUnitIndex = -1;
+    let menuUnitIndex = -1, menuOpenedAt = 0;
     function updateTitleMemo() {
       const u = state.units[state.selected], chip = $('#selectedMemo');
       chip.hidden = !(u && u.memo);
@@ -704,6 +712,7 @@
       if (!u) return;
       saveCurrent();
       menuUnitIndex = i;
+      menuOpenedAt = Date.now();
       const menu = $('#unitMenu');
       const preset = MEMO_PRESETS.map(text => `<button type="button" class="menu-item" data-memo="${escapeHtml(text)}"><span class="tick">${u.memo === text ? '✓' : ''}</span>${escapeHtml(text)}</button>`).join('');
       menu.innerHTML = `<div class="menu-title">${escapeHtml(u.name)}</div>`
@@ -971,24 +980,28 @@
       state.units.forEach(u => parts.push(u.name + (u.edited ? '\n' + u.edited : '')));
       return parts.join('\n\n\n');
     }
+    /** 챔버 인폼만 (최종 확인 화면 가운데 칸) */
+    function buildChambersText() {
+      saveCurrent();
+      return state.units.map(u => u.name + (u.edited ? '\n' + u.edited : '')).join('\n\n\n');
+    }
+    /** 최종 확인 화면의 두 칸을 합친 최종 인폼 (중요 인폼 → 빈 줄 2줄 → 챔버들). 복사·TXT 저장에 씀 */
+    function reviewFinalText() {
+      return [$('#finalImportant').value.trim(), $('#finalText').value.trim()].filter(Boolean).join('\n\n\n');
+    }
     function renderReview(preserveFinalText = false) {
-      const final = preserveFinalText ? $('#finalText').value : buildFinal();
       if (!preserveFinalText) {
-        $('#finalText').value = final;
-        state.lastBuiltFinal = final;
+        $('#finalImportant').value = $('#importantText').value.trim();
+        $('#finalText').value = buildChambersText();
+        state.lastBuiltFinal = reviewFinalText();
         state.finalTouched = false;
-        // 최종 텍스트 = 중요 인폼 + 빈 줄 2줄 + 챔버들. 첫 챔버 제목이 시작하는 위치를 기억해 두고, 고칠 때마다 따라감
-        // (중요 인폼에 [[25A]]처럼 챔버 형식으로 적어도 챔버와 섞이지 않게)
-        const imp = $('#importantText').value.trim();
-        state.finalBoundary = imp ? Math.min(final.length, imp.length + 3) : 0;
-        state.finalPrev = final;
         state.reviewBaseline = state.units.map(u => ({ ...u }));
       }
       const targets = state.units.filter(u => u.target); const changedUnits = state.units.filter(changed);
       $('#statUnits').textContent = state.units.length; $('#statTargets').textContent = targets.length; $('#statChanged').textContent = changedUnits.length;
       const box = $('#changes'); box.innerHTML = '';
       // 최종 텍스트를 실제로 다시 나눠 보고, 확인 화면을 열 때 있던 챔버가 그대로 나오는지 검사
-      const check = parseReviewText(final);
+      const check = parseReviewText();
       const finalKeys = new Set(check.units.map(u => sectionKey(u.name)));
       const missing = state.reviewBaseline.filter(u => !finalKeys.has(sectionKey(u.name)));
       if (missing.length) {
@@ -1348,7 +1361,7 @@
       }
       try {
         const inReview = $('#reviewStep').classList.contains('active');
-        const text = typeof textOverride === 'string' ? textOverride : inReview ? $('#finalText').value : buildFinal();
+        const text = typeof textOverride === 'string' ? textOverride : inReview ? reviewFinalText() : buildFinal();
         autosaveDirty = false;
         const writable = await autosaveFileHandle.createWritable();
         await writable.write('\ufeff' + text);
@@ -1370,90 +1383,22 @@
       if (diff.removed.length) html += `<div class="diff-group"><div class="diff-label">삭제되거나 변경 전 내용</div>${diff.removed.map(x => `<div class="diff-line remove">− ${escapeHtml(x)}</div>`).join('')}</div>`;
       d.innerHTML = html; wireJumpButton(d, title); $('#changes').appendChild(d);
     }
-    /**
-     * 최종 텍스트를 고칠 때마다 '중요 인폼 | 챔버 인폼' 경계를 옮김.
-     * 경계보다 앞(또는 첫 챔버 제목 바로 앞)을 고치면 경계가 그만큼 밀리고, 뒤를 고치면 그대로.
-     * 경계를 걸쳐서 한 번에 고친 경우(전체 선택 후 붙여넣기 등)만 알 수 없음 → 예전 방식으로 다시 찾음
-     */
-    function trackFinalBoundary(next, caret) {
-      const prev = state.finalPrev ?? next;
-      state.finalPrev = next;
-      const b = state.finalBoundary;
-      if (typeof b !== 'number' || prev === next) return;
-      const delta = next.length - prev.length;
-      // 글자만 비교하면 "[[1D]]" 앞에 "["를 친 것처럼 같은 글자가 이어질 때 어디를 고쳤는지 애매함 → 커서 위치로 먼저 판단
-      let start = -1, oldEnd = -1;
-      if (typeof caret === 'number' && delta > 0) {
-        const q = caret - delta;
-        if (q >= 0 && next.slice(0, q) === prev.slice(0, q) && next.slice(q + delta) === prev.slice(q)) { start = q; oldEnd = q; }
-      } else if (typeof caret === 'number' && delta < 0) {
-        const q = caret;
-        if (next.slice(0, q) === prev.slice(0, q) && prev.slice(q - delta) === next.slice(q)) { start = q; oldEnd = q - delta; }
-      }
-      if (start < 0) {
-        const max = Math.min(prev.length, next.length);
-        let p = 0;
-        while (p < max && prev[p] === next[p]) p++;
-        let s = 0;
-        while (s < max - p && prev[prev.length - 1 - s] === next[next.length - 1 - s]) s++;
-        start = p; oldEnd = prev.length - s;
-      }
-      if (oldEnd <= b) state.finalBoundary = b + delta;
-      else if (start < b) state.finalBoundary = null;
-    }
-    /** 확인 화면의 최종 텍스트를 중요 인폼과 챔버로 나눔 (경계를 알면 경계로, 모르면 예전 방식) */
-    function parseReviewText(raw) {
-      if (raw !== $('#finalText').value) return parseFinalText(raw);
-      if (state.finalBoundary === null) state.finalBoundary = guessFinalBoundary(raw);
-      const b = state.finalBoundary;
-      if (typeof b !== 'number') return parseFinalText(raw);
-      const head = cleanInformText(raw.slice(0, b)).trim();
-      const rest = parseInformText(raw.slice(b));
-      // 첫 챔버 제목을 지운 경우처럼 챔버 쪽 맨 앞에 제목 없는 글이 남으면 버리지 않고 중요 인폼 뒤에 붙임
-      return { important: [head, rest.important].filter(Boolean).join('\n'), units: rest.units, bracket: rest.bracket };
-    }
-    /**
-     * 경계를 모를 때(전체를 통째로 바꿔 붙여넣은 경우 등) 추측: 챔버 쪽은 번호순으로 한 번씩만 나오고 기존 챔버로 시작함.
-     * 그래서 뒤에서부터 봤을 때 "번호순·중복 없음·첫 챔버가 원래 있던 챔버"를 만족하는 가장 앞 제목을 챔버 시작으로 봄
-     */
-    function guessFinalBoundary(raw) {
-      const known = new Set([...state.reviewBaseline, ...state.units].map(u => sectionKey(u.name)));
-      const heads = [];
-      let pos = 0;
-      for (const line of raw.split('\n')) { if (isBracketHeader(line)) heads.push({ pos, key: sectionKey(line) }); pos += line.length + 1; }
-      for (let h = 0; h < heads.length; h++) {
-        const run = heads.slice(h);
-        const unique = new Set(run.map(x => x.key)).size === run.length;
-        const ascending = run.every((x, i) => i === 0 || unitOrder(run[i - 1].key) < unitOrder(x.key) || (unitOrder(run[i - 1].key) === unitOrder(x.key) && run[i - 1].key < x.key));
-        if (unique && ascending && known.has(run[0].key)) return run[0].pos;
-      }
-      return null;
-    }
-    /** 예전 방식으로 나눈 결과에서 경계(첫 챔버 제목 위치)를 다시 찾음 */
-    function findFinalBoundary(raw, parsed) {
-      if (!parsed.units.length) return raw.length;
-      const want = cleanInformText(parsed.important).trim();
-      let pos = 0;
-      for (const line of raw.split('\n')) {
-        if (isBracketHeader(line) && cleanInformText(raw.slice(0, pos)).trim() === want) return pos;
-        pos += line.length + 1;
-      }
-      return null;
+    /** 최종 확인 화면: 왼쪽 칸은 그대로 중요 인폼, 가운데 칸만 챔버로 나눔 */
+    function parseReviewText() {
+      const rest = parseInformText($('#finalText').value);
+      const imp = cleanInformText($('#finalImportant').value).trim();
+      // 챔버 칸 맨 앞에 제목 없는 글이 남은 경우(첫 챔버 제목을 지운 경우 등)는 버리지 않고 중요 인폼 뒤에 붙임
+      return { important: [imp, rest.important].filter(Boolean).join('\n'), units: rest.units, bracket: rest.bracket };
     }
     function syncFinalEdits() {
-      const lost = typeof state.finalBoundary === 'number';
-      trackFinalBoundary($('#finalText').value, $('#finalText').selectionEnd);
-      if (lost && state.finalBoundary === null) toast('중요 인폼과 챔버 인폼에 걸쳐 한 번에 고쳐서 경계를 다시 찾습니다. 돌아가기 전에 중요 인폼·챔버가 맞게 나뉘었는지 확인해 주세요.');
       state.finalTouched = true;
       clearTimeout(syncFinalEdits.timer);
       syncFinalEdits.timer = setTimeout(applyFinalEdits, 180);
     }
     function applyFinalEdits() {
-      const raw = $('#finalText').value;
       // 최종 확인 화면에서 아무것도 안 고쳤으면 다시 나누지 않음 (구조가 바뀌는 것 방지)
       if (!state.finalTouched) return;
-      const parsed = parseReviewText(raw);
-      if (state.finalBoundary === null) state.finalBoundary = findFinalBoundary(raw, parsed);
+      const parsed = parseReviewText();
       // 챔버 제목을 고치는 중이라 잠깐 챔버가 하나도 안 보이는 경우는 무시 (처음부터 챔버가 없던 작업은 중요 인폼만 반영)
       if (!parsed.units.length && state.reviewBaseline.length) return;
       markDirty();
@@ -1494,7 +1439,7 @@
     function jumpTitleHtml(title) {
       const jumpable = state.units.some(u => u.name === title);
       return jumpable
-        ? `<button type="button" class="jump-unit"><span>${escapeHtml(title)}</span><small>최종 인폼 위치로 이동 →</small></button>`
+        ? `<button type="button" class="jump-unit"><span>${escapeHtml(title)}</span><small>챔버 인폼 위치로 이동 →</small></button>`
         : `<strong>${escapeHtml(title)}</strong>`;
     }
     function wireJumpButton(card, title) {
@@ -1504,16 +1449,10 @@
     function jumpToFinal(title, card) {
       const area = $('#finalText');
       const lines = area.value.split('\n');
-      // 중요 인폼에도 같은 [[25A]]가 있을 수 있으니 챔버 쪽(경계 뒤)부터 찾음
-      const from = typeof state.finalBoundary === 'number' ? state.finalBoundary : 0;
       let index = 0, lineNumber = -1;
-      for (const start of [from, 0]) {
-        index = 0;
-        for (let i = 0; i < lines.length; i++) {
-          if (index >= start && lines[i].trim() === title.trim()) { lineNumber = i; break; }
-          index += lines[i].length + 1;
-        }
-        if (lineNumber >= 0) break;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim() === title.trim()) { lineNumber = i; break; }
+        index += lines[i].length + 1;
       }
       if (lineNumber < 0) return toast(`${title} 위치를 찾지 못했습니다.`);
       area.focus();
@@ -1552,7 +1491,7 @@
       return `<div style="margin:0;padding:0;">${lines.join('<br>')}</div>`;
     }
     async function copyForMail() {
-      const text = $('#finalText').value.replace(/\r/g, '');
+      const text = reviewFinalText().replace(/\r/g, '');
       const html = mailHtml(text);
       const done = () => toast('메일용으로 복사했습니다. 메일 쓰기 창에 바로 붙여 넣으세요.');
       try {
@@ -1572,8 +1511,13 @@
       if (ok) done(); else toast('복사하지 못했습니다. "전체 복사"를 써 주세요.');
     }
     async function copyFinal() {
-      try { await navigator.clipboard.writeText($('#finalText').value); toast('최종 인폼을 복사했습니다.'); }
-      catch { $('#finalText').select(); document.execCommand('copy'); toast('최종 인폼을 복사했습니다.'); }
+      const text = reviewFinalText();
+      try { await navigator.clipboard.writeText(text); toast('최종 인폼을 복사했습니다.'); }
+      catch {
+        const onCopy = event => { event.clipboardData.setData('text/plain', text); event.preventDefault(); };
+        document.addEventListener('copy', onCopy); document.execCommand('copy'); document.removeEventListener('copy', onCopy);
+        toast('최종 인폼을 복사했습니다.');
+      }
     }
     async function downloadFinal() {
       clearTimeout(syncFinalEdits.timer);
@@ -1582,14 +1526,14 @@
         const selected = await chooseAutosaveFile(false);
         if (!selected) return;
       }
-      const ok = await writeAutosaveFile(true, $('#finalText').value, '최종 저장');
+      const ok = await writeAutosaveFile(true, reviewFinalText(), '최종 저장');
       if (ok) toast('자동저장과 같은 TXT 파일에 최종 저장했습니다.');
       else toast('최종 저장에 실패했습니다. 상단 저장 상태 메시지를 확인하고 다시 시도해 주세요.');
     }
     function resetAll() {
       if ((state.units.length || $('#sourceText').value) && !confirm('현재 작업을 지우고 처음부터 시작할까요?')) return;
       state.units = []; state.selected = -1; state.importantOriginal = ''; state.started = false;
-      $('#sourceText').value = ''; $('#importantText').value = ''; $('#editText').value = ''; $('#finalText').value = '';
+      $('#sourceText').value = ''; $('#importantText').value = ''; $('#editText').value = ''; $('#finalText').value = ''; $('#finalImportant').value = '';
       $('#editOverlayContent').innerHTML = ''; $('#editorStack').classList.remove('highlight');
       try { localStorage.removeItem('informRecoveryV1'); } catch {}
       // 새 작업이 이전 근무 TXT 파일을 덮어쓰지 않도록 저장 파일 연결도 끊음
@@ -1622,7 +1566,8 @@
         localStorage.setItem('informPaneSizes', JSON.stringify({
           unit: work.style.getPropertyValue('--unit-pane'),
           important: work.style.getPropertyValue('--important-pane'),
-          final: review.style.getPropertyValue('--final-pane')
+          finalImp: review.style.getPropertyValue('--final-imp-pane'),
+          check: review.style.getPropertyValue('--check-pane')
         }));
       } catch {}
     }
@@ -1631,7 +1576,8 @@
         const saved = JSON.parse(localStorage.getItem('informPaneSizes') || '{}');
         if (saved.unit) $('#workStep .workspace').style.setProperty('--unit-pane', saved.unit);
         if (saved.important) $('#workStep .workspace').style.setProperty('--important-pane', saved.important);
-        if (saved.final) $('#reviewStep .review').style.setProperty('--final-pane', saved.final);
+        if (saved.finalImp) $('#reviewStep .review').style.setProperty('--final-imp-pane', saved.finalImp);
+        if (saved.check) $('#reviewStep .review').style.setProperty('--check-pane', saved.check);
       } catch {}
     }
     /** 예전에 넓혀 둔 칸 너비가 지금 창보다 크면 창 안에 들어가게 줄임 (저장된 값은 그대로 두어 창을 다시 키우면 돌아옴) */
@@ -1650,8 +1596,9 @@
           const right = important ?? total * 0.34;
           work.style.setProperty('--unit-pane', clamp(unit, 165, Math.max(165, total - right - 390)) + 'px');
         }
-        const final = px(saved.final);
-        if (final !== null) review.style.setProperty('--final-pane', clamp(final, 360, Math.max(360, total + 18 - 370)) + 'px');
+        let check = px(saved.check), finalImp = px(saved.finalImp);
+        if (check !== null) { check = clamp(check, 300, Math.max(300, total - (finalImp ?? 220) - 360)); review.style.setProperty('--check-pane', check + 'px'); }
+        if (finalImp !== null) review.style.setProperty('--final-imp-pane', clamp(finalImp, 200, Math.max(200, total - (check ?? total * 0.28) - 360)) + 'px');
       } catch {}
     }
     function setupSplitter(handle, onMove, onReset) {
@@ -1675,10 +1622,16 @@
         const left = work.querySelector('aside.panel').getBoundingClientRect().width;
         work.style.setProperty('--important-pane', clamp(r.right - x, 260, r.width - left - 390) + 'px');
       }, () => work.style.setProperty('--important-pane', '34%'));
+      setupSplitter($('#finalSplitter'), x => {
+        const r = review.getBoundingClientRect();
+        const right = review.querySelector('aside.panel').getBoundingClientRect().width;
+        review.style.setProperty('--final-imp-pane', clamp(x - r.left, 200, r.width - right - 380) + 'px');
+      }, () => review.style.setProperty('--final-imp-pane', '26%'));
       setupSplitter($('#reviewSplitter'), x => {
         const r = review.getBoundingClientRect();
-        review.style.setProperty('--final-pane', clamp(x - r.left, 360, r.width - 370) + 'px');
-      }, () => review.style.setProperty('--final-pane', '50%'));
+        const left = review.querySelector('.final-box').getBoundingClientRect().width;
+        review.style.setProperty('--check-pane', clamp(r.right - x, 300, r.width - left - 380) + 'px');
+      }, () => review.style.setProperty('--check-pane', '28%'));
     }
 
     $('#sampleBtn').onclick = () => { $('#sourceText').value = sample; };
@@ -1688,9 +1641,10 @@
     $('#editText').onscroll = syncEditorOverlay;
     if (window.ResizeObserver) new ResizeObserver(() => syncEditorOverlay()).observe($('#editText'));
     $('#finalText').oninput = () => { if (isShown($('#finalText'))) syncFinalEdits(); };
+    $('#finalImportant').oninput = () => { if (isShown($('#finalImportant'))) syncFinalEdits(); };
     // 크롬은 Ctrl+Z 기록을 화면 전체가 같이 써서, 수정 화면에서 Ctrl+Z를 계속 누르면 안 보이는 최종 화면 글까지 되돌리려 함
     // (그러면 예전 최종 글이 다시 반영돼 고친 내용이 돌아가고 화면이 넘어감) → 안 보이는 칸의 되돌리기·다시하기는 막음
-    ['#sourceText', '#editText', '#importantText', '#finalText'].forEach(id => $(id).addEventListener('beforeinput', event => {
+    ['#sourceText', '#editText', '#importantText', '#finalText', '#finalImportant'].forEach(id => $(id).addEventListener('beforeinput', event => {
       if (/^history/.test(event.inputType) && !isShown(event.currentTarget)) event.preventDefault();
     }));
     $('#targetCheck').onchange = saveCurrent;
@@ -1717,7 +1671,8 @@
       }
     });
     document.addEventListener('pointerdown', event => { if (!$('#unitMenu').hidden && !$('#unitMenu').contains(event.target)) closeUnitMenu(); });
-    $('#unitList').addEventListener('scroll', closeUnitMenu);
+    // 휠을 굴리다 바로 오른쪽 클릭하면 남은 스크롤 때문에 메뉴가 바로 닫히지 않게, 연 직후 잠깐은 무시
+    $('#unitList').addEventListener('scroll', () => { if (Date.now() - menuOpenedAt > 400) closeUnitMenu(); });
     window.addEventListener('resize', closeUnitMenu);
     $('#selectedMemo').onclick = () => { const r = $('#selectedMemo').getBoundingClientRect(); openUnitMenu(state.selected, r.left, r.bottom + 4); };
     document.addEventListener('pointerdown', event => {

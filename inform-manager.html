@@ -80,6 +80,30 @@
     .unit .done-label { color: #6b7785; font-weight: 900; }
     .unit .name { flex: 1; font-size: var(--content-font-size); font-weight: 800; }
     .unit .count { color: var(--muted); font-size: 11px; }
+    /* 나만 보는 챔버 메모 (최종 인폼·TXT·복사에는 안 들어감) */
+    .unit .name-wrap { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+    .unit .name-wrap .name { flex: none; max-width: 100%; }
+    .memo-tag { display: inline-block; max-width: 100%; overflow: hidden; padding: 1px 8px; border: 1px solid #f0a868; border-radius: 10px; color: #a8470b; background: #fff1e3; font-size: 11px; font-weight: 800; line-height: 1.6; text-overflow: ellipsis; white-space: nowrap; }
+    /* 목록에서는 버튼 위쪽 테두리에 작게 걸쳐서 표시 (버튼 높이 그대로) */
+    .unit { position: relative; }
+    .unit .memo-tag { position: absolute; top: -8px; right: 8px; max-width: 75%; padding: 0 6px; font-size: 10px; line-height: 1.45; box-shadow: 0 0 0 2px var(--panel); }
+    .unit-list { padding-top: 10px; gap: 6px; }
+    /* 긴 챔버 이름은 단어 중간이 아니라 띄어쓰기에서 줄바꿈 */
+    .unit .name { word-break: keep-all; overflow-wrap: anywhere; }
+    .title-memo { cursor: pointer; font-size: 12px; }
+    .title-memo:hover { border-color: #d97a2b; }
+    .unit-menu { position: fixed; z-index: 50; width: 230px; padding: 6px; border: 1px solid var(--line); border-radius: 9px; background: white; box-shadow: 0 12px 34px rgba(0,0,0,.2); font-size: 13px; }
+    .unit-menu[hidden] { display: none; }
+    .unit-menu .menu-title { margin-bottom: 4px; padding: 4px 8px 7px; overflow: hidden; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .unit-menu .menu-label { padding: 4px 8px 2px; color: var(--muted); font-size: 11px; font-weight: 800; }
+    .unit-menu .menu-item { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px; color: var(--ink); background: transparent; text-align: left; font-weight: 700; }
+    .unit-menu .menu-item:hover, .unit-menu .menu-item:focus { outline: none; background: #eef3f8; }
+    .unit-menu .menu-item .tick { width: 14px; color: #a8470b; font-weight: 900; }
+    .unit-menu .menu-item.danger { color: #b52f2f; }
+    .unit-menu .memo-edit { display: flex; gap: 5px; padding: 4px 6px 6px; }
+    .unit-menu .memo-edit input { flex: 1; min-width: 0; padding: 5px 7px; border: 1px solid #b8c5d2; border-radius: 5px; font-size: 12px; }
+    .unit-menu .memo-edit button { padding: 4px 9px; border: 1px solid var(--blue); border-radius: 5px; color: white; background: var(--blue); font-size: 12px; font-weight: 800; }
+    .unit-menu .menu-sep { height: 1px; margin: 4px 0; background: var(--line); }
     .mini-btn { border: 1px solid #9cb8d5; border-radius: 6px; padding: 5px 7px; color: #15549a; background: #eef6ff; font-size: 11px; font-weight: 800; }
     .editor { display: flex; flex-direction: column; height: 100%; }
     .editor-body { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; padding: 12px 14px 14px; }
@@ -214,6 +238,7 @@
           <span><i class="dot" style="background:#8ebcff"></i>현재 선택</span>
           <span><i class="dot" style="background:#8b5cc7"></i>병합됨</span>
           <span><i class="dot" style="background:#b6bec7"></i>오늘 완료</span>
+          <span><span class="memo-tag">메모</span>&nbsp;나만 보는 메모 (챔버 오른쪽 클릭)</span>
         </div>
       </div>
     </div>
@@ -250,7 +275,7 @@
         <section class="panel editor">
           <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
           <div class="editor-body" id="editorBody">
-            <div class="selected-title"><div class="title-wrap"><strong id="selectedName">챔버를 선택하세요</strong><button type="button" class="mini-btn" id="renameUnitBtn" disabled title="[[3A w2]]처럼 제목 안 인폼을 고칩니다">제목 수정</button></div><div class="unit-flags"><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
+            <div class="selected-title"><div class="title-wrap"><strong id="selectedName">챔버를 선택하세요</strong><span class="memo-tag title-memo" id="selectedMemo" title="눌러서 메모 고치기" hidden></span><button type="button" class="mini-btn" id="renameUnitBtn" disabled title="[[3A w2]]처럼 제목 안 인폼을 고칩니다">제목 수정</button></div><div class="unit-flags"><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
             <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜" autocomplete="off"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label></div>
             <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
             <div class="edit-actions"><div class="edit-actions-left"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn danger" id="deleteUnitBtn" disabled title="목록에서 선택한 챔버를 삭제합니다 (목록에서 Delete 키로도 가능)">이 챔버 삭제</button></div><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
@@ -287,6 +312,7 @@
   </main>
   <div class="toast" id="toast"></div>
   <div class="date-pop" id="highlightPop" hidden></div>
+  <div class="unit-menu" id="unitMenu" role="menu" hidden></div>
   <dialog class="merge-dialog txt-dialog" id="txtDialog">
     <div class="merge-dialog-head"><h3>TXT 저장 파일 만들기</h3><p>TXT 파일을 만들어 두면 정한 간격마다 그 파일에 자동으로 저장됩니다.</p></div>
     <div class="merge-dialog-body">
@@ -432,7 +458,7 @@
       }
       const parsedUnits = units.map(u => {
         const body = u.bodyLines.join('\n').trim();
-        return { name: u.name, originalName: u.name, original: body, edited: body, target: false, isNew: false, merged: false, done: false };
+        return { name: u.name, originalName: u.name, original: body, edited: body, target: false, isNew: false, merged: false, done: false, memo: '' };
       });
       parsedUnits.sort(compareUnits);
       return { important: important.join('\n').trim(), units: parsedUnits, bracket };
@@ -572,7 +598,7 @@
     }
     function unitButtonHtml(u) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
-      return `<span class="name">${escapeHtml(u.name)}</span><span class="count">${u.merged && showMerged ? '<span class="merged-label">병합 · </span>' : ''}${u.isNew ? '신규 · ' : ''}${u.done ? '<span class="done-label">완료 · </span>' : ''}${bulletCount(u.edited)}건</span>`;
+      return `<span class="name-wrap"><span class="name">${escapeHtml(u.name)}</span>${u.memo ? `<span class="memo-tag">${escapeHtml(u.memo)}</span>` : ''}</span><span class="count">${u.merged && showMerged ? '<span class="merged-label">병합 · </span>' : ''}${u.isNew ? '신규 · ' : ''}${u.done ? '<span class="done-label">완료 · </span>' : ''}${bulletCount(u.edited)}건</span>`;
     }
     function renderUnits() {
       const list = $('#unitList');
@@ -586,6 +612,8 @@
         b.dataset.index = i;
         b.onclick = () => { saveCurrent(); selectUnit(i); };
         b.onkeydown = event => handleUnitArrowKey(event, i);
+        b.oncontextmenu = event => { event.preventDefault(); openUnitMenu(i, event.clientX, event.clientY); };
+        b.title = u.memo ? `메모: ${u.memo}\n(오른쪽 클릭: 메모·완료 표시)` : '오른쪽 클릭: 메모·완료 표시';
         list.appendChild(b);
       });
       list.scrollTop = savedScrollTop;
@@ -598,10 +626,16 @@
       b.className = unitClassName(state.units[i], i);
       b.style.order = displayRank(state.units[i]);
       b.innerHTML = unitButtonHtml(state.units[i]);
+      b.title = state.units[i].memo ? `메모: ${state.units[i].memo}\n(오른쪽 클릭: 메모·완료 표시)` : '오른쪽 클릭: 메모·완료 표시';
       updateUnitCount();
     }
     function handleUnitArrowKey(event, i) {
       if (event.key === 'Delete') { event.preventDefault(); return deleteUnit(i); }
+      if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+        event.preventDefault();
+        const r = event.currentTarget.getBoundingClientRect();
+        return openUnitMenu(i, r.left + 30, r.bottom - 4);
+      }
       if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
       saveCurrent();
@@ -627,6 +661,7 @@
       scrollEditorToEnd();
       $('#targetCheck').checked = u.target;
       $('#doneCheck').checked = !!u.done;
+      updateTitleMemo();
       $('#restoreBtn').disabled = false; $('#saveNextBtn').disabled = false; $('#deleteUnitBtn').disabled = false; $('#renameUnitBtn').disabled = false;
       updateUnitButton(previous);
       updateUnitButton(i);
@@ -642,10 +677,69 @@
       editor.scrollTop = editor.scrollHeight;
       syncEditorOverlay();
     }
+    /* ---------- 나만 보는 챔버 메모 (오른쪽 클릭 메뉴) ---------- */
+    const MEMO_PRESETS = ['결과 대기', '확인 필요', '보류'];
+    let menuUnitIndex = -1;
+    function updateTitleMemo() {
+      const u = state.units[state.selected], chip = $('#selectedMemo');
+      chip.hidden = !(u && u.memo);
+      chip.textContent = u && u.memo ? u.memo : '';
+    }
+    function setUnitMemo(i, memo) {
+      const u = state.units[i];
+      if (!u) return;
+      u.memo = String(memo || '').trim().slice(0, 60);
+      updateUnitButton(i);
+      if (i === state.selected) updateTitleMemo();
+      scheduleRecoverySnapshot();
+    }
+    function setUnitDone(i, on) {
+      if (i === state.selected) { $('#doneCheck').checked = on; $('#doneCheck').onchange(); return; }
+      state.units[i].done = on;
+      updateUnitButton(i);
+      scheduleRecoverySnapshot();
+    }
+    function openUnitMenu(i, x, y) {
+      const u = state.units[i];
+      if (!u) return;
+      saveCurrent();
+      menuUnitIndex = i;
+      const menu = $('#unitMenu');
+      const preset = MEMO_PRESETS.map(text => `<button type="button" class="menu-item" data-memo="${escapeHtml(text)}"><span class="tick">${u.memo === text ? '✓' : ''}</span>${escapeHtml(text)}</button>`).join('');
+      menu.innerHTML = `<div class="menu-title">${escapeHtml(u.name)}</div>`
+        + `<div class="menu-label">메모 (나만 보임 · 인폼에는 안 들어감)</div>${preset}`
+        + `<div class="memo-edit"><input type="text" id="unitMemoInput" maxlength="60" placeholder="직접 쓰기 후 Enter" value="${escapeHtml(u.memo || '')}"><button type="button" data-act="save">저장</button></div>`
+        + (u.memo ? `<button type="button" class="menu-item danger" data-act="clear"><span class="tick"></span>메모 지우기</button>` : '')
+        + `<div class="menu-sep"></div>`
+        + `<button type="button" class="menu-item" data-act="done"><span class="tick">${u.done ? '✓' : ''}</span>오늘 완료(회색)</button>`;
+      menu.hidden = false;
+      menu.style.left = Math.max(8, Math.min(x, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+      menu.style.top = Math.max(8, Math.min(y, window.innerHeight - menu.offsetHeight - 8)) + 'px';
+      // 바로 타자로 쓸 수 있게 입력칸에 커서 (방향키로 위아래 항목 이동)
+      const input = $('#unitMemoInput');
+      input.focus(); input.select();
+    }
+    function closeUnitMenu() {
+      if ($('#unitMenu').hidden) return;
+      $('#unitMenu').hidden = true;
+      const b = $('#unitList').children[menuUnitIndex];
+      if (b && document.activeElement && $('#unitMenu').contains(document.activeElement)) b.focus();
+      menuUnitIndex = -1;
+    }
+    function handleUnitMenuClick(event) {
+      const b = event.target.closest('button');
+      if (!b || menuUnitIndex < 0) return;
+      const i = menuUnitIndex, u = state.units[i];
+      if (b.dataset.memo !== undefined) { setUnitMemo(i, u.memo === b.dataset.memo ? '' : b.dataset.memo); closeUnitMenu(); }
+      else if (b.dataset.act === 'save') { setUnitMemo(i, $('#unitMemoInput').value); closeUnitMenu(); }
+      else if (b.dataset.act === 'clear') { setUnitMemo(i, ''); closeUnitMenu(); }
+      else if (b.dataset.act === 'done') { closeUnitMenu(); setUnitDone(i, !u.done); }
+    }
     function clearEditor() {
       $('#selectedName').textContent = '챔버를 선택하세요';
       $('#editText').value = ''; $('#editText').disabled = true;
       $('#targetCheck').checked = false; $('#doneCheck').checked = false;
+      $('#selectedMemo').hidden = true;
       ['#restoreBtn', '#saveNextBtn', '#deleteUnitBtn', '#renameUnitBtn'].forEach(id => { $(id).disabled = true; });
       updateLiveDiff();
     }
@@ -674,7 +768,7 @@
       const shownBefore = visibleUnitIndexes(), shownPos = shownBefore.indexOf(i);
       // 완료한 챔버 아래로를 켰으면 남은(완료 안 한) 챔버를 먼저 고름
       const around = [shownBefore[shownPos + 1], shownBefore[shownPos - 1]].filter(x => x !== undefined);
-      const after = (doneToBottom() && around.find(x => !state.units[x].done)) ?? around[0];
+      const after = doneToBottom() ? around.find(x => !state.units[x].done) ?? around[0] : around[0];
       const lines = u.edited ? u.edited.split('\n').filter(x => x.trim()).length : 0;
       if (!confirm(`${u.name} 챔버를 삭제할까요?\n(내용 ${lines}줄도 최종 인폼에서 같이 빠집니다)`)) return;
       state.units.splice(i, 1);
@@ -774,7 +868,7 @@
       if (state.units.some(u => sectionKey(u.name) === sectionKey(name))) {
         const i = state.units.findIndex(u => sectionKey(u.name) === sectionKey(name)); saveCurrent(); selectUnit(i); return toast('이미 있는 구역으로 이동했습니다.');
       }
-      const newUnit = { name, originalName: name, original: '', edited: '', target: true, isNew: true, merged: false, done: false };
+      const newUnit = { name, originalName: name, original: '', edited: '', target: true, isNew: true, merged: false, done: false, memo: '' };
       const order = unitOrder(name);
       let insertAt = state.units.findIndex(u => unitOrder(u.name) > order);
       if (insertAt < 0) insertAt = state.units.length;
@@ -1109,7 +1203,7 @@
         importantEdited: $('#importantText').value,
         selected: state.selected,
         deletedUnits: state.deletedUnits.map(u => ({ name: u.name, edited: u.edited })),
-        units: state.units.map(u => ({ name: u.name, originalName: u.originalName || u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }))
+        units: state.units.map(u => ({ name: u.name, originalName: u.originalName || u.name, original: u.original, edited: u.edited, target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done, memo: u.memo || '' }))
       };
     }
     function readTabLock() {
@@ -1182,7 +1276,7 @@
         if (!confirm(`${when}에 자동 보관된 작업이 있습니다.\n이전 작업을 복구할까요?`)) return;
         state.started = true;
         state.importantOriginal = saved.importantOriginal || '';
-        state.units = saved.units.map(u => ({ name: normalizeName(u.name), originalName: normalizeName(u.originalName || u.name), original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done }));
+        state.units = saved.units.map(u => ({ name: normalizeName(u.name), originalName: normalizeName(u.originalName || u.name), original: u.original || '', edited: u.edited || '', target: !!u.target, isNew: !!u.isNew, merged: !!u.merged, done: !!u.done, memo: u.memo || '' }));
         state.deletedUnits = Array.isArray(saved.deletedUnits) ? saved.deletedUnits : [];
         state.selected = state.units.length ? Math.max(0, Math.min(Number(saved.selected) || 0, state.units.length - 1)) : -1;
         $('#sourceText').value = saved.sourceText || '';
@@ -1305,7 +1399,8 @@
           target: old ? old.target : true,
           isNew: old ? old.isNew : true,
           merged: old ? !!old.merged : false,
-          done: old ? !!old.done : false
+          done: old ? !!old.done : false,
+          memo: old ? old.memo || '' : ''
         };
       });
       $('#importantText').value = parsed.important;
@@ -1518,6 +1613,21 @@
     $('#showMergedCheck').onchange = () => { try { localStorage.setItem('informShowMerged', $('#showMergedCheck').checked ? '1' : '0'); } catch {} renderUnits(); };
     $('#highlightDatesBtn').onclick = () => { if ($('#highlightPop').hidden) openHighlightPop(); else closeHighlightPop(); };
     $('#highlightPop').onclick = handleCalendarClick;
+    $('#unitMenu').onclick = handleUnitMenuClick;
+    $('#unitMenu').addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); return closeUnitMenu(); }
+      if (event.target.id === 'unitMemoInput' && event.key === 'Enter') { event.preventDefault(); setUnitMemo(menuUnitIndex, event.target.value); return closeUnitMenu(); }
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        const items = [...$('#unitMenu').querySelectorAll('.menu-item, #unitMemoInput')];
+        const pos = items.indexOf(document.activeElement);
+        event.preventDefault();
+        items[(pos + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+      }
+    });
+    document.addEventListener('pointerdown', event => { if (!$('#unitMenu').hidden && !$('#unitMenu').contains(event.target)) closeUnitMenu(); });
+    $('#unitList').addEventListener('scroll', closeUnitMenu);
+    window.addEventListener('resize', closeUnitMenu);
+    $('#selectedMemo').onclick = () => { const r = $('#selectedMemo').getBoundingClientRect(); openUnitMenu(state.selected, r.left, r.bottom + 4); };
     document.addEventListener('pointerdown', event => {
       if ($('#highlightPop').hidden || $('#highlightPop').contains(event.target) || $('#highlightDatesBtn').contains(event.target)) return;
       closeHighlightPop();

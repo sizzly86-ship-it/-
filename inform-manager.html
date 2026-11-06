@@ -151,6 +151,8 @@
     :root { --new-fg: #0869c4; --new-bg: transparent; --old-fg: #7a4b00; --old-bg: #ffe99a; }
     .overlay-new { color: var(--new-fg); background: var(--new-bg); }
     .overlay-yesterday { color: var(--old-fg); background: var(--old-bg); }
+    /* Ctrl+B 굵게(일할 때만 보는 표시): 진짜 굵게는 글자 폭이 달라져 커서가 어긋나므로 그림자로 굵어 보이게만 함 */
+    .ov-bold { text-shadow: .5px 0 0 currentColor, -.3px 0 0 currentColor; }
     .color-pop { width: 318px; }
     .color-sec { margin-bottom: 12px; }
     .color-sec h4 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; font-size: 12px; }
@@ -290,10 +292,10 @@
         </aside>
         <div class="splitter" id="unitSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
         <section class="panel editor">
-          <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
+          <div class="toolbar"><h2>진행사항 업데이트</h2><div class="editor-toolbar-actions"><small>Enter: 날짜·주야간 자동 입력 · Shift+Enter: 일반 줄바꿈 · Ctrl+B: 굵게(화면에서만)</small><button type="button" class="merge-btn" id="mergeInformBtn">+ 인폼 병합</button></div></div>
           <div class="editor-body" id="editorBody">
             <div class="selected-title"><div class="title-wrap"><strong id="selectedName">챔버를 선택하세요</strong><span class="memo-tag title-memo" id="selectedMemo" title="눌러서 메모 고치기" hidden></span><button type="button" class="mini-btn" id="renameUnitBtn" disabled title="[[3A w2]]처럼 제목 안 인폼을 고칩니다">제목 수정</button></div><div class="unit-flags"><label class="target-check"><input type="checkbox" id="targetCheck"> 이번 작업 대상</label><label class="target-check" title="오늘 할 일을 끝낸 챔버를 목록에서 회색으로 표시합니다. 최종 인폼 내용에는 영향이 없습니다."><input type="checkbox" id="doneCheck"> 오늘 완료(회색)</label></div></div>
-            <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜" autocomplete="off"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check"><input type="checkbox" id="highlightNewCheck"> 신규 작성 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><button type="button" class="date-pick-btn" id="colorSettingsBtn" title="신규 작성 줄·인폼 강조 색 바꾸기">색 설정</button></div>
+            <div class="view-options"><label class="shift-picker">Enter 입력 <input type="date" id="entryDate" title="자동 입력 날짜" autocomplete="off"><select id="shiftSelect"><option value="주간">주간</option><option value="야간">야간</option></select></label><div class="target-check"><label class="target-check"><input type="checkbox" id="highlightYesterdayCheck"> 인폼 강조</label><button type="button" class="date-pick-btn" id="highlightDatesBtn">날짜 선택</button></div><label class="target-check" title="Enter 입력 날짜(보통 오늘)가 적힌 줄과 그 아래 이어지는 줄에 색을 칠합니다"><input type="checkbox" id="highlightNewCheck"> 오늘 날짜 줄 색상 표시</label><label class="target-check"><input type="checkbox" id="showMergedCheck" checked> 병합 챔버 표시</label><button type="button" class="date-pick-btn" id="colorSettingsBtn" title="오늘 날짜 줄·인폼 강조 색 바꾸기">색 설정</button></div>
             <div class="editor-stack" id="editorStack"><div id="editOverlay" aria-hidden="true"><div id="editOverlayContent"></div></div><textarea id="editText" spellcheck="false" disabled></textarea></div>
             <div class="edit-actions"><div class="edit-actions-left"><button class="btn danger" id="restoreBtn" disabled>원본으로 되돌리기</button><button class="btn danger" id="deleteUnitBtn" disabled title="목록에서 선택한 챔버를 삭제합니다 (목록에서 Delete 키로도 가능)">이 챔버 삭제</button></div><button class="btn primary" id="saveNextBtn" disabled>저장 후 다음 챔버</button></div>
           </div>
@@ -314,7 +316,7 @@
         </section>
         <div class="splitter" id="finalSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
         <section class="panel final-box">
-          <div class="toolbar"><h2>챔버 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn" id="copyMailBtn" title="메일(서식 모드)에 붙여 넣을 때 줄 사이가 벌어지지 않도록 '줄 넘김'으로 복사합니다">메일용 복사</button> <button class="btn primary" id="copyBtn">전체 복사</button></div></div>
+          <div class="toolbar"><h2>챔버 인폼</h2><div><button class="btn" id="downloadBtn">최종 TXT 저장</button> <button class="btn primary" id="copyMailBtn" title="메일(서식 모드)에 붙여 넣을 때 줄 사이가 벌어지지 않도록 '줄 넘김'으로 복사합니다 (굵게 표시는 빠지고 일반 글자로 나갑니다)">메일용 복사</button></div></div>
           <div class="review-box"><textarea id="finalText" spellcheck="false"></textarea></div>
         </section>
         <div class="splitter" id="reviewSplitter" title="드래그해서 창 너비 조절 · 더블클릭해서 초기화"></div>
@@ -534,7 +536,8 @@
     }
     function bulletCount(text) { return text.split('\n').filter(x => x.trim().startsWith('■')).length; }
     function nameChanged(u) { return !!u.originalName && u.name !== u.originalName; }
-    function changed(u) { return u.original.trim() !== u.edited.trim() || nameChanged(u); }
+    // 굵게는 화면 표시일 뿐이라 내용 수정으로 치지 않음
+    function changed(u) { return stripBold(u.original).trim() !== stripBold(u.edited).trim() || nameChanged(u); }
     function unitClassName(u, i) {
       const showMerged = $('#showMergedCheck') ? $('#showMergedCheck').checked : true;
       return 'unit' + (i === state.selected ? ' active' : '') + (changed(u) ? ' changed' : '') + (u.target ? ' checked' : '') + (u.isNew ? ' new-unit' : '') + (u.merged && showMerged ? ' merged-unit' : '') + (u.done ? ' done' : '') + (isUnitVisible(u, i) ? '' : ' filtered-out');
@@ -548,7 +551,7 @@
         // 날짜 앞뒤가 띄어쓰기·괄호·줄 끝이면 인정 ([[12E 10/26]], (10/26), 10/26~ 포함, 2026/10/26·110/26은 제외)
         isTodayUnit.re = new RegExp(`(?:^|[\\s(\\[~,])${day.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s)\\],~])`, 'm');
       }
-      return changed(u) || u.isNew || isTodayUnit.re.test(u.name + '\n' + u.edited);
+      return changed(u) || u.isNew || isTodayUnit.re.test(stripBold(u.name + '\n' + u.edited));
     }
     // 보고 있는 챔버는 조건에서 벗어나도(날짜 줄을 지우는 중 등) 다른 챔버로 옮길 때까지 보이게 둠
     function isUnitVisible(u, i) { return !todayOnly() || i === state.selected || isTodayUnit(u); }
@@ -797,6 +800,12 @@
       scheduleRecoverySnapshot();
     }
     function handleEditorEnter(event) {
+      if (event.key === 'Enter' && event.shiftKey && !event.isComposing && insideBold(event.currentTarget)) {
+        // 굵게 한 부분 가운데서 줄을 나누면 위아래 줄 모두 굵게 유지
+        event.preventDefault();
+        insertTextWithUndo(event.currentTarget, BOLD_CLOSE + '\n' + BOLD_OPEN);
+        return saveCurrent();
+      }
       if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
       event.preventDefault();
       const area = event.currentTarget;
@@ -952,9 +961,9 @@
     /** base 아래에 extra 줄 중 base에 없는 줄만 붙임 (들여쓰기는 그대로, 같은 줄이 여러 번이면 개수까지 비교) */
     function appendMissingLines(base, extra) {
       const counts = new Map();
-      String(base || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(x => counts.set(x, (counts.get(x) || 0) + 1));
+      stripBold(base || '').split('\n').map(x => x.trim()).filter(Boolean).forEach(x => counts.set(x, (counts.get(x) || 0) + 1));
       const missing = String(extra || '').split('\n').filter(raw => {
-        const line = raw.trim();
+        const line = stripBold(raw).trim();
         if (!line) return false;
         const n = counts.get(line) || 0;
         if (n > 0) { counts.set(line, n - 1); return false; }
@@ -976,7 +985,8 @@
     }
     /** 최종 확인 화면의 두 칸을 합친 최종 인폼 (중요 인폼 → 빈 줄 2줄 → 챔버들). 복사·TXT 저장에 씀 */
     function reviewFinalText() {
-      return [$('#finalImportant').value.trim(), $('#finalText').value.trim()].filter(Boolean).join('\n\n\n');
+      // 굵게 표시는 화면에서만 → 복사·저장할 때는 뺌
+      return stripBold([$('#finalImportant').value.trim(), $('#finalText').value.trim()].filter(Boolean).join('\n\n\n'));
     }
     function renderReview(preserveFinalText = false) {
       if (!preserveFinalText) {
@@ -1011,7 +1021,7 @@
         const diff = lineDiff(u.original, u.edited);
         const titleText = nameChanged(u) ? `제목 ${u.originalName} → ${u.name} · ` : '';
         // 추가·삭제된 줄 없이 내용만 다르면 줄 순서(또는 들여쓰기·빈 줄)만 바뀐 것
-        const orderOnly = !diff.added.length && !diff.removed.length && u.original.trim() !== u.edited.trim();
+        const orderOnly = !diff.added.length && !diff.removed.length && stripBold(u.original).trim() !== stripBold(u.edited).trim();
         const orderText = orderOnly ? ' · 추가·삭제 없이 줄 순서(또는 들여쓰기·빈 줄)만 바뀜' : '';
         addDiffCard(u.name, `${titleText}수정 내용 반영 완료 · 항목 ${before}건 → ${after}건${orderText}`, diff);
       });
@@ -1026,8 +1036,8 @@
       $('#changes').appendChild(d);
     }
     function lineDiff(before, after) {
-      const oldLines = before.split('\n').map(x => x.trim()).filter(Boolean);
-      const newLines = after.split('\n').map(x => x.trim()).filter(Boolean);
+      const oldLines = stripBold(before).split('\n').map(x => x.trim()).filter(Boolean);
+      const newLines = stripBold(after).split('\n').map(x => x.trim()).filter(Boolean);
       const oldCounts = new Map(), newCounts = new Map();
       oldLines.forEach(x => oldCounts.set(x, (oldCounts.get(x) || 0) + 1));
       newLines.forEach(x => newCounts.set(x, (newCounts.get(x) || 0) + 1));
@@ -1037,57 +1047,88 @@
       return { added, removed };
     }
     function updateLiveDiff() {
-      const highlightNew = $('#highlightNewCheck').checked;
+      const highlightToday = $('#highlightNewCheck').checked;
       const highlightYesterday = $('#highlightYesterdayCheck').checked;
-      const enabled = (highlightNew || highlightYesterday) && state.selected >= 0 && state.units[state.selected];
+      const value = $('#editText').value;
+      // 굵게 한 부분이 있으면 색 표시를 꺼 둬도 덮어 그리기를 켜서 굵게 보여줌
+      const hasBold = BOLD_RE.test(value);
+      const enabled = (highlightToday || highlightYesterday || hasBold) && state.selected >= 0 && state.units[state.selected];
       $('#editorStack').classList.toggle('highlight', !!enabled);
       if (!enabled) { $('#editOverlayContent').innerHTML = ''; return; }
-      const unit = state.units[state.selected];
-      const lines = $('#editText').value.split('\n');
-      const newFlags = highlightNew ? newLineFlags(unit.original, lines) : [];
+      const today = entryDateText();
       const highlightDays = highlightYesterday ? highlightDateTexts() : [];
-      // 강조 날짜 줄 아래 이어지는 줄(■ 없이 줄바꿈한 줄)도 같이 칠함. 다음 ■ 줄이나 빈 줄에서 멈춤
-      let carryDate = false;
+      // 날짜 줄 아래 이어지는 줄(■ 없이 줄바꿈한 줄)도 같이 칠함. 다음 ■ 줄이나 빈 줄에서 멈춤
+      let carryToday = false, carryOld = false;
       // 입력칸에 실제로 있는 글자 그대로 그려야 줄 위치가 맞음 (앞뒤 빈 줄 포함)
-      $('#editOverlayContent').innerHTML = lines.map((raw, index) => {
-        const line = raw.trim();
-        const isNew = !!newFlags[index];
-        const hasDate = !!line && highlightDays.some(day => lineHasDate(line, day));
-        if (!line) carryDate = false;
-        else if (line.startsWith('■')) carryDate = hasDate;
-        else if (hasDate) carryDate = true;
-        const isYesterday = highlightYesterday && !isNew && carryDate;
-        const className = isNew ? 'overlay-new' : isYesterday ? 'overlay-yesterday' : '';
-        return `<span class="${className}">${raw ? escapeHtml(raw) : ' '}</span>`;
+      $('#editOverlayContent').innerHTML = value.split('\n').map(raw => {
+        const line = stripBold(raw).trim();
+        const isToday = highlightToday && !!line && lineHasDate(line, today);
+        const isOld = !!line && highlightDays.some(day => lineHasDate(line, day));
+        if (!line) { carryToday = false; carryOld = false; }
+        else if (line.startsWith('■')) { carryToday = isToday; carryOld = isOld; }
+        else { if (isToday) carryToday = true; if (isOld) carryOld = true; }
+        const className = carryToday ? 'overlay-new' : (highlightYesterday && carryOld) ? 'overlay-yesterday' : '';
+        return `<span class="${className}">${raw ? boldOverlayHtml(raw) : ' '}</span>`;
       }).join('\n');
       syncEditorOverlay();
     }
-    /**
-     * 원본에 없던 줄 표시 (줄마다 true/false). 원본과 순서까지 맞춰 비교하므로
-     * 같은 문장을 한 줄 더 쓰면 원래 줄이 아니라 새로 쓴 줄에 표시됨
+    /*
+     * ---------- Ctrl+B 굵게: 일할 때 입력칸에서만 굵게 보이는 표시 ----------
+     * 굵게 할 부분 앞뒤에 눈에 안 보이고 폭도 없는 글자(U+2063, U+2064)를 넣어 둠 → 입력칸에 표시가 안 보이고 커서 위치도 그대로.
+     * 메일용 복사·TXT 저장·Ctrl+C로 내보낼 때는 빼서 일반 글자로 나감. 내용 비교(수정 여부, 병합)에서도 무시
      */
-    function newLineFlags(original, lines) {
-      const a = String(original || '').split('\n').map(x => x.trim()).filter(Boolean);
-      const b = lines.map(x => x.trim());
-      const n = a.length, m = b.length;
-      // 아주 긴 챔버는 계산이 무거우니 예전 방식(같은 문장 개수 비교)으로
-      if (n * m > 2000000) {
-        const counts = new Map();
-        lineDiff(a.join('\n'), b.join('\n')).added.forEach(x => counts.set(x, (counts.get(x) || 0) + 1));
-        return b.map(x => { const c = counts.get(x) || 0; if (!x || !c) return false; counts.set(x, c - 1); return true; });
+    const BOLD_OPEN = '\u2063', BOLD_CLOSE = '\u2064';
+    const BOLD_RE = /\u2063[^\u2063\u2064\n]*\u2064/;
+    const BOLD_RE_G = /\u2063([^\u2063\u2064\n]*)\u2064/g;
+    /** 커서가 굵게 한 부분 안에 있는지 (같은 줄에서 앞에 여는 표시, 뒤에 닫는 표시) */
+    function insideBold(area) {
+      const v = area.value, s = area.selectionStart;
+      if (s !== area.selectionEnd) return false;
+      const lineStart = v.lastIndexOf('\n', s - 1) + 1, lineEndRaw = v.indexOf('\n', s), lineEnd = lineEndRaw < 0 ? v.length : lineEndRaw;
+      const open = v.lastIndexOf(BOLD_OPEN, s - 1), close = v.lastIndexOf(BOLD_CLOSE, s - 1);
+      const nextClose = v.indexOf(BOLD_CLOSE, s), nextOpen = v.indexOf(BOLD_OPEN, s);
+      return open >= lineStart && open > close && nextClose >= 0 && nextClose < lineEnd && (nextOpen < 0 || nextClose < nextOpen);
+    }
+    function stripBold(text) { return String(text).replace(/[\u2063\u2064]/g, ''); }
+    function boldOverlayHtml(raw) {
+      // 표시 글자도 그대로 그려야(폭 0) 입력칸과 글자 위치가 맞음
+      return escapeHtml(raw).replace(BOLD_RE_G, `${BOLD_OPEN}<span class="ov-bold">$1</span>${BOLD_CLOSE}`);
+    }
+    /** 고른 부분(없으면 커서가 있는 줄)을 굵게/해제. 여러 줄이면 줄마다. ■ 와 챔버 제목 줄 [[ ]]은 표시 밖에 둠 */
+    function toggleBold(area) {
+      const v = area.value;
+      let s = area.selectionStart, e = area.selectionEnd;
+      if (s === e) {
+        s = v.lastIndexOf('\n', s - 1) + 1;
+        const le = v.indexOf('\n', e);
+        e = le < 0 ? v.length : le;
       }
-      const table = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
-      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) {
-        table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
-      }
-      const flags = b.map(x => !!x);
-      let i = 0, j = 0;
-      while (i < n && j < m) {
-        if (a[i] === b[j]) { flags[j] = false; i++; j++; }
-        else if (table[i + 1][j] >= table[i][j + 1]) i++;
-        else j++;
-      }
-      return flags;
+      // 굵게 한 부분을 반쯤 걸쳐 고른 경우(안쪽만 고른 경우 포함) 그 부분 전체로 넓힘 → 표시 짝이 깨지지 않게
+      const lineStartOf = i => v.lastIndexOf('\n', i - 1) + 1;
+      const lineEndOf = i => { const n = v.indexOf('\n', i); return n < 0 ? v.length : n; };
+      const open = v.lastIndexOf(BOLD_OPEN, s - 1), close = v.lastIndexOf(BOLD_CLOSE, s - 1);
+      if (open >= lineStartOf(s) && open > close) s = open;
+      const nextClose = v.indexOf(BOLD_CLOSE, e), nextOpen = v.indexOf(BOLD_OPEN, e);
+      if (nextClose >= 0 && nextClose < lineEndOf(e) && (nextOpen < 0 || nextClose < nextOpen)) e = nextClose + 1;
+      const parts = v.slice(s, e).split('\n').map(part => {
+        const m = part.match(/^(\s*)(.*?)(\s*)$/);
+        let [, lead, core, trail] = m;
+        const bullet = core.match(/^■\s*/);
+        if (bullet) { lead += bullet[0]; core = core.slice(bullet[0].length); }
+        return { lead, core, trail, skip: !core || isBracketHeader(core) };
+      });
+      const targets = parts.filter(x => !x.skip);
+      if (!targets.length) return toast('굵게 할 글자가 없습니다. (챔버 제목 줄 [[ ]]은 굵게 할 수 없습니다)');
+      const allBold = targets.every(x => x.core.startsWith(BOLD_OPEN) && x.core.endsWith(BOLD_CLOSE) && x.core.length > 2);
+      const out = parts.map(x => {
+        if (x.skip) return x.lead + x.core + x.trail;
+        const plain = stripBold(x.core);
+        return x.lead + (allBold ? plain : BOLD_OPEN + plain + BOLD_CLOSE) + x.trail;
+      }).join('\n');
+      area.focus();
+      area.setSelectionRange(s, e);
+      insertTextWithUndo(area, out);
+      area.setSelectionRange(s, s + out.length);
     }
     function formatDateMD(date) {
       return `${date.getMonth() + 1}/${date.getDate()}`;
@@ -1186,7 +1227,7 @@
       if (b.dataset.act === 'clear') { setHighlightDates([]); return renderCalendar(); }
       if (b.dataset.act === 'close') closeHighlightPop();
     }
-    /* ---------- 강조 색 설정 (신규 작성 줄 / 인폼 강조) ---------- */
+    /* ---------- 강조 색 설정 (오늘 날짜 줄 / 인폼 강조) ---------- */
     const HIGHLIGHT_DEFAULTS = { newFg: '#0869c4', newBg: '', oldFg: '#7a4b00', oldBg: '#ffe99a' };
     // [이름, 글자색, 배경색('' = 배경 없음)]
     const COLOR_PRESETS = {
@@ -1228,9 +1269,9 @@
     function renderColorPop() {
       const pop = $('#colorPop');
       if (pop.hidden) return;
-      pop.innerHTML = colorSectionHtml('new', '신규 작성 줄 (오늘 새로 쓴 줄)', '#highlightNewCheck')
+      pop.innerHTML = colorSectionHtml('new', '오늘 날짜 줄', '#highlightNewCheck')
         + colorSectionHtml('old', '인폼 강조 (고른 날짜의 줄)', '#highlightYesterdayCheck')
-        + `<div class="color-preview"><span class="overlay-yesterday">■ 10/31 야간 이전 인폼 강조 예시</span>\n<span class="overlay-new">■ 11/1 주간 오늘 새로 쓴 줄 예시</span>\n■ 강조 안 된 일반 줄</div>`
+        + `<div class="color-preview"><span class="overlay-yesterday">■ 10/31 야간 이전 인폼 강조 예시</span>\n<span class="overlay-new">■ ${escapeHtml(entryDateText())} 주간 오늘 날짜 줄 예시</span>\n■ 강조 안 된 일반 줄</div>`
         + `<div class="cal-foot"><button type="button" class="mini-btn" data-act="reset">기본 색으로</button><button type="button" class="mini-btn" data-act="close">닫기</button></div>`;
     }
     function openColorPop() {
@@ -1264,7 +1305,7 @@
     }
     function lineHasDate(line, dateText) {
       const escaped = dateText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`).test(line);
+      return new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`).test(stripBold(line));
     }
     function syncEditorOverlay() {
       const overlay = $('#editOverlay'), editor = $('#editText');
@@ -1425,7 +1466,7 @@
       }
       try {
         const inReview = $('#reviewStep').classList.contains('active');
-        const text = typeof textOverride === 'string' ? textOverride : inReview ? reviewFinalText() : buildFinal();
+        const text = stripBold(typeof textOverride === 'string' ? textOverride : inReview ? reviewFinalText() : buildFinal());
         autosaveDirty = false;
         const writable = await autosaveFileHandle.createWritable();
         await writable.write('\ufeff' + text);
@@ -1574,16 +1615,7 @@
       let ok = false;
       try { ok = document.execCommand('copy'); } catch {}
       document.removeEventListener('copy', onCopy);
-      if (ok) done(); else toast('복사하지 못했습니다. "전체 복사"를 써 주세요.');
-    }
-    async function copyFinal() {
-      const text = reviewFinalText();
-      try { await navigator.clipboard.writeText(text); toast('최종 인폼을 복사했습니다.'); }
-      catch {
-        const onCopy = event => { event.clipboardData.setData('text/plain', text); event.preventDefault(); };
-        document.addEventListener('copy', onCopy); document.execCommand('copy'); document.removeEventListener('copy', onCopy);
-        toast('최종 인폼을 복사했습니다.');
-      }
+      if (ok) done(); else toast('복사하지 못했습니다. 다시 한 번 눌러 주세요.');
     }
     async function downloadFinal() {
       clearTimeout(syncFinalEdits.timer);
@@ -1715,6 +1747,30 @@
     ['#sourceText', '#editText', '#importantText', '#finalText', '#finalImportant'].forEach(id => $(id).addEventListener('beforeinput', event => {
       if (/^history/.test(event.inputType) && !isShown(event.currentTarget)) event.preventDefault();
     }));
+    $('#editText').addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.code === 'KeyB' && !event.isComposing) {
+        event.preventDefault();
+        toggleBold(event.currentTarget);
+        return;
+      }
+      // 안 보이는 굵게 표시 바로 옆에서 ← → Backspace Delete를 누르면 표시를 건너뜀 (한 번 눌렀는데 아무 일 없는 것처럼 보이지 않게)
+      const area = event.currentTarget, v = area.value, s = area.selectionStart;
+      if (event.isComposing || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || s !== area.selectionEnd) return;
+      const isMark = c => c === BOLD_OPEN || c === BOLD_CLOSE;
+      let i = s;
+      if (event.key === 'ArrowLeft' || event.key === 'Backspace') { while (i > 0 && isMark(v[i - 1])) i--; }
+      else if (event.key === 'ArrowRight' || event.key === 'Delete') { while (i < v.length && isMark(v[i])) i++; }
+      else return;
+      if (i !== s) area.setSelectionRange(i, i);
+    });
+    // 직접 Ctrl+C / Ctrl+X 해도 안 보이는 굵게 표시가 다른 곳으로 따라가지 않게
+    ['#editText', '#importantText', '#finalText', '#finalImportant'].forEach(id => ['copy', 'cut'].forEach(type => $(id).addEventListener(type, event => {
+      const area = event.currentTarget, picked = area.value.slice(area.selectionStart, area.selectionEnd);
+      if (!/[\u2063\u2064]/.test(picked)) return;
+      event.preventDefault();
+      event.clipboardData.setData('text/plain', stripBold(picked));
+      if (type === 'cut') insertTextWithUndo(area, '');
+    })));
     $('#targetCheck').onchange = saveCurrent;
     $('#doneCheck').onchange = () => {
       saveCurrent();
@@ -1815,7 +1871,6 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) followToday(); });
     $('#reviewBtn').onclick = () => renderReview();
     $('#backBtn').onclick = () => { clearTimeout(syncFinalEdits.timer); applyFinalEdits(); showStep('workStep'); };
-    $('#copyBtn').onclick = copyFinal;
     $('#copyMailBtn').onclick = copyForMail;
     $('#downloadBtn').onclick = downloadFinal;
     $('#newBtn').onclick = resetAll;

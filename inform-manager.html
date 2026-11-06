@@ -277,7 +277,7 @@
       </div>
       <div class="input-wrap">
         <textarea id="sourceText" spellcheck="false" placeholder="챔버 인폼만 넣어주세요.&#10;상단인폼은 다음 단계에서 넣어주세요.&#10;&#10;예)&#10;[[17D]]&#10;■ 8/1 주간 더미 200매 진행&#10;■ 8/1 야간 더미 200매 추가 진행&#10;&#10;&#10;[[18기타]]&#10;■ 설비 점검 진행 중"></textarea>
-        <div class="hint"><b>현재 인식 규칙:</b> 줄 맨 앞에 <b>[[17A]]</b>, <b>[[18기타]]</b>처럼 대괄호 두 개로 감싼 챔버명(1~99 + A~E·H/호기/기타)이 있으면 그 줄부터 새 챔버입니다. 빈 줄 개수는 상관없습니다. 괄호 안 챔버명 뒤에 띄어쓰고 인폼을 적어도 되고(예: <b>[[3A w2]]</b>), 괄호 뒤에 설명이 있어도 됩니다(예: [[17D]] 5검증). 챔버 구분은 앞의 챔버명(3A)으로만 합니다. 상단인폼은 다음 단계의 '중요 인폼' 칸에 따로 넣어주세요. (첫 챔버 위에 같이 붙여넣은 글도 그 칸으로 들어갑니다) <b>[[ ]]가 하나도 없는 예전 형식</b>(빈 줄 2줄 + 17D)은 예전 규칙으로 나누고 [[17D]] 형식으로 바꿔 드립니다. [17A], [[17A]처럼 잘못 쓴 줄은 나누기 전에 알려드립니다.</div>
+        <div class="hint"><b>현재 인식 규칙:</b> 줄 맨 앞에 <b>[[17A]]</b>, <b>[[18기타]]</b>처럼 대괄호 두 개로 감싼 챔버명(1~99 + A~E·H/호기/기타)이 있으면 그 줄부터 새 챔버입니다. 빈 줄 개수는 상관없습니다. 괄호 안 챔버명 뒤에 띄어쓰고 인폼을 적어도 되고(예: <b>[[3A w2]]</b>), 괄호 뒤에 설명이 있어도 됩니다(예: [[17D]] 5검증). 챔버 구분은 앞의 챔버명(3A)으로만 합니다. 상단인폼은 다음 단계의 '중요 인폼' 칸에 따로 넣어주세요. (첫 챔버 위에 같이 붙여넣은 글도 그 칸으로 들어가고, 어제 최종 인폼을 통째로 붙여 맨 위에 [[25A]]처럼 쓴 중요 인폼이 있으면 중요 인폼으로 옮길지 물어봅니다) <b>[[ ]]가 하나도 없는 예전 형식</b>(빈 줄 2줄 + 17D)은 예전 규칙으로 나누고 [[17D]] 형식으로 바꿔 드립니다. [17A], [[17A]처럼 잘못 쓴 줄은 나누기 전에 알려드립니다.</div>
       </div>
     </section>
 
@@ -501,12 +501,39 @@
       const why = parsed.bracket === false ? '(빈 줄 개수가 부족하면 앞 챔버 내용에 붙어버립니다)' : '(챔버는 줄 맨 앞에 [[17A]]처럼 대괄호 두 개로 적어야 나뉩니다)';
       return confirm(`챔버명처럼 보이지만 챔버로 나누지 않은 줄이 있습니다.\n${why}\n\n${shown}\n\n이대로 ${actionText}할까요?\n[취소]를 누르면 원문을 고칠 수 있습니다.`);
     }
+    /**
+     * 어제 최종 인폼을 통째로 붙여넣은 경우: 맨 위 중요 인폼에 [[25A]]처럼 쓴 블록이 아래 챔버와 이름이 겹침.
+     * 아래 챔버들은 번호순으로 한 번씩만 나오므로, 그 앞의 겹치는 블록들을 상단 중요 인폼으로 보고 옮길지 물어봄
+     */
+    function splitLeadingImportant(raw) {
+      const text = cleanInformText(raw).trim();
+      const heads = [];
+      let pos = 0;
+      for (const line of text.split('\n')) { if (isBracketHeader(line)) heads.push({ pos, key: sectionKey(line), name: normalizeName(line) }); pos += line.length + 1; }
+      if (new Set(heads.map(x => x.key)).size === heads.length) return null;
+      for (let h = 1; h < heads.length; h++) {
+        const lead = heads.slice(0, h), run = heads.slice(h), runKeys = run.map(x => x.key);
+        if (new Set(runKeys).size !== runKeys.length) continue;
+        if (!run.every((x, i) => i === 0 || compareUnits({ name: run[i - 1].key }, { name: x.key }) < 0)) continue;
+        if (!lead.some(x => runKeys.includes(x.key))) continue;
+        return { important: text.slice(0, run[0].pos).trim(), rest: text.slice(run[0].pos), names: lead.map(x => x.name) };
+      }
+      return null;
+    }
+    function maybeSplitLeadingImportant(raw, parsed) {
+      const lead = splitLeadingImportant(raw);
+      if (!lead) return parsed;
+      const ok = confirm(`맨 위의 ${lead.names.join(', ')} 블록은 아래에 같은 챔버가 또 있어서 상단 중요 인폼으로 보입니다.\n(어제 최종 인폼을 통째로 붙여넣은 경우)\n\n[확인] 중요 인폼으로 옮기고 나머지만 챔버로 나눔 (권장)\n[취소] 그대로 챔버로 나눔 (같은 챔버가 두 번 생김)`);
+      if (!ok) return parsed;
+      return { ...parseInformText(lead.rest), important: lead.important };
+    }
     function markDirty() { autosaveDirty = true; }
     function parseSource() {
       const raw = $('#sourceText').value;
       if (!raw.trim()) return toast('전체 인폼을 먼저 붙여넣어 주세요.');
-      const parsed = parseInformText(raw);
+      let parsed = parseInformText(raw);
       if (!parsed.units.length) return toast('챔버 제목을 찾지 못했습니다. 챔버는 줄 맨 앞에 [[17A]], [[18기타]]처럼 적어 주세요.');
+      parsed = maybeSplitLeadingImportant(raw, parsed);
       if (!confirmSuspicious(parsed, '진행')) return;
       markDirty();
       state.started = true;
@@ -546,12 +573,7 @@
     function todayOnly() { return $('#todayOnlyCheck').checked; }
     function isTodayUnit(u) {
       const day = entryDateText();
-      if (isTodayUnit.day !== day) {
-        isTodayUnit.day = day;
-        // 날짜 앞뒤가 띄어쓰기·괄호·줄 끝이면 인정 ([[12E 10/26]], (10/26), 10/26~ 포함, 2026/10/26·110/26은 제외)
-        isTodayUnit.re = new RegExp(`(?:^|[\\s(\\[~,])${day.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[\\s)\\],~])`, 'm');
-      }
-      return changed(u) || u.isNew || isTodayUnit.re.test(stripBold(u.name + '\n' + u.edited));
+      return changed(u) || u.isNew || dateRegex(day, 'm').test(stripBold(u.name + '\n' + u.edited));
     }
     // 보고 있는 챔버는 조건에서 벗어나도(날짜 줄을 지우는 중 등) 다른 챔버로 옮길 때까지 보이게 둠
     function isUnitVisible(u, i) { return !todayOnly() || i === state.selected || isTodayUnit(u); }
@@ -894,8 +916,9 @@
     function mergeAdditionalInform() {
       const raw = $('#mergeText').value.trim();
       if (!raw) return toast('병합할 인폼을 붙여넣어 주세요.');
-      const parsed = parseInformText(raw);
+      let parsed = parseInformText(raw);
       if (!parsed.units.length) return toast('병합할 챔버 제목을 찾지 못했습니다.');
+      parsed = maybeSplitLeadingImportant(raw, parsed);
       if (!confirmSuspicious(parsed, '병합')) return;
 
       saveCurrent();
@@ -1303,9 +1326,21 @@
       else if (t.dataset.act === 'reset') setHighlightColors({ ...HIGHLIGHT_DEFAULTS });
       else if (t.dataset.act === 'close') closeColorPop();
     }
+    /**
+     * 날짜 찾기 규칙 (오늘 진행만 보기·오늘 날짜 줄 색·인폼 강조 모두 같은 규칙):
+     * 날짜 앞뒤가 띄어쓰기·괄호·물결·쉼표·줄 끝이면 인정 → [[12E 10/26]], (10/26), 10/26~10/28 포함, 2026/10/26·110/26·10/261은 제외
+     */
+    function dateRegex(dateText, flags = '') {
+      const key = dateText + '|' + flags;
+      dateRegex.cache = dateRegex.cache || new Map();
+      if (!dateRegex.cache.has(key)) {
+        const escaped = dateText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        dateRegex.cache.set(key, new RegExp(`(?:^|[\\s(\\[~,])${escaped}(?=$|[\\s)\\],~])`, flags));
+      }
+      return dateRegex.cache.get(key);
+    }
     function lineHasDate(line, dateText) {
-      const escaped = dateText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`(?:^|\\s)${escaped}(?=\\s|$)`).test(stripBold(line));
+      return dateRegex(dateText).test(stripBold(line));
     }
     function syncEditorOverlay() {
       const overlay = $('#editOverlay'), editor = $('#editText');

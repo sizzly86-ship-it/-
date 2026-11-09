@@ -45,6 +45,9 @@ namespace ClipCheck
         public const int WM_KEYDOWN = 0x0100;
         public const int WM_SYSKEYDOWN = 0x0104;
         public const int WM_CLIPBOARDUPDATE = 0x031D;
+        public const int VK_LBUTTON = 0x01;
+        public const int VK_RBUTTON = 0x02;
+        public const int VK_MBUTTON = 0x04;
         public const int VK_CONTROL = 0x11;
         public const int VK_SHIFT = 0x10;
         public const int VK_MENU = 0x12;
@@ -130,6 +133,9 @@ namespace ClipCheck
         [DllImport("user32.dll")]
         public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern int GetClassName(IntPtr hWnd, StringBuilder className, int maxCount);
+
         [DllImport("user32.dll")]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
@@ -159,17 +165,41 @@ namespace ClipCheck
             return ClipboardHasFiles() && !ClipboardHasText() && !ClipboardHasImage();
         }
 
-        // 지금 앞에 있는 창이 윈도우 탐색기(또는 바탕화면)인지
-        public static bool ForegroundIsExplorer()
+        // Ctrl+C 를 확인하지 않을 창인지:
+        //  - 윈도우 탐색기(바탕화면 포함): 파일 복사는 잘 되고, 알림이 성가심
+        //  - 명령 프롬프트 같은 콘솔 창: Ctrl+C 가 복사가 아니라 "실행 중단"이라 다시 누르면 안 됨
+        public static bool IsSkippedWindow(IntPtr hwnd)
         {
             try
             {
+                StringBuilder cls = new StringBuilder(256);
+                GetClassName(hwnd, cls, cls.Capacity);
+                string c = cls.ToString();
+                if (c == "ConsoleWindowClass" || c == "CASCADIA_HOSTING_WINDOW_CLASS"
+                    || c == "PuTTY" || c == "mintty" || c == "VirtualConsoleClass")
+                    return true;
+
                 uint pid;
-                GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+                GetWindowThreadProcessId(hwnd, out pid);
                 using (Process p = Process.GetProcessById((int)pid))
-                    return string.Equals(p.ProcessName, "explorer", StringComparison.OrdinalIgnoreCase);
+                {
+                    string n = p.ProcessName.ToLowerInvariant();
+                    return n == "explorer" || n == "cmd" || n == "powershell" || n == "pwsh"
+                        || n == "windowsterminal" || n == "conhost" || n == "openconsole";
+                }
             }
             catch (Exception) { return false; }
+        }
+
+        public static bool IsModifierKey(int vk)
+        {
+            return vk == VK_SHIFT || vk == VK_CONTROL || vk == VK_MENU || vk == VK_LWIN || vk == VK_RWIN
+                || (vk >= 0xA0 && vk <= 0xA5); // 좌/우 Shift, Ctrl, Alt
+        }
+
+        public static bool AnyMouseButtonDown()
+        {
+            return IsDown(VK_LBUTTON) || IsDown(VK_RBUTTON) || IsDown(VK_MBUTTON);
         }
 
         // 글자 · 이미지(픽픽, 그림판 등) · 파일 중 하나라도 들어 있으면 제대로 복사된 것으로 봄
@@ -359,6 +389,9 @@ namespace ClipCheck
     {
         public event EventHandler<CopyKeyEventArgs> CopyPressed;
 
+        // 복사 키가 아닌 다른 키를 누른 횟수. 복사 후 사용자가 다른 조작을 했는지 알아내는 데 씀
+        public int OtherKeyCount;
+
         private readonly Native.LowLevelKeyboardProc proc; // GC 되지 않도록 필드로 보관
         private IntPtr hook = IntPtr.Zero;
 
@@ -379,14 +412,20 @@ namespace ClipCheck
                     int vk = (int)k.vkCode;
                     // 자동 재시도로 이 프로그램이 보낸 키는 무시.
                     // Shift/Alt/Win 이 같이 눌린 조합(예: 픽픽 캡처 Ctrl+Shift+C)은 복사가 아니므로 무시
-                    if (k.dwExtraInfo != Native.OurInputMark
-                        && (vk == Native.VK_C || vk == Native.VK_X || vk == Native.VK_INSERT)
+                    if (k.dwExtraInfo == Native.OurInputMark)
+                    {
+                    }
+                    else if ((vk == Native.VK_C || vk == Native.VK_X || vk == Native.VK_INSERT)
                         && Native.IsDown(Native.VK_CONTROL) && !Native.IsDown(Native.VK_SHIFT)
                         && !Native.IsDown(Native.VK_MENU)
                         && !Native.IsDown(Native.VK_LWIN) && !Native.IsDown(Native.VK_RWIN))
                     {
                         if (CopyPressed != null)
                             CopyPressed(this, new CopyKeyEventArgs(vk == Native.VK_X));
+                    }
+                    else if (!Native.IsModifierKey(vk))
+                    {
+                        OtherKeyCount++;
                     }
                 }
             }
@@ -557,12 +596,16 @@ namespace ClipCheck
         private readonly NotifyIcon tray = new NotifyIcon();
         private readonly System.Windows.Forms.Timer waitTimer = new System.Windows.Forms.Timer();
         private readonly System.Windows.Forms.Timer readTimer = new System.Windows.Forms.Timer();
+        private readonly System.Windows.Forms.Timer actTimer = new System.Windows.Forms.Timer();
 
         // 지금 확인 중인 복사 시도
         private bool waiting;
         private bool isCut;
         private int attempt;         // 1 = 사용자가 누른 것, 2 이상 = 자동 재시도
-        private bool sawUpdate;      // 클립보드가 바뀌긴 했는지 (글자 없이)
+        private bool sawUpdate;      // 이번 시도에서 클립보드가 바뀌긴 했는지
+        private bool sawEmpty;       // 복사했는데 클립보드가 비어 버린 적이 있는지 (재시도 대상)
+        private bool sawMouseClick;  // Ctrl+C 이후 마우스를 클릭했는지
+        private int keyCountAtPress; // Ctrl+C 를 누른 순간의 CopyKeyHook.OtherKeyCount
         private uint seqAtPress;
         private IntPtr targetWindow;
         private int successAttempt;  // 성공 알림에 "재시도 n번" 표시용
@@ -582,6 +625,14 @@ namespace ClipCheck
             watcher.ClipboardChanged += OnClipboardChanged;
 
             waitTimer.Tick += OnWaitTimeout;
+
+            // 확인하는 동안 마우스 클릭이 있었는지 살핌 (다른 칸을 선택했으면 재시도하면 안 됨)
+            actTimer.Interval = 15;
+            actTimer.Tick += delegate
+            {
+                if (!waiting) actTimer.Stop();
+                else if (Native.AnyMouseButtonDown()) sawMouseClick = true;
+            };
 
             // 미리보기용 글자는 복사한 프로그램이 다 쓰고 난 뒤 아주 살짝 늦게 읽는다
             readTimer.Interval = 30;
@@ -688,8 +739,9 @@ namespace ClipCheck
         private void OnCopyPressed(object sender, CopyKeyEventArgs e)
         {
             // 후킹 콜백은 이 프로그램의 UI 스레드에서 불리므로 바로 처리해도 됨 (가볍게만)
-            // 탐색기는 파일 복사가 잘 되고, 선택한 게 없을 때 실패·재시도가 뜨면 성가시므로 확인하지 않음
-            if (Native.ForegroundIsExplorer())
+            // 탐색기·명령 프롬프트 창에서는 확인하지 않음 (이유는 Native.IsSkippedWindow 참고)
+            IntPtr window = Native.GetForegroundWindow();
+            if (Native.IsSkippedWindow(window))
             {
                 waiting = false;
                 waitTimer.Stop();
@@ -697,8 +749,12 @@ namespace ClipCheck
             }
             isCut = e.IsCut;
             attempt = 1;
-            targetWindow = Native.GetForegroundWindow();
+            targetWindow = window;
+            sawEmpty = false;
+            sawMouseClick = false;
+            keyCountAtPress = keyHook.OtherKeyCount;
             StartAttempt();
+            actTimer.Start();
         }
 
         private void StartAttempt()
@@ -719,6 +775,7 @@ namespace ClipCheck
                 {
                     // 바뀌긴 했는데 글자·이미지가 없음 → 곧 들어올 수도 있으니 대기 시간 끝까지 기다림
                     sawUpdate = true;
+                    if (Native.CountClipboardFormats() == 0) sawEmpty = true;
                     return;
                 }
                 Succeed();
@@ -740,33 +797,53 @@ namespace ClipCheck
             waitTimer.Stop();
             if (!waiting) return;
 
-            // 혹시 알림을 놓쳤더라도 순번이 바뀌었고 내용이 있으면 성공
-            if (Native.GetClipboardSequenceNumber() != seqAtPress && Native.ClipboardHasContent())
+            // 알림을 놓쳤더라도 순번이 바뀌었으면 바뀐 것으로 봄
+            bool changed = sawUpdate || Native.GetClipboardSequenceNumber() != seqAtPress;
+            if (changed)
             {
-                Succeed();
-                return;
+                // 글자·이미지·파일이 들어왔거나, 그 프로그램만 아는 전용 형식이 들어온 경우 → 복사된 것
+                if (Native.ClipboardHasContent() || Native.CountClipboardFormats() > 0)
+                {
+                    Succeed();
+                    return;
+                }
+                sawEmpty = true;
             }
 
-            // 잘라내기(Ctrl+X)는 다시 누르면 위험하므로 재시도하지 않음.
-            // 그 사이 다른 창으로 옮겨 갔으면 엉뚱한 걸 복사하지 않게 재시도하지 않음.
-            bool canRetry = !isCut && attempt <= settings.RetryCount
-                            && Native.GetForegroundWindow() == targetWindow;
+            // 재시도는 "복사했는데 클립보드가 비어 버린 경우"에만 한다.
+            // 클립보드가 아예 안 바뀐 경우는 선택한 게 없는 것일 수 있으므로 다시 누르지 않는다.
+            // 그 밖에 재시도하지 않는 경우:
+            //  - 잘라내기(Ctrl+X): 다시 누르면 위험
+            //  - 다른 창으로 옮겨 감 / 마우스를 클릭함 / 다른 키를 누름: 선택이 바뀌었을 수 있어 엉뚱한 걸 복사하게 됨
+            bool sameWindow = Native.GetForegroundWindow() == targetWindow;
+            bool userActed = sawMouseClick || Native.AnyMouseButtonDown()
+                             || keyHook.OtherKeyCount != keyCountAtPress;
+            bool canRetry = sawEmpty && !isCut && attempt <= settings.RetryCount && sameWindow && !userActed;
             if (canRetry)
             {
                 attempt++;
                 toast.ShowResult(ToastKind.Retry, "다시 복사 중… (" + (attempt - 1) + "/" + settings.RetryCount + ")",
-                    sawUpdate ? "내용이 안 들어와서 Ctrl+C 다시 누름" : "반응이 없어서 Ctrl+C 다시 누름",
-                    settings.WaitMs + 500, settings.AtCursor);
+                    "내용이 안 들어와서 Ctrl+C 다시 누름", settings.WaitMs + 500, settings.AtCursor);
                 StartAttempt();
                 Native.SendCtrlC();
                 return;
             }
 
             waiting = false;
+            actTimer.Stop();
             failCount++;
             UpdateTray();
-            string detail = sawUpdate ? "글자·이미지가 안 들어옴 (" + NonTextDetail() + ")" : "클립보드 변화 없음";
-            if (attempt > 1) detail = (attempt - 1) + "번 다시 시도했지만 실패 · " + detail;
+            string detail;
+            if (!sawEmpty)
+                detail = "클립보드 변화 없음 · 선택한 내용이 있는지 확인";
+            else if (attempt > 1)
+                detail = (attempt - 1) + "번 다시 시도했지만 실패 · 클립보드가 비어 있음";
+            else if (userActed && !isCut && settings.RetryCount > 0)
+                detail = "클립보드가 비어 있음 · 다른 조작이 있어 재시도 안 함";
+            else if (!sameWindow && !isCut && settings.RetryCount > 0)
+                detail = "클립보드가 비어 있음 · 창이 바뀌어 재시도 안 함";
+            else
+                detail = "클립보드가 비어 있음";
             toast.ShowResult(ToastKind.Fail, "복사 안 됨!", detail, settings.FailShowMs, settings.AtCursor);
             if (settings.Sound) SystemSounds.Hand.Play();
         }
@@ -775,6 +852,7 @@ namespace ClipCheck
         {
             waiting = false;
             waitTimer.Stop();
+            actTimer.Stop();
             if (attempt > 1) retryOkCount++; else okCount++;
             successAttempt = attempt;
             if (Native.ClipboardIsFilesOnly() && !settings.ShowFileCopy)
@@ -804,7 +882,8 @@ namespace ClipCheck
                     if (!Native.ClipboardHasText())
                     {
                         // 이미지는 크기가 클 수 있어서 읽지 않고 종류만 표시
-                        ShowSuccess(Native.ClipboardHasImage() ? "(이미지)" : "(파일)");
+                        ShowSuccess(Native.ClipboardHasImage() ? "(이미지)"
+                                  : Native.ClipboardHasFiles() ? "(파일)" : "(기타 형식)");
                         return;
                     }
                     string text = Clipboard.GetText();
@@ -826,13 +905,6 @@ namespace ClipCheck
             UpdateTray();
             string title = successAttempt > 1 ? "복사됨 (재시도 " + (successAttempt - 1) + "번)" : "복사됨";
             toast.ShowResult(ToastKind.Ok, title, detail ?? "", settings.OkShowMs, settings.AtCursor);
-        }
-
-        // 클립보드를 열지 않고 확인 (복사 중인 프로그램을 방해하지 않도록)
-        private static string NonTextDetail()
-        {
-            int n = Native.CountClipboardFormats();
-            return n == 0 ? "클립보드 비어 있음" : "알 수 없는 형식 " + n + "개";
         }
 
         private void UpdateTray()

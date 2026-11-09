@@ -524,11 +524,16 @@
       }
       return null;
     }
-    /** 중요 인폼이 섞여 있으면 안내하고, 지우기 쉽게 그 부분(맨 위 ~ 첫 챔버 앞)을 선택해 둠 */
+    /**
+     * 중요 인폼이 섞여 있으면 안내하고, 지우기 쉽게 그 부분(맨 위 ~ 첫 챔버 앞)을 선택해 둠.
+     * 중요 인폼이 아니라 진짜 챔버가 두 번 들어간 인폼일 수도 있으므로, 글을 고치지 않고 한 번 더 누르면 그대로 진행
+     */
     function warnLeadingImportant(area, where) {
       const lead = findLeadingImportant(area.value);
       if (!lead) return false;
-      alert(`챔버 인폼만 넣으세요.\n중요인폼은 ${where} 넣으세요.\n\n(맨 위의 ${lead.names.join(', ')} 블록이 아래 챔버와 겹쳐서 중요 인폼으로 보입니다.\n맨 위 중요 인폼 부분을 선택해 두었으니 Delete로 지우고 다시 눌러 주세요.)`);
+      if (warnLeadingImportant.shown === area.id + '\n' + area.value) return false;
+      warnLeadingImportant.shown = area.id + '\n' + area.value;
+      alert(`챔버 인폼만 넣으세요.\n중요인폼은 ${where} 넣으세요.\n\n(맨 위의 ${lead.names.join(', ')} 블록이 아래 챔버와 겹쳐서 중요 인폼으로 보입니다.\n맨 위 중요 인폼 부분을 선택해 두었으니 Delete로 지우고 다시 눌러 주세요.\n중요 인폼이 아니라 같은 챔버가 두 번 들어간 거라면, 고치지 말고 한 번 더 누르면 그대로 나눕니다.)`);
       area.focus();
       area.setSelectionRange(0, lead.pos);
       area.scrollTop = 0;
@@ -849,7 +854,8 @@
       const lineEndRaw = value.indexOf('\n', start);
       const lineEnd = lineEndRaw < 0 ? value.length : lineEndRaw;
       const line = value.slice(lineStart, lineEnd);
-      const indent = line.length - line.trimStart().length;
+      // 줄 맨 앞의 띄어쓰기와 안 보이는 굵게 표시는 '줄 맨 앞'으로 침
+      const indent = line.match(/^[\s\u2063\u2064]*/)[0].length;
       if (!line.trim()) {
         // 빈 줄: 그 줄에 바로 새 항목을 채움
         area.setSelectionRange(lineStart, lineEnd);

@@ -1,0 +1,39 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'app.condition'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.condition'
+        minSdk 28
+        // 34로 둔다: 35부터는 화면이 상태바 밑으로 강제로 깔린다
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        // 개인용 사이드로드 앱: 업데이트 설치 때 데이터가 유지되도록 서명 키를 저장소에 고정해 둔다
+        fixed {
+            storeFile file('../keystore/condition.jks')
+            storePassword 'condition'
+            keyAlias 'condition'
+            keyPassword 'condition'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.fixed }
+        release {
+            signingConfig signingConfigs.fixed
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { checkReleaseBuilds false }
+}

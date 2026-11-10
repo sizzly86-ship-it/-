@@ -74,6 +74,18 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 dialog h3{margin:0 0 10px;font-size:15px}
 dialog label{display:block;margin-bottom:8px;font-size:12px;color:var(--sub)}
 dialog label input,dialog label select{display:block;width:100%;margin-top:2px;font-size:14px;color:var(--text)}
+.daycols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.daycols h3{font-size:14px;margin:0 0 8px}
+.daycols h4{font-size:13px;margin:10px 0 4px;color:var(--accent)}
+.chk{display:flex;gap:8px;align-items:baseline;padding:5px 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;margin-bottom:4px;cursor:pointer}
+.chk.done{opacity:.55;border-color:var(--ok)}
+.chk .what{font-weight:600}
+#dayMemo{display:block;width:100%;min-height:320px;font:14px/1.6 inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical}
+.alarm{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--panel)}
+.alarm input[type=time]{padding:2px 6px}
+.subnote{font-size:12px;color:var(--sub);margin-top:6px}
+dialog pre{white-space:pre-wrap;word-break:break-all;max-height:50vh;overflow:auto;background:var(--chip);padding:10px;border-radius:6px;font:13px/1.6 inherit;margin:0}
+@media (max-width:900px){ .daycols{grid-template-columns:1fr} }
 dialog.wide{width:min(760px,94vw)}
 dialog textarea{display:block;width:100%;height:240px;margin-top:2px;font:13px/1.5 inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre;overflow:auto}
 dialog .note{font-size:12px;color:var(--sub);margin:0 0 8px}
@@ -133,7 +145,7 @@ function splitDate(text) {
   return {date: iso(d), text: m[3].trim()};
 }
 
-let S = load();
+let S = normalize(load());
 let tab = 'open';
 let dayDate = today();
 
@@ -161,6 +173,10 @@ function load() {
 }
 function normalize(s) {
   s.archive = Array.isArray(s.archive) ? s.archive : [];
+  s.layers = Array.isArray(s.layers) ? s.layers : [];
+  s.notes = s.notes && typeof s.notes === 'object' ? s.notes : {};     // 날짜별 기타 변경점 메모
+  s.checked = s.checked && typeof s.checked === 'object' ? s.checked : {}; // 날짜별 확인 완료 항목
+  s.alarm = s.alarm && typeof s.alarm === 'object' ? s.alarm : {on: false, time: '17:30'};
   for (const l of s.layers) {
     l.id = l.id || uid(); l.chambers = Array.isArray(l.chambers) ? l.chambers : [];
     for (const c of l.chambers) { c.id = c.id || uid(); c.wafers = c.wafers || ''; c.symptom = c.symptom || ''; c.actions = Array.isArray(c.actions) ? c.actions : []; }
@@ -227,7 +243,7 @@ function ask(title, fields, okLabel = '저장', extra) {
 /* ---------- 렌더링 ---------- */
 function render() {
   const nOpen = S.layers.reduce((n, l) => n + l.chambers.filter(hasContent).length, 0);
-  $('#tabs').innerHTML = [['open', '진행중', nOpen], ['day', '일자별 변경분', dayEntries(today(), true).length], ['closed', '종료 이력', S.archive.length]]
+  $('#tabs').innerHTML = [['open', '진행중', nOpen], ['day', '오늘 변경점 확인', dayEntries(today(), true).length + memoOf(today()).split('\n').filter(x => x.trim()).length], ['closed', '종료 이력', S.archive.length]]
     .map(([k, l, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${l}<span class="n">${n}</span></button>`).join('');
 
   const sel = $('#layerFilter'), cur = sel.value;
@@ -291,36 +307,107 @@ function closedHtml() {
 function dayEntries(d, all) {
   const out = [];
   for (const l of S.layers) for (const c of l.chambers) for (const a of c.actions)
-    if (a.date === d) out.push({layer: l.name, chamber: c.name, wafers: c.wafers, symptom: c.symptom, text: a.text});
+    if (a.date === d) out.push({key: a.id, layer: l.name, chamber: c.name, wafers: c.wafers, symptom: c.symptom, text: a.text});
   for (const r of S.archive) {
-    for (const a of r.actions) if (a.date === d) out.push({layer: r.layer, chamber: r.chamber, wafers: r.wafers, symptom: r.symptom, text: a.text});
-    if (r.closedAt === d) out.push({layer: r.layer, chamber: r.chamber, wafers: r.wafers, symptom: r.symptom, text: `[종료] ${r.closeReason}${r.closeMemo ? ' ' + r.closeMemo : ''}`});
+    for (const a of r.actions) if (a.date === d) out.push({key: a.id, layer: r.layer, chamber: r.chamber, wafers: r.wafers, symptom: r.symptom, text: a.text});
+    if (r.closedAt === d) out.push({key: 'close:' + r.id, layer: r.layer, chamber: r.chamber, wafers: r.wafers, symptom: r.symptom, text: `[종료] ${r.closeReason}${r.closeMemo ? ' ' + r.closeMemo : ''}`});
   }
   if (all) return out;
   const f = lf();
   return out.filter(e => (!f || e.layer === f) && match(e.layer, e.chamber, e.symptom, e.text));
 }
-function dayGroups(d) {
+function dayGroups(d, all) {
   const m = new Map();
-  for (const e of dayEntries(d)) { if (!m.has(e.layer)) m.set(e.layer, []); m.get(e.layer).push(e); }
+  for (const e of dayEntries(d, all)) { if (!m.has(e.layer)) m.set(e.layer, []); m.get(e.layer).push(e); }
   return [...m.entries()].map(([l, es]) => [l, es.sort((a, b) => natCmp(a.chamber, b.chamber))]);
 }
-const dayText = d => `[${fmtDate(d)} 변경분]\n` + dayGroups(d).map(([l, es]) => `■ ${l}\n` + es.map(e => `${headLine(e.chamber, e)} - ${e.text}`).join('\n')).join('\n');
+const memoOf = d => (S.notes[d] || '').trim();
+/* 그 날짜의 변경점 전체를 텍스트로: 표에 입력한 것 + 기타 메모 */
+function dayText(d, all) {
+  const g = dayGroups(d, all), m = memoOf(d);
+  return `[${fmtDate(d)} 변경점]\n` +
+    (g.map(([l, es]) => `[${l}]\n` + es.map(e => `${headLine(e.chamber, e)} - ${e.text}`).join('\n')).join('\n\n') || '(표에 입력한 변경 없음)') +
+    (m ? `\n\n[기타 변경점]\n${m}` : '');
+}
 function dayHtml() {
-  const groups = dayGroups(dayDate);
+  const groups = dayGroups(dayDate), done = new Set(S.checked[dayDate] || []);
+  const total = groups.reduce((n, g) => n + g[1].length, 0), nDone = groups.reduce((n, g) => n + g[1].filter(e => done.has(e.key)).length, 0);
   return `<div class="daybar">
       <button class="btn" data-act="dayShift" data-n="-1">◀ 이전</button>
       <input type="date" id="dayDate" value="${dayDate}">
       <button class="btn" data-act="dayShift" data-n="1">다음 ▶</button>
       <button class="btn" data-act="dayToday">오늘</button>
       <span class="spacer"></span>
-      <button class="btn primary" data-act="copyDay">이 날짜 변경분 복사</button>
-    </div>` +
-    (groups.length ? groups.map(([l, es]) => `<section class="layer">
-      <div class="layer-h"><h2>${esc(l)}</h2><span class="cnt">${es.length}건</span></div>
-      ${es.map(e => `<div class="dayrow"><b>${esc(e.chamber)}</b>${e.wafers ? `<span class="wf">${esc(e.wafers)}매</span>` : ''}<span class="sym">${esc(e.symptom)}</span><span class="what">${esc(e.text)}</span></div>`).join('')}</section>`).join('')
-      : `<div class="empty">${fmtDate(dayDate)} 에 기록된 변경이 없습니다.</div>`);
+      <span class="alarm"><label><input type="checkbox" id="alarmOn"${S.alarm.on ? ' checked' : ''}> 확인 알림</label>
+        <input type="time" id="alarmTime" value="${esc(S.alarm.time)}">
+        <button class="btn sm" data-act="testAlarm">테스트</button></span>
+      <button class="btn primary" data-act="copyDay">텍스트로 복사</button>
+    </div>
+    <div class="daycols">
+      <div>
+        <h3>표에 입력한 변경점 (자동) <span class="cnt" style="font-weight:400;color:var(--sub)">· 이상 없음 확인 ${nDone}/${total}</span></h3>
+        ${groups.length ? groups.map(([l, es]) => `<h4>[${esc(l)}]</h4>` + es.map(e => `<label class="chk${done.has(e.key) ? ' done' : ''}">
+          <input type="checkbox" data-key="${esc(e.key)}"${done.has(e.key) ? ' checked' : ''}>
+          <span>${esc(headLine(e.chamber, e))} - <span class="what">${esc(e.text)}</span></span></label>`).join('')).join('')
+          : `<div class="empty" style="padding:24px 0">${fmtDate(dayDate)} 에 표에 입력한 변경이 없습니다.</div>`}
+        <div class="subnote">이상 여부를 확인한 항목은 체크하세요.</div>
+      </div>
+      <div>
+        <h3>기타 변경점 메모 (표에 안 적은 것)</h3>
+        <textarea id="dayMemo" spellcheck="false" placeholder="표에는 안 적지만 오늘 넣은 변경점을 자유롭게 적으세요.&#10;예) 11C 레시피 스텝3 시간 +2초&#10;예) 12A 더미 런 추가">${esc(S.notes[dayDate] || '')}</textarea>
+        <div class="subnote">적는 즉시 자동 저장됩니다. 알림과 복사에 함께 포함됩니다.</div>
+      </div>
+    </div>
+    <div class="subnote" style="margin-top:14px">확인 알림은 이 페이지가 브라우저에 열려 있을 때만 울립니다 (다른 탭을 보고 있어도 됩니다). 설정 시각이 지난 뒤에 페이지를 열면 열자마자 한 번 알려줍니다.</div>`;
 }
+
+/* ---------- 퇴근 전 확인 알림 ---------- */
+const FIRED_KEY = 'chamberLog.alarmFired';
+const BASE_TITLE = document.title;
+function beep() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.25, 0.5].forEach(t => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = 880; g.gain.value = 0.15; o.connect(g); g.connect(ac.destination);
+      o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.15);
+    });
+  } catch (e) {}
+}
+function fireAlarm() {
+  const text = dayText(today(), true);
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const n = new Notification('퇴근 전 변경점 확인', {body: text.slice(0, 300)});
+      n.onclick = () => window.focus();
+    }
+  } catch (e) {}
+  beep();
+  document.title = '🔔 변경점 확인! - ' + BASE_TITLE;
+  const dlg = $('#dlg');
+  dlg.className = 'wide';
+  dlg.innerHTML = `<form method="dialog"><h3>🔔 퇴근 전 변경점 확인</h3>
+    <p class="note">오늘 넣은 변경점입니다. 이상 여부를 확인하고, 표에 안 적은 변경점이 더 없는지도 확인하세요.</p>
+    <pre>${esc(text)}</pre>
+    <menu><button class="btn" value="cancel">닫기</button><button class="btn primary" value="ok">확인 화면으로 이동</button></menu></form>`;
+  dlg.returnValue = '';
+  dlg.onclose = () => {
+    dlg.className = ''; document.title = BASE_TITLE;
+    if (dlg.returnValue === 'ok') { tab = 'day'; dayDate = today(); render(); }
+  };
+  dlg.showModal();
+}
+function checkAlarm() {
+  const a = S.alarm;
+  if (!a.on || !a.time || $('#dlg').open) return; // 다른 창이 떠 있으면 다음 주기에 다시 시도
+  const now = new Date(), hm = pad(now.getHours()) + ':' + pad(now.getMinutes()), mark = today() + ' ' + a.time;
+  let fired = null; try { fired = localStorage.getItem(FIRED_KEY); } catch (e) {}
+  if (hm >= a.time && fired !== mark) {
+    try { localStorage.setItem(FIRED_KEY, mark); } catch (e) {}
+    fireAlarm();
+  }
+}
+setInterval(checkAlarm, 20000);
 
 /* ---------- 이벤트 ---------- */
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; render(); } });
@@ -374,6 +461,22 @@ $('#main').addEventListener('keydown', e => {
 $('#main').addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'dayDate' && t.value) { dayDate = t.value; render(); return; }
+  if (t.dataset.key) {
+    const set = new Set(S.checked[dayDate] || []);
+    t.checked ? set.add(t.dataset.key) : set.delete(t.dataset.key);
+    if (set.size) S.checked[dayDate] = [...set]; else delete S.checked[dayDate];
+    save(); return;
+  }
+  if (t.id === 'alarmOn' || t.id === 'alarmTime') {
+    S.alarm = {on: $('#alarmOn').checked, time: $('#alarmTime').value || '17:30'};
+    persist();
+    if (S.alarm.on) {
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (err) {}
+      toast(`매일 ${S.alarm.time} 에 알려드립니다 (페이지가 열려 있어야 합니다)`);
+      checkAlarm();
+    } else toast('확인 알림을 껐습니다');
+    return;
+  }
   const col = t.dataset.col;
   if (col === 'wafers' || col === 'symptom') {
     const {ch} = findCh(t.closest('.row').dataset.cid);
@@ -382,6 +485,12 @@ $('#main').addEventListener('change', e => {
     t.value = ch[col];
     persist(); // 포커스를 유지하려고 화면은 다시 그리지 않음
   }
+});
+
+$('#main').addEventListener('input', e => {
+  if (e.target.id !== 'dayMemo') return;
+  if (e.target.value.trim()) S.notes[dayDate] = e.target.value; else delete S.notes[dayDate];
+  persist(); // 입력 중 포커스를 유지하려고 화면은 다시 그리지 않음
 });
 
 $('#main').addEventListener('submit', e => {
@@ -473,6 +582,7 @@ $('#main').addEventListener('click', async e => {
   else if (act === 'dayShift') { const d = new Date(dayDate + 'T00:00:00'); d.setDate(d.getDate() + (+b.dataset.n)); dayDate = iso(d); render(); }
   else if (act === 'dayToday') { dayDate = today(); render(); }
   else if (act === 'copyDay') copy(dayText(dayDate));
+  else if (act === 'testAlarm') fireAlarm();
 });
 
 $('#noticeAllBtn').addEventListener('click', () => {
@@ -561,6 +671,7 @@ $('#importFile').addEventListener('change', async e => {
 });
 
 render();
+checkAlarm();
 </script>
 </body>
 </html>

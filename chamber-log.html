@@ -88,7 +88,7 @@ dialog menu{display:flex;justify-content:flex-end;gap:6px;padding:0;margin:12px 
     <span class="spacer"></span>
     <select id="layerFilter" title="레이어 필터"></select>
     <input id="q" type="search" placeholder="검색 (챔버, 증상, 변경 내용)" style="width:210px">
-    <button class="btn" id="noticeAllBtn" title="모든 레이어를 레이어당 한 줄로 복사">전체 공지 복사</button>
+    <button class="btn" id="noticeAllBtn" title="모든 레이어를 챔버당 한 줄씩 텍스트로 복사">전체 공지 복사</button>
     <button class="btn" id="exportBtn" title="JSON 파일로 백업">백업</button>
     <button class="btn" id="importBtn" title="백업 파일 불러오기">불러오기</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -188,8 +188,8 @@ const headLine = (name, c) => [name, c.wafers ? c.wafers + '매' : '', c.symptom
 const actsLine = c => sortedActs(c).map(a => `${fmtDate(a.date)} ${a.text}`).join(', ');
 const chLine = c => [headLine(c.name, c), actsLine(c)].filter(Boolean).join(' ');
 const arLine = a => [headLine(a.chamber, a), actsLine(a)].filter(Boolean).join(' ') + ` → ${fmtDate(a.closedAt)} ${a.closeReason}${a.closeMemo ? ' ' + a.closeMemo : ''}`;
-/* 공지용: 레이어 하나를 줄바꿈 없이 한 줄로 */
-const noticeLine = l => `[${l.name}] ` + [...l.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(chLine).join(' / ');
+/* 공지용: 레이어 제목 아래로 챔버당 한 줄 (챔버 안에서는 줄바꿈 없음) */
+const noticeLine = l => `[${l.name}]\n` + [...l.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(chLine).join('\n');
 function findCh(cid) {
   for (const layer of S.layers) { const ch = layer.chambers.find(c => c.id === cid); if (ch) return {layer, ch}; }
   return {};
@@ -246,8 +246,7 @@ function openHtml() {
       .filter(c => match(l.name, c.name, c.wafers, c.symptom, ...c.actions.map(a => a.text)));
     return `<section class="layer" data-lid="${l.id}">
       <div class="layer-h"><h2>${esc(l.name)}</h2><span class="cnt">진행 ${l.chambers.filter(hasContent).length} / 챔버 ${l.chambers.length}</span><span class="spacer"></span>
-        <button class="btn sm primary" data-act="copyNotice" title="이 레이어를 줄바꿈 없이 한 줄로 복사">공지 복사 (한 줄)</button>
-        <button class="btn sm" data-act="copyLayer" title="챔버마다 한 줄씩 복사">줄별 복사</button>
+        <button class="btn sm primary" data-act="copyNotice" title="이 레이어를 챔버당 한 줄씩 텍스트로 복사">공지 복사</button>
         <button class="btn sm" data-act="layerUp" title="위로">▲</button><button class="btn sm" data-act="layerDown" title="아래로">▼</button>
         <button class="btn sm" data-act="renameLayer">이름 변경</button><button class="btn sm danger" data-act="delLayer">삭제</button></div>
       ${rows.length ? `<div class="grid"><div class="row head"><div>챔버</div><div>최초매수</div><div>증상</div><div>변경 이력 →</div><div></div></div>
@@ -411,7 +410,6 @@ $('#main').addEventListener('click', async e => {
 
   if (act === 'copyCh') copy(chLine(ch));
   else if (act === 'copyNotice') { if (layer.chambers.some(hasContent)) copy(noticeLine(layer)); else toast('복사할 내용이 없습니다'); }
-  else if (act === 'copyLayer') copy(`■ ${layer.name}\n` + [...layer.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(chLine).join('\n'));
   else if (act === 'layerUp' || act === 'layerDown') {
     const j = li + (act === 'layerUp' ? -1 : 1);
     if (j >= 0 && j < S.layers.length) { [S.layers[li], S.layers[j]] = [S.layers[j], S.layers[li]]; save(); }
@@ -474,7 +472,7 @@ $('#main').addEventListener('click', async e => {
 
 $('#noticeAllBtn').addEventListener('click', () => {
   const f = lf(), ls = S.layers.filter(l => (!f || l.name === f) && l.chambers.some(hasContent));
-  if (ls.length) copy(ls.map(noticeLine).join('\n')); else toast('복사할 내용이 없습니다');
+  if (ls.length) copy(ls.map(noticeLine).join('\n\n')); else toast('복사할 내용이 없습니다');
 });
 $('#exportBtn').addEventListener('click', () => {
   const a = document.createElement('a');

@@ -7,7 +7,7 @@ var CITIES = [
   ['서울', 37.5665, 126.978], ['인천', 37.4563, 126.7052], ['수원', 37.2636, 127.0286], ['성남', 37.42, 127.1265],
   ['고양', 37.6584, 126.832], ['용인', 37.2411, 127.1776], ['춘천', 37.8813, 127.7298], ['강릉', 37.7519, 128.8761],
   ['원주', 37.3422, 127.9202], ['대전', 36.3504, 127.3845], ['세종', 36.48, 127.289], ['청주', 36.6424, 127.489],
-  ['천안', 36.8151, 127.1139], ['전주', 35.8242, 127.148], ['광주', 35.1595, 126.8526], ['목포', 34.8118, 126.3922],
+  ['천안', 36.8151, 127.1139], ['아산', 36.7898, 127.0018], ['평택', 36.9921, 127.1129], ['전주', 35.8242, 127.148], ['광주', 35.1595, 126.8526], ['목포', 34.8118, 126.3922],
   ['여수', 34.7604, 127.6622], ['대구', 35.8714, 128.6014], ['포항', 36.019, 129.3435], ['안동', 36.5684, 128.7294],
   ['부산', 35.1796, 129.0756], ['울산', 35.5384, 129.3114], ['창원', 35.228, 128.6811], ['진주', 35.18, 128.1076],
   ['제주', 33.4996, 126.5312], ['서귀포', 33.2541, 126.56]
@@ -37,6 +37,7 @@ var N = window.Native || {
   notifPermission: function () { return 'granted'; },
   requestNotif: function () {},
   exportData: function (j) { console.log(j); toast('안드로이드 앱에서만 동작합니다'); },
+  shareText: function (t) { console.log(t); toast('안드로이드 앱에서만 동작합니다'); },
   importData: function () { toast('안드로이드 앱에서만 동작합니다'); },
   launchTarget: function () { return ''; }
 };
@@ -65,7 +66,7 @@ function freshState() {
   return {
     version: 1,
     settings: {
-      city: '서울', minorMin: 5,
+      city: '천안', cityChosen: false, minorMin: 5,
       rem: { morning: { on: true, time: '08:00' }, evening: { on: true, time: '18:30' }, night: { on: true, time: '22:00' } }
     },
     items: DEFAULT_ITEMS.map(function (x, i) { return { id: 'i' + i, cat: x[0], name: x[1], unit: x[2] }; }),
@@ -73,14 +74,49 @@ function freshState() {
     days: {}
   };
 }
+// 저장 파일·가져온 파일의 값을 화면에 넣기 전에 형태를 강제한다 (조작된 백업 파일로 스크립트가 끼어들지 못하게)
+function num(v) { v = Number(v); return isFinite(v) ? v : null; }
+function str(v, max) { return v == null ? '' : String(v).slice(0, max); }
 function normalize(s) {
   var f = freshState();
-  if (!s || typeof s !== 'object' || !s.days) return f;
-  s.settings = Object.assign(f.settings, s.settings || {});
-  s.settings.rem = Object.assign(freshState().settings.rem, s.settings.rem || {});
-  if (!Array.isArray(s.items)) s.items = f.items;
-  if (!s.nextId) s.nextId = s.items.length + 100;
-  return s;
+  if (!s || typeof s !== 'object' || !s.days || typeof s.days !== 'object') return f;
+  var st = s.settings && typeof s.settings === 'object' ? s.settings : {};
+  var out = { version: 1, settings: f.settings, items: [], nextId: 0, days: {}, weatherAt: 0, weatherCity: '' };
+  var known = CITIES.some(function (c) { return c[0] === st.city; });
+  // 지역을 직접 고른 적이 없으면 기본 지역(천안)을 쓴다
+  out.settings.cityChosen = !!st.cityChosen && known;
+  out.settings.city = out.settings.cityChosen ? st.city : '천안';
+  out.settings.minorMin = [2, 3, 5, 10, 15].indexOf(+st.minorMin) >= 0 ? +st.minorMin : 5;
+  REMINDERS.forEach(function (r) {
+    var c = st.rem && st.rem[r[0]];
+    if (c && typeof c === 'object') out.settings.rem[r[0]] = { on: !!c.on, time: /^\d\d:\d\d$/.test(c.time) ? c.time : r[2] };
+  });
+  var seen = {};
+  (Array.isArray(s.items) ? s.items : f.items).forEach(function (it) {
+    if (!it || !/^i\d+$/.test(it.id) || seen[it.id]) return;
+    seen[it.id] = 1;
+    out.items.push({ id: it.id, cat: CATS.some(function (c) { return c[0] === it.cat; }) ? it.cat : 'etc', name: str(it.name, 30) || '이름 없음', unit: str(it.unit, 3) });
+    out.nextId = Math.max(out.nextId, +it.id.slice(1) + 1);
+  });
+  Object.keys(s.days).forEach(function (k) {
+    var x = s.days[k], d = { log: {} }, v;
+    if (!/^\d{4}-\d\d-\d\d$/.test(k) || !x || typeof x !== 'object') return;
+    v = Math.round(num(x.score)); if (v >= 1 && v <= 10) d.score = v;
+    v = Math.round(num(x.stress)); if (v >= 1 && v <= 5) d.stress = v;
+    ['memo', 'foodMemo', 'stressMemo'].forEach(function (m) { if (x[m]) d[m] = str(x[m], 500); });
+    if (x.touched) d.touched = true;
+    if (x.sleep && num(x.sleep.bed) && num(x.sleep.wake) && x.sleep.wake > x.sleep.bed) {
+      d.sleep = { bed: num(x.sleep.bed), wake: num(x.sleep.wake), wakeups: Math.max(0, Math.round(num(x.sleep.wakeups) || 0)) };
+      if (x.sleep.manual) d.sleep.manual = true;
+    }
+    if (x.weather && num(x.weather.tmax) != null && num(x.weather.tmin) != null) {
+      d.weather = { tmax: num(x.weather.tmax), tmin: num(x.weather.tmin), rain: num(x.weather.rain), hum: num(x.weather.hum), city: str(x.weather.city, 10), final: !!x.weather.final };
+    }
+    if (x.log && typeof x.log === 'object') Object.keys(x.log).forEach(function (id) { var n = num(x.log[id]); if (/^i\d+$/.test(id) && n > 0) d.log[id] = n; });
+    out.days[k] = d;
+  });
+  if (out.settings.city === s.weatherCity) { out.weatherAt = num(s.weatherAt) || 0; out.weatherCity = str(s.weatherCity, 10); }
+  return out;
 }
 var S;
 try { S = normalize(JSON.parse(N.loadData() || 'null')); } catch (e) { S = freshState(); }
@@ -129,7 +165,7 @@ function refreshWeather() {
   var c = CITIES.filter(function (x) { return x[0] === S.settings.city; })[0];
   if (!c) return;
   var t = today(), need = false;
-  for (var i = 0; i <= 7; i++) { var w = peek(addDays(t, -i)).weather; if (!w || !w.final) need = true; }
+  for (var i = 0; i <= 7; i++) { var w = peek(addDays(t, -i)).weather; if (!w || !w.final || w.city !== c[0]) need = true; }
   if (!need || (S.weatherAt && Date.now() - S.weatherAt < 3 * 3600000 && S.weatherCity === c[0])) return;
   var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + c[1] + '&longitude=' + c[2] +
     '&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean' +
@@ -272,6 +308,65 @@ function bucketTable(title, rows) {
   return '<div class="card"><h2>' + title + '</h2><table><tr><th>구간</th><th class="n">평균 컨디션</th><th class="n">일수</th></tr>' +
     rows.map(function (r) { return '<tr><td>' + r.name + '</td><td class="n">' + (r.n ? r.avg.toFixed(1) : '–') + '</td><td class="n">' + r.n + '</td></tr>'; }).join('') + '</table></div>';
 }
+// 점수 상위 1/3인 날과 하위 1/3인 날을 나란히 비교한다
+function goodBad(ps) {
+  if (ps.length < 6) return '<div class="card"><h2>좋은 날 vs 나쁜 날</h2><p class="muted">아침 점수가 6일 이상 쌓이면 표시됩니다.</p></div>';
+  var sc = ps.map(function (p) { return p.score; }).sort(function (a, b) { return a - b; });
+  var lo = sc[Math.floor((sc.length - 1) / 3)], hi = sc[Math.ceil((sc.length - 1) * 2 / 3)];
+  if (hi <= lo) return '<div class="card"><h2>좋은 날 vs 나쁜 날</h2><p class="muted">아직 점수가 거의 비슷해서 나눌 수 없어요.</p></div>';
+  var G = ps.filter(function (p) { return p.score >= hi; }), B = ps.filter(function (p) { return p.score <= lo; });
+  function m(list, get, digits, unit) {
+    var xs = []; list.forEach(function (p) { var v = get(p); if (v != null) xs.push(v); });
+    return xs.length ? avg(xs).toFixed(digits) + unit : '–';
+  }
+  function clock(list) {
+    var xs = []; list.forEach(function (p) { if (p.cur.sleep) { var b = new Date(p.cur.sleep.bed), x = b.getHours() * 60 + b.getMinutes(); xs.push(x < 900 ? x + 1440 : x); } });
+    if (!xs.length) return '–';
+    var a = Math.round(avg(xs)) % 1440; return pad(Math.floor(a / 60)) + ':' + pad(a % 60);
+  }
+  var rows = [
+    ['일수', G.length + '일', B.length + '일'],
+    ['수면 시간', m(G, slpH, 1, '시간'), m(B, slpH, 1, '시간')],
+    ['잠든 시각', clock(G), clock(B)],
+    ['새벽에 폰 만진 횟수', m(G, function (p) { return p.cur.sleep ? p.cur.sleep.wakeups : null; }, 1, '회'), m(B, function (p) { return p.cur.sleep ? p.cur.sleep.wakeups : null; }, 1, '회')],
+    ['전날 스트레스', m(G, function (p) { return p.prev && p.prev.stress ? p.prev.stress : null; }, 1, ''), m(B, function (p) { return p.prev && p.prev.stress ? p.prev.stress : null; }, 1, '')],
+    ['전날 일교차', m(G, function (p) { return p.prev && p.prev.weather ? range(p.prev.weather) : null; }, 1, '°'), m(B, function (p) { return p.prev && p.prev.weather ? range(p.prev.weather) : null; }, 1, '°')]
+  ];
+  // 전날 한 비율이 두 그룹 사이에 가장 크게 갈리는 항목 5개
+  var its = [];
+  S.items.forEach(function (it) {
+    function rate(list) { var n = 0, y = 0; list.forEach(function (p) { if (p.prev && p.prev.touched) { n++; if (p.prev.log[it.id]) y++; } }); return n >= 2 ? y / n : null; }
+    var g = rate(G), b = rate(B);
+    if (g != null && b != null && g !== b) its.push({ name: it.name, g: g, b: b });
+  });
+  its.sort(function (x, y) { return Math.abs(y.g - y.b) - Math.abs(x.g - x.b); }).slice(0, 5).forEach(function (x) {
+    rows.push(['전날 ' + esc(x.name), Math.round(x.g * 100) + '%', Math.round(x.b * 100) + '%']);
+  });
+  return '<div class="card"><h2>좋은 날 vs 나쁜 날</h2><p class="sub">점수가 높은 쪽 1/3(' + hi + '점 이상)과 낮은 쪽 1/3(' + lo + '점 이하)의 평균 비교</p>' +
+    '<table><tr><th></th><th class="n">좋은 날</th><th class="n">나쁜 날</th></tr>' +
+    rows.map(function (r) { return '<tr><td>' + r[0] + '</td><td class="n">' + r[1] + '</td><td class="n">' + r[2] + '</td></tr>'; }).join('') + '</table></div>';
+}
+function slpH(p) { return p.cur.sleep ? (p.cur.sleep.wake - p.cur.sleep.bed) / 3600000 : null; }
+
+// AI에게 넘길 텍스트: 부탁하는 말 + 하루에 한 줄짜리 표
+function aiText() {
+  var ps = pairs().slice(-120), lines = [];
+  lines.push('아래는 내가 매일 기록한 컨디션 데이터야. 각 줄의 "아침점수"는 그날 자고 일어났을 때 컨디션(1~10, 높을수록 좋음)이고, "전날"로 시작하는 값은 그 전날 있었던 일이야.');
+  lines.push('이 데이터를 분석해서 알려줘: (1) 컨디션이 좋은 날과 나쁜 날에 공통으로 보이는 패턴, (2) 영향이 커 보이는 요인을 큰 순서대로, 근거 수치와 함께, (3) 여러 요인이 겹칠 때의 효과(예: 술 + 늦게 잠), (4) 표본이 적어서 아직 믿기 어려운 부분, (5) 앞으로 2주 동안 해볼 만한 실험 2~3가지. 인과관계로 단정하지 말고, 날짜 수가 적은 결론은 그렇다고 말해줘.');
+  lines.push('');
+  lines.push('지역: ' + S.settings.city + ' / 기록 ' + ps.length + '일');
+  lines.push('날짜 | 아침점수 | 잠든시각 | 깬시각 | 수면시간 | 새벽에 폰 만진 횟수 | 전날 스트레스(1~5) | 전날 최저~최고기온(일교차) | 전날 한 것·먹은 것 | 메모');
+  ps.forEach(function (p) {
+    var s = p.cur.sleep, pv = p.prev || {}, w = pv.weather, memo = [];
+    if (p.cur.memo) memo.push('아침: ' + p.cur.memo);
+    if (pv.foodMemo) memo.push('전날 식사: ' + pv.foodMemo);
+    if (pv.stressMemo) memo.push('전날 스트레스: ' + pv.stressMemo);
+    lines.push([p.date, p.score, s ? hm(s.bed) : '?', s ? hm(s.wake) : '?', s ? ((s.wake - s.bed) / 3600000).toFixed(1) + 'h' : '?', s ? s.wakeups : '?',
+      pv.stress || '?', w ? w.tmin + '~' + w.tmax + '(' + range(w) + ')' : '?',
+      pv.touched ? (daySummary({ log: pv.log }) || '없음') : '기록 안 함', memo.join(' / ').replace(/[\n|]/g, ' ')].join(' | '));
+  });
+  return lines.join('\n');
+}
 function trendChart() {
   var t = today(), n = 30, W = 340, H = 150, L = 22, R = 8, T = 10, B = 20, pts = [];
   for (var i = n - 1; i >= 0; i--) { var d = addDays(t, -i), sc = peek(d).score; pts.push({ d: d, v: sc || null, x: L + (W - L - R) * (n - 1 - i) / (n - 1) }); }
@@ -319,6 +414,8 @@ function viewStats() {
   }
   h += '</div>';
 
+  h += goodBad(ps);
+  h += '<div class="card"><h2>AI에게 분석 맡기기</h2><p class="sub">지금까지의 기록을 분석 요청 문장과 함께 글로 정리해서 Claude 같은 AI 앱으로 보냅니다. 메모 내용도 함께 들어가요.</p><button class="btn primary" data-act="ai">AI 앱으로 보내기</button></div>';
   h += bucketTable('수면 시간별', buckets(ps, function (p) { return p.cur.sleep ? (p.cur.sleep.wake - p.cur.sleep.bed) / 3600000 : null; },
     [['6시간 미만', 0, 6], ['6~7시간', 6, 7], ['7~8시간', 7, 8], ['8시간 이상', 8, 99]]));
   h += bucketTable('잠든 시각별', buckets(ps, function (p) {
@@ -356,7 +453,7 @@ function viewSettings() {
     '<label class="f">새벽에 폰을 이 시간(분)보다 짧게 만지고 다시 안 만지면 "잠결"로 보고 무시</label>' +
     '<select data-set="minorMin">' + [2, 3, 5, 10, 15].map(function (m) { return '<option value="' + m + '"' + (st.minorMin === m ? ' selected' : '') + '>' + m + '분</option>'; }).join('') + '</select></div>';
 
-  h += '<div class="card"><h2>날씨 지역</h2><select data-set="city">' + CITIES.map(function (c) { return '<option' + (c[0] === st.city ? ' selected' : '') + '>' + c[0] + '</option>'; }).join('') + '</select></div>';
+  h += '<div class="card"><h2>날씨 지역</h2><p class="sub">위치(GPS)는 쓰지 않아요. 고른 지역의 기온만 가져옵니다. 바꾸면 최근 2주 날씨를 새 지역 기준으로 다시 채워요.</p><select data-set="city">' + CITIES.map(function (c) { return '<option' + (c[0] === st.city ? ' selected' : '') + '>' + c[0] + '</option>'; }).join('') + '</select></div>';
 
   h += '<div class="card"><h2>알림</h2>';
   if (N.notifPermission() !== 'granted') h += '<p class="sub">알림 권한이 꺼져 있어요.</p><button class="btn small" data-act="notif">알림 허용하기</button>';
@@ -450,6 +547,7 @@ document.getElementById('view').addEventListener('click', function (e) {
     if (!confirm('「' + it.name + '」 항목을 삭제할까요? 지난 기록에서도 보이지 않게 됩니다.')) return;
     S.items = S.items.filter(function (x) { return x.id !== id; }); save();
   }
+  else if (a === 'ai') { N.shareText(aiText()); return; }
   else if (a === 'export') { N.exportData(JSON.stringify(S, null, 1)); return; }
   else if (a === 'import') { N.importData(); return; }
   render();
@@ -458,7 +556,7 @@ document.getElementById('view').addEventListener('click', function (e) {
 document.getElementById('view').addEventListener('change', function (e) {
   var el = e.target;
   if (el.dataset.field) { var dd = day(ui.date); dd[el.dataset.field] = el.value; if (el.dataset.field !== 'memo') dd.touched = true; save(); }
-  else if (el.dataset.set === 'city') { S.settings.city = el.value; S.weatherAt = 0; save(); refreshWeather(); }
+  else if (el.dataset.set === 'city') { S.settings.city = el.value; S.settings.cityChosen = true; S.weatherAt = 0; save(); refreshWeather(); }
   else if (el.dataset.set === 'minorMin') { S.settings.minorMin = +el.value; save(); refreshSleep(); }
   else if (el.dataset.rem) {
     S.settings.rem[el.dataset.rem].on = el.checked; save(); pushReminders();

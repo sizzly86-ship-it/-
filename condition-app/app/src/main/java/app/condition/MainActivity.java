@@ -46,10 +46,16 @@ public class MainActivity extends Activity {
         WebSettings ws = web.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
-        ws.setAllowFileAccess(true);
+        ws.setAllowFileAccess(false);
+        ws.setAllowContentAccess(false);
         ws.setTextZoom(100);
         web.setWebChromeClient(new WebChromeClient()); // confirm() 대화상자용
         web.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                return true; // 앱 화면 밖의 어떤 주소로도 이동하지 않는다
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 pageReady = true;
@@ -205,6 +211,12 @@ public class MainActivity extends Activity {
                     .setType("application/json")
                     .putExtra(Intent.EXTRA_TITLE, name);
             runOnUiThread(() -> startActivityForResult(in, REQ_EXPORT));
+        }
+
+        @JavascriptInterface
+        public void shareText(String text) {
+            Intent in = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
+            runOnUiThread(() -> startActivity(Intent.createChooser(in, "분석을 맡길 AI 앱 선택")));
         }
 
         @JavascriptInterface

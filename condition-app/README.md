@@ -14,7 +14,7 @@
 
 ## 빌드
 
-    ./gradlew assembleDebug
-    cp app/build/outputs/apk/debug/app-debug.apk release/condition-note.apk
+    ./gradlew assembleRelease
+    cp app/build/outputs/apk/release/app-release.apk release/condition-note.apk
 
 `keystore/condition.jks` 는 업데이트 설치 때 데이터가 유지되도록 고정해 둔 서명 키다.

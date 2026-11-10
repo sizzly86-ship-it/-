@@ -21,9 +21,10 @@ var DEFAULT_ITEMS = [
   ['etc', '낮잠', ''], ['etc', '야근', ''], ['etc', '반신욕', '']
 ];
 var REMINDERS = [
-  ['morning', '아침 컨디션 점수', '08:00'],
-  ['evening', '퇴근길 스트레스 (평일만)', '18:30'],
-  ['night', '자기 전 하루 기록', '22:00']
+  // [id, 이름, 설명, 기본 시각, 기본으로 평일만 울릴지]
+  ['morning', '출근할 때', '아침 컨디션 점수', '08:00', false],
+  ['evening', '퇴근할 때', '오늘 받은 스트레스', '18:30', true],
+  ['night', '자기 전', '먹은 것 · 운동 · 영양제', '22:00', false]
 ];
 
 /* ---------- 네이티브 브리지 (브라우저에서는 localStorage로 대체) ---------- */
@@ -67,7 +68,7 @@ function freshState() {
     version: 1,
     settings: {
       city: '천안', cityChosen: false, minorMin: 5,
-      rem: { morning: { on: true, time: '08:00' }, evening: { on: true, time: '18:30' }, night: { on: true, time: '22:00' } }
+      rem: { morning: { on: true, time: '08:00', wd: false }, evening: { on: true, time: '18:30', wd: true }, night: { on: true, time: '22:00', wd: false, auto: false } }
     },
     items: DEFAULT_ITEMS.map(function (x, i) { return { id: 'i' + i, cat: x[0], name: x[1], unit: x[2] }; }),
     nextId: DEFAULT_ITEMS.length,
@@ -89,7 +90,7 @@ function normalize(s) {
   out.settings.minorMin = [2, 3, 5, 10, 15].indexOf(+st.minorMin) >= 0 ? +st.minorMin : 5;
   REMINDERS.forEach(function (r) {
     var c = st.rem && st.rem[r[0]];
-    if (c && typeof c === 'object') out.settings.rem[r[0]] = { on: !!c.on, time: /^\d\d:\d\d$/.test(c.time) ? c.time : r[2] };
+    if (c && typeof c === 'object') out.settings.rem[r[0]] = { on: !!c.on, time: /^\d\d:\d\d$/.test(c.time) ? c.time : r[3], wd: c.wd == null ? r[4] : !!c.wd, auto: r[0] === 'night' && !!c.auto };
   });
   var seen = {};
   (Array.isArray(s.items) ? s.items : f.items).forEach(function (it) {
@@ -455,12 +456,16 @@ function viewSettings() {
 
   h += '<div class="card"><h2>날씨 지역</h2><p class="sub">위치(GPS)는 쓰지 않아요. 고른 지역의 기온만 가져옵니다. 바꾸면 최근 2주 날씨를 새 지역 기준으로 다시 채워요.</p><select data-set="city">' + CITIES.map(function (c) { return '<option' + (c[0] === st.city ? ' selected' : '') + '>' + c[0] + '</option>'; }).join('') + '</select></div>';
 
-  h += '<div class="card"><h2>알림</h2>';
+  h += '<div class="card"><h2>알림</h2><p class="sub">정한 시각에 소리와 함께 울리고, 누르면 해당 입력 칸으로 바로 이동해요.</p>';
   if (N.notifPermission() !== 'granted') h += '<p class="sub">알림 권한이 꺼져 있어요.</p><button class="btn small" data-act="notif">알림 허용하기</button>';
   REMINDERS.forEach(function (r) {
     var c = st.rem[r[0]];
-    h += '<div class="itemrow"><label class="row grow"><input type="checkbox" data-rem="' + r[0] + '"' + (c.on ? ' checked' : '') + '> ' + r[1] + '</label>' +
-      '<input type="time" data-remtime="' + r[0] + '" value="' + c.time + '" style="width:120px"></div>';
+    var auto = r[0] === 'night' && c.auto, at = auto ? autoNightTime() : null;
+    h += '<div class="itemrow"><label class="row grow"><input type="checkbox" data-rem="' + r[0] + '"' + (c.on ? ' checked' : '') + '> <span><b>' + r[1] + '</b><br><span class="muted">' + r[2] + '</span></span></label>' +
+      '<input type="time" data-remtime="' + r[0] + '" value="' + (at || c.time) + '"' + (at ? ' disabled' : '') + ' style="width:120px"></div>' +
+      '<div class="remopt"><label><input type="checkbox" data-remwd="' + r[0] + '"' + (c.wd ? ' checked' : '') + '> 평일에만</label>' +
+      (r[0] === 'night' ? '<label><input type="checkbox" data-remauto="1"' + (c.auto ? ' checked' : '') + '> 평소 잠드는 시각 30분 전으로 자동 조정</label>' +
+        (c.auto && !at ? '<span class="muted">수면 기록이 3일 이상 쌓이면 적용돼요. 그 전에는 위 시각에 울립니다.</span>' : '') : '') + '</div>';
   });
   h += '</div>';
 
@@ -492,8 +497,21 @@ function render() {
   }
   window.scrollTo(0, y);
 }
+// 최근 7일 동안 실제로 잠든 시각의 평균에서 30분을 뺀 시각 (기록이 3일 미만이면 null)
+function autoNightTime() {
+  var t = today(), xs = [];
+  for (var i = 0; i < 7; i++) {
+    var s = peek(addDays(t, -i)).sleep;
+    if (s) { var b = new Date(s.bed), m = b.getHours() * 60 + b.getMinutes(); xs.push(m < 900 ? m + 1440 : m); }
+  }
+  if (xs.length < 3) return null;
+  var a = (Math.round((avg(xs) - 30) / 5) * 5 + 1440) % 1440;
+  return pad(Math.floor(a / 60)) + ':' + pad(a % 60);
+}
 function pushReminders() {
-  N.setReminders(JSON.stringify(S.settings.rem));
+  var rem = JSON.parse(JSON.stringify(S.settings.rem)), at = rem.night.auto ? autoNightTime() : null;
+  if (at) rem.night.time = at;
+  N.setReminders(JSON.stringify(rem));
 }
 function setTab(tab) { ui.tab = tab; ui.editSleep = false; window.scrollTo(0, 0); render(); }
 
@@ -562,6 +580,8 @@ document.getElementById('view').addEventListener('change', function (e) {
     S.settings.rem[el.dataset.rem].on = el.checked; save(); pushReminders();
     if (el.checked && N.notifPermission() !== 'granted') N.requestNotif();
   }
+  else if (el.dataset.remwd) { S.settings.rem[el.dataset.remwd].wd = el.checked; save(); pushReminders(); }
+  else if (el.dataset.remauto) { S.settings.rem.night.auto = el.checked; save(); pushReminders(); render(); }
   else if (el.dataset.remtime) { if (el.value) { S.settings.rem[el.dataset.remtime].time = el.value; save(); pushReminders(); } }
 });
 
@@ -589,7 +609,7 @@ window.onResume = function () {
   if (target) { ui.tab = 'today'; ui.date = today(); ui.focus = target; }
   else if (ui.tab === 'today' && ui.date === ui.lastToday && ui.date !== today()) ui.date = today();
   ui.lastToday = today();
-  refreshSleep(); render(); refreshWeather();
+  refreshSleep(); pushReminders(); render(); refreshWeather();
 };
 
 /* ---------- 브라우저 미리보기용 예시 데이터 (?demo) ---------- */
@@ -610,5 +630,4 @@ if (!window.Native && /demo/.test(location.search)) {
   }
 }
 
-pushReminders();
 window.onResume();

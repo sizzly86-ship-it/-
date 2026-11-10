@@ -128,3 +128,5 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
 .addrow { display: grid; grid-template-columns: 1fr 96px auto; gap: 6px; margin-top: 8px; }
 
 #toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--ink); color: var(--card); padding: 8px 16px; border-radius: 999px; font-size: 14px; z-index: 10; }
+
+.remopt { display: flex; flex-direction: column; gap: 4px; padding: 0 0 10px 26px; font-size: 13px; color: var(--ink2); }

@@ -18,9 +18,10 @@ import java.util.Calendar;
 public class ReminderReceiver extends BroadcastReceiver {
     static final String ACTION = "app.condition.REMIND";
     static final String PREFS = "reminders";
-    static final String CHANNEL = "remind";
+    static final String CHANNEL = "remind_alert";
+    private static final String OLD_CHANNEL = "remind";
     static final String[] IDS = {"morning", "evening", "night"};
-    private static final String[] TITLES = {"아침 컨디션은 어때요?", "퇴근길 스트레스 기록", "오늘 하루 기록"};
+    private static final String[] TITLES = {"출근길 · 아침 컨디션은 어때요?", "퇴근길 · 오늘 스트레스 기록", "자기 전 · 오늘 하루 기록"};
     private static final String[] TEXTS = {
             "자고 일어난 지금 상태를 점수로 남겨 주세요.",
             "오늘 일하면서 받은 스트레스를 남겨 주세요.",
@@ -34,10 +35,20 @@ public class ReminderReceiver extends BroadcastReceiver {
             if (idx >= 0) {
                 int dow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
                 boolean weekend = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY;
-                if (!("evening".equals(id) && weekend)) show(c, idx);
+                if (!(weekend && weekdaysOnly(c, id))) show(c, idx);
             }
         }
         scheduleAll(c); // 부팅·앱 업데이트 후에도, 알림을 띄운 뒤에도 다음 것을 다시 예약한다
+    }
+
+    private static boolean weekdaysOnly(Context c, String id) {
+        try {
+            JSONObject all = new JSONObject(c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("json", "{}"));
+            JSONObject r = all.optJSONObject(id);
+            return r != null && r.optBoolean("wd");
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     static int indexOf(String id) {
@@ -75,7 +86,12 @@ public class ReminderReceiver extends BroadcastReceiver {
                 cal.set(Calendar.SECOND, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 if (cal.getTimeInMillis() <= System.currentTimeMillis() + 30_000) cal.add(Calendar.DAY_OF_YEAR, 1);
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+                // 정확한 시각 알람을 쓸 수 있으면 제시간에, 아니면 조금 늦을 수 있는 방식으로
+                if (android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+                } else {
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
+                }
             } catch (NumberFormatException ignored) {
             }
         }
@@ -83,7 +99,9 @@ public class ReminderReceiver extends BroadcastReceiver {
 
     private static void show(Context c, int idx) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.createNotificationChannel(new NotificationChannel(CHANNEL, "기록 알림", NotificationManager.IMPORTANCE_DEFAULT));
+        nm.deleteNotificationChannel(OLD_CHANNEL);
+        // 중요도 높음: 소리가 나고 화면 위에 잠깐 떠오른다
+        nm.createNotificationChannel(new NotificationChannel(CHANNEL, "기록 알림", NotificationManager.IMPORTANCE_HIGH));
         Intent open = new Intent(c, MainActivity.class).putExtra("target", IDS[idx])
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(c, 100 + idx, open,

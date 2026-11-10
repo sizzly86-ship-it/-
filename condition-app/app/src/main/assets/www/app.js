@@ -109,21 +109,42 @@ function normalize(s) {
     if (x.sleep && num(x.sleep.bed) && num(x.sleep.wake) && x.sleep.wake > x.sleep.bed) {
       d.sleep = { bed: num(x.sleep.bed), wake: num(x.sleep.wake), wakeups: Math.max(0, Math.round(num(x.sleep.wakeups) || 0)) };
       if (x.sleep.manual) d.sleep.manual = true;
+      if (x.sleep.prov) d.sleep.prov = true;
     }
     if (x.weather && num(x.weather.tmax) != null && num(x.weather.tmin) != null) {
       d.weather = { tmax: num(x.weather.tmax), tmin: num(x.weather.tmin), rain: num(x.weather.rain), hum: num(x.weather.hum), city: str(x.weather.city, 10), final: !!x.weather.final };
     }
-    if (x.log && typeof x.log === 'object') Object.keys(x.log).forEach(function (id) { var n = num(x.log[id]); if (/^i\d+$/.test(id) && n > 0) d.log[id] = n; });
+    if (x.log && typeof x.log === 'object') Object.keys(x.log).forEach(function (id) {
+      var n = num(x.log[id]);
+      if (/^i\d+$/.test(id) && n > 0) { d.log[id] = n; out.nextId = Math.max(out.nextId, +id.slice(1) + 1); } // 삭제된 항목의 번호도 다시 쓰지 않는다
+    });
     out.days[k] = d;
   });
+  out.nextId = Math.max(out.nextId, Math.round(num(s.nextId)) || 0);
+  if (s.notifAsked) out.notifAsked = true;
   if (out.settings.city === s.weatherCity) { out.weatherAt = num(s.weatherAt) || 0; out.weatherCity = str(s.weatherCity, 10); }
   return out;
 }
-var S;
-try { S = normalize(JSON.parse(N.loadData() || 'null')); } catch (e) { S = freshState(); }
+// 저장 파일이 깨졌으면 새 데이터로 덮어쓰기 전에 따로 보관하고, 하루 전 자동 백업에서 복구를 시도한다
+function tryParse(raw) { try { var j = JSON.parse(raw); return j && j.days ? normalize(j) : null; } catch (e) { return null; } }
+var S = null, loadNote = '';
+(function () {
+  var raw = N.loadData();
+  if (raw) S = tryParse(raw);
+  if (raw && !S) {
+    if (N.quarantine) N.quarantine();
+    var bak = N.loadBackup ? N.loadBackup() : '';
+    S = bak ? tryParse(bak) : null;
+    loadNote = S ? '저장 파일이 손상되어 최근 백업으로 복구했어요' : '저장 파일을 읽지 못해 새로 시작합니다';
+  }
+  if (!S) S = freshState();
+})();
 var ui = { tab: 'today', date: today(), editSleep: false, focus: '' };
 
-function save() { N.saveData(JSON.stringify(S)); }
+var saveTimer = null;
+function save() { clearTimeout(saveTimer); saveTimer = null; N.saveData(JSON.stringify(S)); }
+function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 600); } // 글자 입력 중에는 잠깐 모았다가 저장
+function flush() { if (saveTimer) save(); }
 function day(d) {
   if (!S.days[d]) S.days[d] = { log: {} };
   if (!S.days[d].log) S.days[d].log = {};
@@ -145,6 +166,20 @@ function sleepWindow(d) {
   var end = parse(d); end.setHours(15);
   return [start.getTime(), Math.min(end.getTime(), Date.now())];
 }
+// d일 아침의 수면을 추정해 넣는다. 창(오후 3시)이 닫히기 전의 결과는 임시(prov)로 표시해 두고 나중에 다시 계산한다
+function applySleep(d, sessions) {
+  var w = sleepWindow(d), cur = peek(d).sleep;
+  if (w[1] <= w[0]) return false;
+  var closed = Date.now() >= parse(d).setHours(15);
+  var r = estimateSleep(sessions, w[0], w[1], { minorMin: S.settings.minorMin, minWake: parse(d).setHours(2) });
+  if (r) {
+    day(d).sleep = { bed: r.bed, wake: r.wake, wakeups: r.wakeups };
+    if (!closed) S.days[d].sleep.prov = true;
+    return true;
+  }
+  if (cur && cur.prov && closed) { delete cur.prov; return true; }
+  return false;
+}
 function refreshSleep() {
   if (!N.hasUsageAccess()) return;
   var t = today(), from = sleepWindow(addDays(t, -6))[0], sessions;
@@ -152,11 +187,8 @@ function refreshSleep() {
   var changed = false;
   for (var i = 0; i <= 6; i++) {
     var d = addDays(t, -i), cur = peek(d).sleep;
-    if (cur && (cur.manual || i > 0)) continue; // 지난 날은 한 번 정해지면 그대로, 오늘 것만 계속 갱신
-    var w = sleepWindow(d);
-    if (w[1] <= w[0]) continue;
-    var r = estimateSleep(sessions, w[0], w[1], { minorMin: S.settings.minorMin });
-    if (r) { day(d).sleep = { bed: r.bed, wake: r.wake, wakeups: r.wakeups }; changed = true; }
+    if (cur && (cur.manual || (i > 0 && !cur.prov))) continue; // 직접 입력했거나 이미 확정된 지난 날은 건드리지 않는다
+    if (applySleep(d, sessions)) changed = true;
   }
   if (changed) save();
 }
@@ -231,12 +263,16 @@ function viewToday() {
       '<button class="btn primary" data-act="usage">허용하러 가기</button></div>';
   }
 
+  if (window.Native && remindersOn() && N.notifPermission() !== 'granted') {
+    h += '<div class="card warn"><h2>알림이 꺼져 있어요</h2><p class="sub">출근·퇴근·자기 전 알림을 받으려면 알림 권한을 허용해 주세요.</p><button class="btn primary" data-act="notif">알림 허용하기</button></div>';
+  }
+
   h += '<div class="card" id="sec-morning"><h2>아침 컨디션</h2><p class="sub">자고 일어났을 때 상태 (전날 밤 수면)</p>' + sleepCard(d, dd) +
     scaleButtons('score', 10, dd.score) + '<div class="scalehint"><span>1 최악</span><span>10 최고</span></div>' +
     '<label class="f">메모</label><input type="text" data-field="memo" value="' + esc(dd.memo) + '" placeholder="예: 목이 칼칼함, 개운함"></div>';
 
   var w = dd.weather;
-  h += '<div class="card"><div class="row between"><h2>날씨 · ' + esc(S.settings.city) + '</h2>' +
+  h += '<div class="card"><div class="row between"><h2>날씨 · ' + esc(w && w.city ? w.city : S.settings.city) + '</h2>' +
     (w ? '<span class="sub">일교차 <b>' + range(w) + '°</b></span>' : '') + '</div>' +
     (w ? '<p class="sub">최저 ' + w.tmin + '° / 최고 ' + w.tmax + '°' + (w.hum != null ? ' · 습도 ' + w.hum + '%' : '') + (w.rain ? ' · 강수 ' + w.rain + 'mm' : '') + (w.final ? '' : ' (예보)') + '</p>'
       : '<p class="muted">날씨 정보를 아직 못 가져왔어요 (인터넷 연결 시 자동으로 채워집니다)</p>') + '</div>';
@@ -508,6 +544,7 @@ function autoNightTime() {
   var a = (Math.round((avg(xs) - 30) / 5) * 5 + 1440) % 1440;
   return pad(Math.floor(a / 60)) + ':' + pad(a % 60);
 }
+function remindersOn() { return REMINDERS.some(function (r) { return S.settings.rem[r[0]].on; }); }
 function pushReminders() {
   var rem = JSON.parse(JSON.stringify(S.settings.rem)), at = rem.night.auto ? autoNightTime() : null;
   if (at) rem.night.time = at;
@@ -571,6 +608,14 @@ document.getElementById('view').addEventListener('click', function (e) {
   render();
 });
 
+document.getElementById('view').addEventListener('input', function (e) {
+  var el = e.target;
+  if (!el.dataset.field) return;
+  var dd = day(ui.date); dd[el.dataset.field] = el.value; if (el.dataset.field !== 'memo') dd.touched = true;
+  saveSoon();
+});
+document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
+
 document.getElementById('view').addEventListener('change', function (e) {
   var el = e.target;
   if (el.dataset.field) { var dd = day(ui.date); dd[el.dataset.field] = el.value; if (el.dataset.field !== 'memo') dd.touched = true; save(); }
@@ -588,10 +633,7 @@ document.getElementById('view').addEventListener('change', function (e) {
 function refreshSleepFor(d) {
   if (!N.hasUsageAccess()) return;
   var w = sleepWindow(d);
-  try {
-    var r = estimateSleep(JSON.parse(N.getSessions(String(w[0]), String(w[1]))), w[0], w[1], { minorMin: S.settings.minorMin });
-    if (r) { day(d).sleep = { bed: r.bed, wake: r.wake, wakeups: r.wakeups }; save(); }
-  } catch (e) {}
+  try { if (applySleep(d, JSON.parse(N.getSessions(String(w[0]), String(w[1]))))) save(); } catch (e) {}
 }
 
 /* ---------- 네이티브에서 부르는 콜백 ---------- */
@@ -609,6 +651,9 @@ window.onResume = function () {
   if (target) { ui.tab = 'today'; ui.date = today(); ui.focus = target; }
   else if (ui.tab === 'today' && ui.date === ui.lastToday && ui.date !== today()) ui.date = today();
   ui.lastToday = today();
+  flush();
+  // 알림이 켜져 있는데 권한을 한 번도 묻지 않았으면 처음 한 번 묻는다
+  if (window.Native && remindersOn() && !S.notifAsked && N.notifPermission() !== 'granted') { S.notifAsked = true; save(); N.requestNotif(); }
   refreshSleep(); pushReminders(); render(); refreshWeather();
 };
 
@@ -631,3 +676,4 @@ if (!window.Native && /demo/.test(location.search)) {
 }
 
 window.onResume();
+if (loadNote) toast(loadNote);

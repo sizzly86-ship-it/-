@@ -44,12 +44,14 @@ final class UsageReader {
         Session cur = null;
         boolean locked = true;
         boolean sawKeyguard = false;
+        boolean sawScreen = false; // 화면 켜짐/꺼짐 이벤트를 한 번이라도 봤는지
 
         while (events != null && events.hasNextEvent()) {
             events.getNextEvent(e);
             long t = e.getTimeStamp();
             switch (e.getEventType()) {
                 case SCREEN_INTERACTIVE:
+                    sawScreen = true;
                     if (cur == null) {
                         cur = new Session();
                         cur.start = t;
@@ -59,26 +61,30 @@ final class UsageReader {
                 case KEYGUARD_HIDDEN:
                     sawKeyguard = true;
                     locked = false;
-                    if (cur == null) {
+                    // 화면이 꺼진 채로 잠금만 풀리는 경우(스마트 잠금 등)에 가짜 세션이 열리지 않게 한다
+                    if (cur == null && !sawScreen) {
                         cur = new Session();
                         cur.start = t;
                     }
-                    cur.unlocked = true;
+                    if (cur != null) cur.unlocked = true;
                     break;
                 case KEYGUARD_SHOWN:
                     sawKeyguard = true;
                     locked = true;
                     break;
                 case ACTIVITY_RESUMED:
-                    if (cur == null) {
+                    // 화면이 꺼진 동안 앱이 혼자 뜨는 경우는 세션으로 치지 않는다.
+                    // 조회 시작 전부터 화면이 켜져 있던 경우에만 여기서 세션을 연다
+                    if (cur == null && !sawScreen) {
                         cur = new Session();
                         cur.start = t;
                         cur.unlocked = !locked;
                     }
-                    cur.resumes++;
+                    if (cur != null) cur.resumes++;
                     break;
                 case SCREEN_NON_INTERACTIVE:
                 case DEVICE_SHUTDOWN:
+                    sawScreen = true;
                     if (cur != null) {
                         cur.end = t;
                         out.add(cur);
@@ -100,8 +106,9 @@ final class UsageReader {
             JSONObject o = new JSONObject();
             o.put("s", s.start);
             o.put("e", s.end);
-            // 잠금 화면을 안 쓰는 폰은 잠금 이벤트가 없으므로 앱을 실제로 띄웠는지로 대신 판단한다
-            o.put("u", sawKeyguard ? s.unlocked : s.resumes > 0);
+            // 실제 사용 = 잠금이 풀려 있었고 앱 화면이 하나라도 떴다 (알림으로 화면만 켜진 경우 제외).
+            // 잠금 화면을 안 쓰는 폰은 잠금 이벤트가 없으므로 앱 화면이 떴는지만 본다
+            o.put("u", (s.unlocked || !sawKeyguard) && s.resumes > 0);
             o.put("r", s.resumes);
             arr.put(o);
         }

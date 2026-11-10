@@ -29,6 +29,7 @@
     var isoBeforeMin = opt.isoBeforeMin || 90; // 그 전에 이만큼은 안 만졌어야 하고
     var isoAfterMin = opt.isoAfterMin || 45;   // 그 뒤로도 이만큼은 다시 안 만져야 한다
     var minSleepMin = opt.minSleepMin || 120;
+    var minWake = opt.minWake || 0;            // 이 시각 전에 끝나는 공백은 밤잠으로 보지 않는다 (저녁에 폰 안 본 시간 등)
 
     var blocks = buildBlocks(sessions, winStart, winEnd, clusterGapMin);
     var kept = [], ignored = [];
@@ -45,7 +46,7 @@
     var best = null;
     for (var i = 0; i + 1 < kept.length; i++) {
       var gap = kept[i + 1].s - kept[i].e;
-      if (gap >= minSleepMin * MIN && (!best || gap > best.gap)) {
+      if (gap >= minSleepMin * MIN && kept[i + 1].s >= minWake && (!best || gap > best.gap)) {
         best = { gap: gap, bed: kept[i].e, wake: kept[i + 1].s };
       }
     }

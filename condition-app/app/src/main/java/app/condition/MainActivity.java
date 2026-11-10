@@ -35,7 +35,8 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private boolean pageReady;
-    private String pendingExport;
+    private volatile String pendingExport;
+    private final java.util.ArrayList<String> pendingJs = new java.util.ArrayList<>();
     private volatile String launchTarget = "";
 
     @Override
@@ -59,6 +60,9 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 pageReady = true;
+                // 파일 선택 화면에 다녀오는 사이 화면이 다시 만들어졌으면, 그동안 밀린 결과를 지금 전달한다
+                for (String code : pendingJs) view.evaluateJavascript(code, null);
+                pendingJs.clear();
             }
         });
         web.addJavascriptInterface(new Bridge(), "Native");
@@ -84,7 +88,19 @@ public class MainActivity extends Activity {
     }
 
     private void js(String code) {
-        web.post(() -> web.evaluateJavascript(code, null));
+        web.post(() -> {
+            if (pageReady) web.evaluateJavascript(code, null);
+            else pendingJs.add(code);
+        });
+    }
+
+    private static void copy(File from, File to) throws Exception {
+        try (InputStream is = new FileInputStream(from); FileOutputStream os = new FileOutputStream(to)) {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = is.read(buf)) > 0) os.write(buf, 0, n);
+            os.getFD().sync();
+        }
     }
 
     private File dataFile() {
@@ -138,7 +154,26 @@ public class MainActivity extends Activity {
             try (InputStream is = new FileInputStream(f)) {
                 return readAll(is);
             } catch (Exception ex) {
+                return "ERR"; // 빈 값으로 돌려주면 새 데이터로 덮어써 버리므로 "읽기 실패"임을 알린다
+            }
+        }
+
+        /** 하루에 한 번 자동으로 떠 두는 사본. */
+        @JavascriptInterface
+        public String loadBackup() {
+            try (InputStream is = new FileInputStream(new File(getFilesDir(), "data.bak.json"))) {
+                return readAll(is);
+            } catch (Exception ex) {
                 return "";
+            }
+        }
+
+        /** 읽을 수 없는 저장 파일을 지우지 않고 따로 보관한다. */
+        @JavascriptInterface
+        public void quarantine() {
+            try {
+                copy(dataFile(), new File(getFilesDir(), "data.broken.json"));
+            } catch (Exception ignored) {
             }
         }
 
@@ -152,7 +187,12 @@ public class MainActivity extends Activity {
             } catch (Exception ex) {
                 return;
             }
-            tmp.renameTo(dataFile());
+            File main = dataFile(), bak = new File(getFilesDir(), "data.bak.json");
+            try {
+                if (main.length() > 0 && System.currentTimeMillis() - bak.lastModified() > 24 * 3600_000L) copy(main, bak);
+            } catch (Exception ignored) {
+            }
+            tmp.renameTo(main);
         }
 
         @JavascriptInterface
@@ -195,9 +235,16 @@ public class MainActivity extends Activity {
         public void requestNotif() {
             if (Build.VERSION.SDK_INT < 33) return;
             runOnUiThread(() -> {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
-                        || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIF);
+                String perm = Manifest.permission.POST_NOTIFICATIONS;
+                if (checkSelfPermission(perm) == PackageManager.PERMISSION_GRANTED) return;
+                android.content.SharedPreferences p = getPreferences(MODE_PRIVATE);
+                if (p.getBoolean("notifAsked", false) && !shouldShowRequestPermissionRationale(perm)) {
+                    // 이미 거절해서 시스템이 더는 묻지 않는 상태: 앱 알림 설정 화면을 직접 연다
+                    startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
+                } else {
+                    p.edit().putBoolean("notifAsked", true).apply();
+                    requestPermissions(new String[]{perm}, REQ_NOTIF);
                 }
             });
         }

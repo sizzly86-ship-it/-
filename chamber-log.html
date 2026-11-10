@@ -7,11 +7,11 @@
 <style>
 :root{
   --bg:#f4f5f7; --panel:#fff; --line:#d9dce3; --text:#1c1f26; --sub:#667085;
-  --accent:#2457d6; --accent-weak:#e8eefc; --danger:#c62828; --ok:#1b7f4b; --chip:#eef0f4;
+  --accent:#2457d6; --accent-weak:#e8eefc; --danger:#c62828; --ok:#1b7f4b; --chip:#eef0f4; --today:#fff3c4; --today-line:#e0b400;
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#15171c; --panel:#1f2229; --line:#343843; --text:#e7e9ee; --sub:#9aa3b2;
-    --accent:#7aa2ff; --accent-weak:#263453; --danger:#ff7b7b; --ok:#5fd39a; --chip:#2a2e38; }
+    --accent:#7aa2ff; --accent-weak:#263453; --danger:#ff7b7b; --ok:#5fd39a; --chip:#2a2e38; --today:#4a3f10; --today-line:#b89400; }
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif}
@@ -33,43 +33,51 @@ button{cursor:pointer}
 .btn.sm{padding:2px 8px;font-size:12px}
 .btn.ok{color:var(--ok);border-color:var(--ok)}
 .btn.danger{color:var(--danger)}
-main{max-width:1100px;margin:0 auto;padding:16px}
-.addform{display:grid;grid-template-columns:130px 90px 110px 1fr 120px 1fr auto;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:16px}
-.addform input{width:100%}
-.hint{grid-column:1/-1;color:var(--sub);font-size:12px}
-.layer{margin-bottom:20px}
-.layer-h{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent)}
-.layer-h h2{font-size:15px;margin:0}
+.quick{display:flex;gap:8px;align-items:center;margin-top:8px}
+.quick input{flex:1;font-size:15px;padding:8px 10px;border-color:var(--accent)}
+.quick .hint{color:var(--sub);font-size:12px;white-space:nowrap}
+main{max-width:1400px;margin:0 auto;padding:16px}
+.layer{margin-bottom:22px}
+.layer-h{display:flex;align-items:center;gap:6px;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--accent)}
+.layer-h h2{font-size:15px;margin:0 4px 0 0}
 .layer-h .cnt{color:var(--sub);font-size:12px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
-.card-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.ch{font-weight:700;font-size:15px;background:var(--accent-weak);color:var(--accent);padding:1px 8px;border-radius:4px}
-.wf{color:var(--sub)}
-.sym{font-weight:600}
-.closed-tag{font-size:12px;background:var(--chip);border-radius:4px;padding:1px 6px;color:var(--sub)}
-.acts{list-style:none;margin:8px 0 0;padding:0}
-.acts li{display:flex;gap:8px;align-items:baseline;padding:2px 0;border-top:1px dashed var(--line)}
-.acts li.today{background:var(--accent-weak)}
-.acts .d{width:64px;flex:none;color:var(--sub);font-variant-numeric:tabular-nums}
-.acts .t{flex:1;word-break:break-all}
-.acts .x{visibility:hidden;display:flex;gap:4px}
-.acts li:hover .x{visibility:visible}
-.link{border:0;background:none;color:var(--sub);padding:0 2px;font-size:12px;text-decoration:underline}
-.addact{display:flex;gap:6px;margin-top:8px}
-.addact input[type=text]{flex:1}
+.grid{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.row{display:grid;grid-template-columns:72px 84px 190px 1fr auto;border-top:1px solid var(--line);align-items:stretch}
+.row:first-child{border-top:0}
+.row.head{background:var(--chip);color:var(--sub);font-size:12px}
+.row.head>div{padding:3px 8px}
+.row>*{border-right:1px solid var(--line)}
+.row>*:last-child{border-right:0}
+.row:focus-within:not(.head){background:var(--accent-weak)}
+.chname{border:0;background:none;font-weight:700;font-size:15px;color:var(--accent);text-align:left;padding:4px 8px}
+.chname:hover{text-decoration:underline}
+.cell{border:0;border-radius:0;background:transparent;width:100%;padding:4px 8px}
+.cell.wf{text-align:right}
+.hist{display:flex;flex-wrap:wrap;gap:4px;padding:4px 6px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--chip);border-radius:4px;padding:1px 7px;white-space:nowrap}
+button.chip:hover{border-color:var(--accent)}
+.chip .d{color:var(--sub);margin-right:5px;font-variant-numeric:tabular-nums}
+.chip.today{background:var(--today);border-color:var(--today-line)}
+.rowinput{flex:1;min-width:150px;border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;padding:2px 4px}
+.rowbtn{display:flex;gap:4px;align-items:center;padding:3px 6px}
+.under{display:flex;gap:6px;margin-top:6px}
+.under input{width:320px}
+.closedinfo{padding:4px 8px;font-size:12px;color:var(--sub);white-space:nowrap}
 .empty{color:var(--sub);text-align:center;padding:40px 0}
 .daybar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 .dayrow{display:flex;gap:8px;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;margin-bottom:4px;flex-wrap:wrap}
-.dayrow .what{flex:1;min-width:200px}
+.dayrow b{color:var(--accent)}
+.dayrow .wf,.dayrow .sym{color:var(--sub)}
+.dayrow .what{flex:1;min-width:200px;font-weight:600}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);padding:16px;width:min(420px,92vw)}
 dialog::backdrop{background:rgba(0,0,0,.4)}
 dialog h3{margin:0 0 10px;font-size:15px}
 dialog label{display:block;margin-bottom:8px;font-size:12px;color:var(--sub)}
 dialog label input,dialog label select{display:block;width:100%;margin-top:2px;font-size:14px;color:var(--text)}
 dialog menu{display:flex;justify-content:flex-end;gap:6px;padding:0;margin:12px 0 0}
-#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
-#toast.show{opacity:.92}
-@media (max-width:800px){ .addform{grid-template-columns:1fr 1fr} .acts .x{visibility:visible} }
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+#toast.show{opacity:.94}
+@media (max-width:800px){ .row{grid-template-columns:60px 70px 1fr} .row>.hist,.row>.rowbtn{grid-column:1/-1;border-top:1px dashed var(--line)} .row.head{display:none} .quick .hint{display:none} }
 </style>
 </head>
 <body>
@@ -79,24 +87,28 @@ dialog menu{display:flex;justify-content:flex-end;gap:6px;padding:0;margin:12px 
     <div class="tabs" id="tabs"></div>
     <span class="spacer"></span>
     <select id="layerFilter" title="레이어 필터"></select>
-    <input id="q" type="search" placeholder="검색 (챔버, 증상, 조치)" style="width:200px">
+    <input id="q" type="search" placeholder="검색 (챔버, 증상, 변경 내용)" style="width:210px">
     <button class="btn" id="exportBtn" title="JSON 파일로 백업">백업</button>
     <button class="btn" id="importBtn" title="백업 파일 불러오기">불러오기</button>
     <input type="file" id="importFile" accept=".json,application/json" hidden>
   </div>
+  <form class="quick" id="quickForm" autocomplete="off">
+    <input id="quick" placeholder="빠른 입력:  11A 클린타임 변경   /   11A,11B RF 변경   /   11A 10/30 가스 변경">
+    <span class="hint">챔버 + 내용 → Enter (날짜 생략 시 오늘)</span>
+  </form>
 </header>
 <main id="main"></main>
-<datalist id="layerList"></datalist>
 <dialog id="dlg"></dialog>
 <div id="toast"></div>
 
 <script>
 'use strict';
-const KEY = 'chamberLog.v1';
+const KEY = 'chamberLog.v2', OLD_KEY = 'chamberLog.v1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const natCmp = (a, b) => String(a).localeCompare(String(b), 'ko', {numeric: true, sensitivity: 'base'});
+const same = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = () => iso(new Date());
@@ -104,6 +116,15 @@ function fmtDate(s) {
   if (!s) return '';
   const [y, m, d] = s.split('-');
   return (y === String(new Date().getFullYear()) ? '' : y.slice(2) + '/') + (+m) + '/' + (+d);
+}
+/* "10/30 내용" 처럼 앞에 날짜가 있으면 분리. 미래 날짜가 되면 작년으로 본다. */
+function splitDate(text) {
+  const m = text.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
+  if (!m || +m[1] < 1 || +m[1] > 12 || +m[2] < 1 || +m[2] > 31) return {date: today(), text};
+  const now = new Date();
+  let d = new Date(now.getFullYear(), +m[1] - 1, +m[2]);
+  if (d - now > 86400000) d = new Date(now.getFullYear() - 1, +m[1] - 1, +m[2]);
+  return {date: iso(d), text: m[3].trim()};
 }
 
 let S = load();
@@ -113,18 +134,42 @@ let dayDate = today();
 function load() {
   try {
     const r = JSON.parse(localStorage.getItem(KEY));
-    if (r && Array.isArray(r.issues)) return r;
+    if (r && Array.isArray(r.layers)) return normalize(r);
   } catch (e) {}
-  return {issues: []};
+  try { // 이전 버전(카드형) 데이터 변환
+    const o = JSON.parse(localStorage.getItem(OLD_KEY));
+    if (o && Array.isArray(o.issues)) {
+      const s = {layers: [], archive: []};
+      for (const i of o.issues) {
+        if (i.status === 'closed') { s.archive.push({id: i.id, layer: i.layer, chamber: i.chamber, wafers: i.wafers || '', symptom: i.symptom || '', actions: i.actions || [], closedAt: i.closedAt, closeReason: i.closeReason, closeMemo: i.closeMemo || ''}); continue; }
+        let L = s.layers.find(l => same(l.name, i.layer));
+        if (!L) s.layers.push(L = {id: uid(), name: i.layer, chambers: []});
+        const c = L.chambers.find(c => same(c.name, i.chamber));
+        if (c) c.actions.push(...(i.actions || []));
+        else L.chambers.push({id: uid(), name: i.chamber, wafers: i.wafers || '', symptom: i.symptom || '', actions: i.actions || []});
+      }
+      return s;
+    }
+  } catch (e) {}
+  return {layers: [], archive: []};
 }
-function save() {
+function normalize(s) {
+  s.archive = Array.isArray(s.archive) ? s.archive : [];
+  for (const l of s.layers) {
+    l.id = l.id || uid(); l.chambers = Array.isArray(l.chambers) ? l.chambers : [];
+    for (const c of l.chambers) { c.id = c.id || uid(); c.wafers = c.wafers || ''; c.symptom = c.symptom || ''; c.actions = Array.isArray(c.actions) ? c.actions : []; }
+  }
+  for (const a of s.archive) { a.id = a.id || uid(); a.actions = Array.isArray(a.actions) ? a.actions : []; }
+  return s;
+}
+function persist() {
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
   catch (e) { toast('브라우저 저장 실패 - 백업 버튼으로 파일 저장하세요'); }
-  render();
 }
+function save() { persist(); render(); }
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
-  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 1800);
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 2200);
 }
 async function copy(text) {
   try { await navigator.clipboard.writeText(text); }
@@ -136,44 +181,32 @@ async function copy(text) {
 }
 
 /* ---------- 데이터 헬퍼 ---------- */
-const issueById = id => S.issues.find(i => i.id === id);
-const sortedActs = i => [...i.actions].sort((a, b) => a.date.localeCompare(b.date));
-const layers = () => [...new Set(S.issues.map(i => i.layer))].sort(natCmp);
-const headLine = i => `${i.chamber} ${i.wafers ? i.wafers + '매 ' : ''}${i.symptom}`;
-function issueLine(i) {
-  const acts = sortedActs(i).map(a => `${fmtDate(a.date)} ${a.text}`).join(', ');
-  let s = headLine(i) + (acts ? ' ' + acts : '');
-  if (i.status === 'closed') s += ` → ${fmtDate(i.closedAt)} ${i.closeReason}${i.closeMemo ? ' ' + i.closeMemo : ''}`;
-  return s;
+const sortedActs = c => [...c.actions].sort((a, b) => a.date.localeCompare(b.date));
+const hasContent = c => !!(c.wafers || c.symptom || c.actions.length);
+const headLine = (name, c) => [name, c.wafers ? c.wafers + '매' : '', c.symptom].filter(Boolean).join(' ');
+const actsLine = c => sortedActs(c).map(a => `${fmtDate(a.date)} ${a.text}`).join(', ');
+const chLine = c => [headLine(c.name, c), actsLine(c)].filter(Boolean).join(' ');
+const arLine = a => [headLine(a.chamber, a), actsLine(a)].filter(Boolean).join(' ') + ` → ${fmtDate(a.closedAt)} ${a.closeReason}${a.closeMemo ? ' ' + a.closeMemo : ''}`;
+function findCh(cid) {
+  for (const layer of S.layers) { const ch = layer.chambers.find(c => c.id === cid); if (ch) return {layer, ch}; }
+  return {};
 }
-function visibleIssues(status) {
-  const q = $('#q').value.trim().toLowerCase();
-  const lf = $('#layerFilter').value;
-  return S.issues.filter(i => {
-    if (status && i.status !== status) return false;
-    if (lf && i.layer !== lf) return false;
-    if (!q) return true;
-    return [i.layer, i.chamber, i.wafers, i.symptom, i.closeReason, i.closeMemo, ...i.actions.map(a => a.text)]
-      .join(' ').toLowerCase().includes(q);
-  });
-}
-function groupByLayer(list) {
-  const m = new Map();
-  for (const i of list) { if (!m.has(i.layer)) m.set(i.layer, []); m.get(i.layer).push(i); }
-  return [...m.entries()].sort((a, b) => natCmp(a[0], b[0]));
-}
+const lf = () => $('#layerFilter').value;
+const query = () => $('#q').value.trim().toLowerCase();
+const match = (...parts) => { const q = query(); return !q || parts.join(' ').toLowerCase().includes(q); };
 
 /* ---------- 입력 대화상자 ---------- */
-function ask(title, fields, okLabel = '저장') {
+function ask(title, fields, okLabel = '저장', extra) {
   return new Promise(res => {
     const dlg = $('#dlg');
     dlg.innerHTML = `<form method="dialog"><h3>${esc(title)}</h3>` + fields.map(f => {
       if (f.type === 'select')
         return `<label>${esc(f.label)}<select name="${f.name}">${f.options.map(o => `<option${o === f.value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
-      return `<label>${esc(f.label)}<input name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value ?? '')}"${f.list ? ` list="${f.list}"` : ''}${f.required ? ' required' : ''} autocomplete="off"></label>`;
-    }).join('') + `<menu><button class="btn" value="cancel" formnovalidate>취소</button><button class="btn primary" value="ok">${esc(okLabel)}</button></menu></form>`;
+      return `<label>${esc(f.label)}<input name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value ?? '')}"${f.required ? ' required' : ''} autocomplete="off"></label>`;
+    }).join('') + `<menu>${extra ? `<button class="btn danger" value="extra" formnovalidate>${esc(extra)}</button><span class="spacer"></span>` : ''}<button class="btn" value="cancel" formnovalidate>취소</button><button class="btn primary" value="ok">${esc(okLabel)}</button></menu></form>`;
     dlg.returnValue = '';
     dlg.onclose = () => {
+      if (dlg.returnValue === 'extra') return res({_extra: true});
       if (dlg.returnValue !== 'ok') return res(null);
       const o = {};
       for (const f of fields) o[f.name] = dlg.querySelector(`[name="${f.name}"]`).value.trim();
@@ -185,88 +218,86 @@ function ask(title, fields, okLabel = '저장') {
 
 /* ---------- 렌더링 ---------- */
 function render() {
-  const nOpen = S.issues.filter(i => i.status === 'open').length;
-  const nClosed = S.issues.length - nOpen;
-  const nToday = dayEntries(today()).length;
-  $('#tabs').innerHTML = [['open', '진행중', nOpen], ['day', '일자별 변경분', nToday], ['closed', '종료 이력', nClosed]]
+  const nOpen = S.layers.reduce((n, l) => n + l.chambers.filter(hasContent).length, 0);
+  $('#tabs').innerHTML = [['open', '진행중', nOpen], ['day', '일자별 변경분', dayEntries(today(), true).length], ['closed', '종료 이력', S.archive.length]]
     .map(([k, l, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${l}<span class="n">${n}</span></button>`).join('');
 
-  const lf = $('#layerFilter'), cur = lf.value, ls = layers();
-  lf.innerHTML = '<option value="">전체 레이어</option>' + ls.map(l => `<option${l === cur ? ' selected' : ''}>${esc(l)}</option>`).join('');
-  $('#layerList').innerHTML = ls.map(l => `<option value="${esc(l)}">`).join('');
+  const sel = $('#layerFilter'), cur = sel.value;
+  const names = [...new Set([...S.layers.map(l => l.name), ...S.archive.map(a => a.layer)])];
+  sel.innerHTML = '<option value="">전체 레이어</option>' + names.map(n => `<option${n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('');
+  $('#quickForm').style.display = tab === 'open' ? '' : 'none';
 
-  const main = $('#main');
-  if (tab === 'open') main.innerHTML = addFormHtml() + listHtml('open');
-  else if (tab === 'closed') main.innerHTML = listHtml('closed');
-  else main.innerHTML = dayHtml();
+  $('#main').innerHTML = tab === 'open' ? openHtml() : tab === 'closed' ? closedHtml() : dayHtml();
 }
 
-function addFormHtml() {
-  return `<form class="addform" id="addForm" autocomplete="off">
-    <input name="layer" list="layerList" placeholder="레이어 (구분)" required>
-    <input name="chamber" placeholder="챔버" required>
-    <input name="wafers" placeholder="최초 누적매수" inputmode="numeric">
-    <input name="symptom" placeholder="증상 (예: 센터맵 다발)" required>
-    <input name="date" type="date" value="${today()}" title="조치 날짜">
-    <input name="action" placeholder="조치 내용 (선택)">
-    <button class="btn primary">등록</button>
-    <div class="hint">챔버 칸에 <b>11A 2232매 센터맵 다발</b> 처럼 한 줄로 적고 Tab 을 누르면 자동으로 나뉩니다. 레이어는 새 이름을 적으면 새 구분이 생깁니다.</div>
-  </form>`;
+function chip(a, editable) {
+  const cls = 'chip' + (a.date === today() ? ' today' : '');
+  const inner = `<span class="d">${fmtDate(a.date)}</span>${esc(a.text)}`;
+  return editable ? `<button class="${cls}" data-act="editAct" data-aid="${a.id}" title="눌러서 수정/삭제">${inner}</button>` : `<span class="${cls}">${inner}</span>`;
 }
 
-function listHtml(status) {
-  const groups = groupByLayer(visibleIssues(status));
-  if (!groups.length) return `<div class="empty">${status === 'open' ? '진행중인 이슈가 없습니다.' : '종료된 이력이 없습니다.'}</div>`;
-  return groups.map(([layer, list]) => {
-    list.sort(status === 'open' ? (a, b) => natCmp(a.chamber, b.chamber) : (a, b) => (b.closedAt || '').localeCompare(a.closedAt || ''));
-    return `<section class="layer">
-      <div class="layer-h"><h2>${esc(layer)}</h2><span class="cnt">${list.length}건</span><span class="spacer"></span>
-        <button class="btn sm" data-act="copyLayer" data-layer="${esc(layer)}" data-status="${status}">전체 복사</button>
-        <button class="btn sm" data-act="renameLayer" data-layer="${esc(layer)}">이름 변경</button></div>
-      ${list.map(cardHtml).join('')}</section>`;
+function openHtml() {
+  const f = lf();
+  const secs = S.layers.filter(l => !f || l.name === f).map((l, idx) => {
+    const rows = [...l.chambers].sort((a, b) => natCmp(a.name, b.name))
+      .filter(c => match(l.name, c.name, c.wafers, c.symptom, ...c.actions.map(a => a.text)));
+    return `<section class="layer" data-lid="${l.id}">
+      <div class="layer-h"><h2>${esc(l.name)}</h2><span class="cnt">진행 ${l.chambers.filter(hasContent).length} / 챔버 ${l.chambers.length}</span><span class="spacer"></span>
+        <button class="btn sm" data-act="copyLayer">전체 복사</button>
+        <button class="btn sm" data-act="layerUp" title="위로">▲</button><button class="btn sm" data-act="layerDown" title="아래로">▼</button>
+        <button class="btn sm" data-act="renameLayer">이름 변경</button><button class="btn sm danger" data-act="delLayer">삭제</button></div>
+      ${rows.length ? `<div class="grid"><div class="row head"><div>챔버</div><div>최초매수</div><div>증상</div><div>변경 이력 →</div><div></div></div>
+      ${rows.map(c => `<div class="row" data-cid="${c.id}">
+        <button class="chname" data-act="editCh" title="챔버 이름 변경/삭제">${esc(c.name)}</button>
+        <input class="cell wf" data-col="wafers" value="${esc(c.wafers)}" inputmode="numeric" placeholder="매수">
+        <input class="cell" data-col="symptom" value="${esc(c.symptom)}" placeholder="증상">
+        <div class="hist">${sortedActs(c).map(a => chip(a, true)).join('')}<input class="rowinput" data-col="act" placeholder="+ 변경 내용 입력 후 Enter"></div>
+        <div class="rowbtn"><button class="btn sm" data-act="copyCh">복사</button><button class="btn sm ok" data-act="closeCh">완료</button></div>
+      </div>`).join('')}</div>` : (l.chambers.length ? '' : '<div class="empty" style="padding:12px 0">아래 칸에 챔버 이름을 적어 추가하세요.</div>')}
+      <form class="under" data-form="addCh" autocomplete="off"><input name="names" placeholder="챔버 추가 (여러 개: 11A 11B 12A)" required><button class="btn sm">추가</button></form>
+    </section>`;
   }).join('');
+  return (secs || '<div class="empty">레이어가 없습니다. 아래에서 레이어를 먼저 추가하세요.</div>') +
+    `<form class="under" data-form="addLayer" autocomplete="off" style="margin-top:24px"><input name="name" placeholder="새 레이어 이름" required><button class="btn">레이어 추가</button></form>`;
 }
 
-function cardHtml(i) {
-  const open = i.status === 'open', t = today();
-  return `<div class="card" data-id="${i.id}">
-    <div class="card-h">
-      <span class="ch">${esc(i.chamber)}</span>
-      ${i.wafers ? `<span class="wf">${esc(i.wafers)}매</span>` : ''}
-      <span class="sym">${esc(i.symptom)}</span>
-      ${open ? '' : `<span class="closed-tag">${fmtDate(i.closedAt)} ${esc(i.closeReason)}${i.closeMemo ? ' · ' + esc(i.closeMemo) : ''}</span>`}
-      <span class="spacer"></span>
-      <button class="btn sm" data-act="copyIssue">복사</button>
-      <button class="btn sm" data-act="editIssue">수정</button>
-      ${open ? '<button class="btn sm ok" data-act="closeIssue">수리/PM 완료</button>'
-             : '<button class="btn sm" data-act="reopen">진행중으로 되돌리기</button><button class="btn sm danger" data-act="delIssue">삭제</button>'}
-    </div>
-    <ul class="acts">${sortedActs(i).map(a => `<li data-aid="${a.id}" class="${a.date === t ? 'today' : ''}">
-      <span class="d">${fmtDate(a.date)}</span><span class="t">${esc(a.text)}</span>
-      <span class="x"><button class="link" data-act="editAct">수정</button><button class="link" data-act="delAct">삭제</button></span></li>`).join('')}</ul>
-    ${open ? `<form class="addact" data-act="addAct"><input type="date" name="date" value="${t}"><input type="text" name="text" placeholder="조치 추가 후 Enter" required autocomplete="off"><button class="btn sm">추가</button></form>` : ''}
-  </div>`;
+function closedHtml() {
+  const f = lf();
+  const list = S.archive.filter(a => (!f || a.layer === f) && match(a.layer, a.chamber, a.wafers, a.symptom, a.closeReason, a.closeMemo, ...a.actions.map(x => x.text)));
+  if (!list.length) return '<div class="empty">종료된 이력이 없습니다.</div>';
+  const m = new Map();
+  for (const a of list) { if (!m.has(a.layer)) m.set(a.layer, []); m.get(a.layer).push(a); }
+  return [...m.entries()].map(([name, as]) => `<section class="layer">
+    <div class="layer-h"><h2>${esc(name)}</h2><span class="cnt">${as.length}건</span><span class="spacer"></span>
+      <button class="btn sm" data-act="copyArLayer" data-layer="${esc(name)}">전체 복사</button></div>
+    <div class="grid"><div class="row head"><div>챔버</div><div>최초매수</div><div>증상</div><div>변경 이력 → 종료</div><div></div></div>
+    ${as.sort((a, b) => (b.closedAt || '').localeCompare(a.closedAt || '') || natCmp(a.chamber, b.chamber)).map(a => `<div class="row" data-arid="${a.id}">
+      <div class="chname">${esc(a.chamber)}</div>
+      <div class="cell wf">${esc(a.wafers)}</div>
+      <div class="cell">${esc(a.symptom)}</div>
+      <div class="hist">${sortedActs(a).map(x => chip(x)).join('')}<span class="closedinfo">→ ${fmtDate(a.closedAt)} ${esc(a.closeReason)}${a.closeMemo ? ' · ' + esc(a.closeMemo) : ''}</span></div>
+      <div class="rowbtn"><button class="btn sm" data-act="copyAr">복사</button><button class="btn sm" data-act="restore">되돌리기</button><button class="btn sm danger" data-act="delAr">삭제</button></div>
+    </div>`).join('')}</div></section>`).join('');
 }
 
-function dayEntries(d) {
+function dayEntries(d, all) {
   const out = [];
-  for (const i of S.issues) {
-    for (const a of i.actions) if (a.date === d) out.push({issue: i, text: a.text});
-    if (i.status === 'closed' && i.closedAt === d) out.push({issue: i, text: `[종료] ${i.closeReason}${i.closeMemo ? ' ' + i.closeMemo : ''}`});
+  for (const l of S.layers) for (const c of l.chambers) for (const a of c.actions)
+    if (a.date === d) out.push({layer: l.name, chamber: c.name, wafers: c.wafers, symptom: c.symptom, text: a.text});
+  for (const r of S.archive) {
+    for (const a of r.actions) if (a.date === d) out.push({layer: r.layer, chamber: r.chamber, wafers: r.wafers, symptom: r.symptom, text: a.text});
+    if (r.closedAt === d) out.push({layer: r.layer, chamber: r.chamber, wafers: r.wafers, symptom: r.symptom, text: `[종료] ${r.closeReason}${r.closeMemo ? ' ' + r.closeMemo : ''}`});
   }
-  const lf = $('#layerFilter').value, q = $('#q').value.trim().toLowerCase();
-  return out.filter(e => (!lf || e.issue.layer === lf) && (!q || (headLine(e.issue) + ' ' + e.text + ' ' + e.issue.layer).toLowerCase().includes(q)));
+  if (all) return out;
+  const f = lf();
+  return out.filter(e => (!f || e.layer === f) && match(e.layer, e.chamber, e.symptom, e.text));
 }
 function dayGroups(d) {
   const m = new Map();
-  for (const e of dayEntries(d)) { if (!m.has(e.issue.layer)) m.set(e.issue.layer, []); m.get(e.issue.layer).push(e); }
-  return [...m.entries()].sort((a, b) => natCmp(a[0], b[0]))
-    .map(([l, es]) => [l, es.sort((a, b) => natCmp(a.issue.chamber, b.issue.chamber))]);
+  for (const e of dayEntries(d)) { if (!m.has(e.layer)) m.set(e.layer, []); m.get(e.layer).push(e); }
+  return [...m.entries()].map(([l, es]) => [l, es.sort((a, b) => natCmp(a.chamber, b.chamber))]);
 }
-function dayText(d) {
-  return `[${fmtDate(d)} 변경분]\n` + dayGroups(d).map(([l, es]) =>
-    `■ ${l}\n` + es.map(e => `${headLine(e.issue)} - ${e.text}`).join('\n')).join('\n');
-}
+const dayText = d => `[${fmtDate(d)} 변경분]\n` + dayGroups(d).map(([l, es]) => `■ ${l}\n` + es.map(e => `${headLine(e.chamber, e)} - ${e.text}`).join('\n')).join('\n');
 function dayHtml() {
   const groups = dayGroups(dayDate);
   return `<div class="daybar">
@@ -279,97 +310,158 @@ function dayHtml() {
     </div>` +
     (groups.length ? groups.map(([l, es]) => `<section class="layer">
       <div class="layer-h"><h2>${esc(l)}</h2><span class="cnt">${es.length}건</span></div>
-      ${es.map(e => `<div class="dayrow"><span class="ch">${esc(e.issue.chamber)}</span>
-        ${e.issue.wafers ? `<span class="wf">${esc(e.issue.wafers)}매</span>` : ''}<span class="sym">${esc(e.issue.symptom)}</span>
-        <span class="what">${esc(e.text)}</span></div>`).join('')}</section>`).join('')
+      ${es.map(e => `<div class="dayrow"><b>${esc(e.chamber)}</b>${e.wafers ? `<span class="wf">${esc(e.wafers)}매</span>` : ''}<span class="sym">${esc(e.symptom)}</span><span class="what">${esc(e.text)}</span></div>`).join('')}</section>`).join('')
       : `<div class="empty">${fmtDate(dayDate)} 에 기록된 변경이 없습니다.</div>`);
 }
 
 /* ---------- 이벤트 ---------- */
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; render(); } });
-$('#q').addEventListener('input', () => { const p = $('#q').selectionStart; render(); $('#q').focus(); $('#q').setSelectionRange(p, p); });
+$('#q').addEventListener('input', render);
 $('#layerFilter').addEventListener('change', render);
 
+function addAction(ch, raw) {
+  const {date, text} = splitDate(raw.trim());
+  if (!text) return false;
+  ch.actions.push({id: uid(), date, text});
+  return true;
+}
+
+/* 빠른 입력: "11A 내용", "11A,11B 내용", "11A 10/30 내용" */
+$('#quickForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('#quick').value.trim();
+  const m = v.match(/^(\S+)\s+(.+)$/);
+  if (!m) return toast('형식: 챔버 내용  (예: 11A 클린타임 변경)');
+  const f = lf(), targets = [];
+  for (const name of m[1].split(',').filter(Boolean)) {
+    const hits = [];
+    for (const l of S.layers) if (!f || l.name === f) for (const c of l.chambers) if (same(c.name, name)) hits.push({l, c});
+    if (!hits.length) return toast(`챔버 "${name}" 이(가) 없습니다. 먼저 챔버를 추가하세요.`);
+    if (hits.length > 1) return toast(`"${name}" 이(가) 여러 레이어(${hits.map(h => h.l.name).join(', ')})에 있습니다. 오른쪽 위에서 레이어를 선택하세요.`);
+    targets.push(hits[0].c);
+  }
+  targets.forEach(c => addAction(c, m[2]));
+  $('#quick').value = '';
+  save(); $('#quick').focus();
+  toast(`${targets.map(c => c.name).join(', ')} 에 추가했습니다`);
+});
+
+$('#main').addEventListener('keydown', e => {
+  const t = e.target, col = t.dataset?.col;
+  if (!col || e.isComposing) return;
+  const row = t.closest('.row');
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (col === 'act') {
+      const {ch} = findCh(row.dataset.cid);
+      if (ch && addAction(ch, t.value)) { save(); document.querySelector(`.row[data-cid="${ch.id}"] .rowinput`)?.focus(); }
+    } else row.querySelector(col === 'wafers' ? '[data-col=symptom]' : '[data-col=act]').focus();
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    const all = [...document.querySelectorAll(`#main [data-col="${col}"]`)];
+    const n = all[all.indexOf(t) + (e.key === 'ArrowDown' ? 1 : -1)];
+    if (n) { e.preventDefault(); n.focus(); n.select?.(); }
+  }
+});
+
 $('#main').addEventListener('change', e => {
-  if (e.target.id === 'dayDate' && e.target.value) { dayDate = e.target.value; render(); }
-  if (e.target.name === 'chamber' && e.target.form?.id === 'addForm') {
-    const m = e.target.value.trim().match(/^(\S+)\s+([\d,]+)\s*매\s*(.*)$/);
-    if (m) {
-      const f = e.target.form;
-      f.chamber.value = m[1]; f.wafers.value = m[2].replace(/,/g, '');
-      if (m[3] && !f.symptom.value) f.symptom.value = m[3];
-    }
+  const t = e.target;
+  if (t.id === 'dayDate' && t.value) { dayDate = t.value; render(); return; }
+  const col = t.dataset.col;
+  if (col === 'wafers' || col === 'symptom') {
+    const {ch} = findCh(t.closest('.row').dataset.cid);
+    if (!ch) return;
+    ch[col] = col === 'wafers' ? t.value.replace(/[^\d]/g, '') : t.value.trim();
+    t.value = ch[col];
+    persist(); // 포커스를 유지하려고 화면은 다시 그리지 않음
   }
 });
 
 $('#main').addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target;
-  if (f.id === 'addForm') {
-    const v = n => f[n].value.trim();
-    const layer = v('layer'), chamber = v('chamber'), action = v('action'), date = v('date') || today();
-    const dup = S.issues.find(i => i.status === 'open' && i.layer === layer && i.chamber.toLowerCase() === chamber.toLowerCase());
-    if (dup) {
-      if (action) {
-        if (confirm(`${layer} ${chamber} 은(는) 이미 진행중입니다.\n\n[확인] 기존 카드에 조치만 추가\n[취소] 새 이슈로 따로 등록`)) {
-          dup.actions.push({id: uid(), date, text: action}); save(); toast('기존 카드에 조치를 추가했습니다'); return;
-        }
-      } else if (!confirm(`${layer} ${chamber} 은(는) 이미 진행중입니다. 그래도 새로 등록할까요?`)) return;
+  if (f.dataset.form === 'addLayer') {
+    const name = f.name.value.trim();
+    if (S.layers.some(l => same(l.name, name))) return toast('같은 이름의 레이어가 이미 있습니다');
+    const l = {id: uid(), name, chambers: []};
+    S.layers.push(l); save();
+    document.querySelector(`.layer[data-lid="${l.id}"] [name=names]`)?.focus();
+  } else if (f.dataset.form === 'addCh') {
+    const l = S.layers.find(l => l.id === f.closest('.layer').dataset.lid);
+    const skipped = [];
+    for (const name of f.names.value.split(/[\s,]+/).filter(Boolean)) {
+      if (l.chambers.some(c => same(c.name, name))) skipped.push(name);
+      else l.chambers.push({id: uid(), name, wafers: '', symptom: '', actions: []});
     }
-    S.issues.push({id: uid(), layer, chamber, wafers: v('wafers').replace(/[^\d]/g, ''), symptom: v('symptom'),
-      status: 'open', createdAt: today(), actions: action ? [{id: uid(), date, text: action}] : []});
     save();
-    $('#addForm').layer.value = layer; $('#addForm').chamber.focus();
-  } else if (f.dataset.act === 'addAct') {
-    const i = issueById(f.closest('.card').dataset.id);
-    i.actions.push({id: uid(), date: f.date.value || today(), text: f.text.value.trim()});
-    save();
-    document.querySelector(`.card[data-id="${i.id}"] .addact input[type=text]`)?.focus();
+    if (skipped.length) toast(`이미 있는 챔버는 건너뜀: ${skipped.join(', ')}`);
+    document.querySelector(`.layer[data-lid="${l.id}"] [name=names]`)?.focus();
   }
 });
 
 $('#main').addEventListener('click', async e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
   const act = b.dataset.act;
-  const card = b.closest('.card'), i = card && issueById(card.dataset.id);
-  const aid = b.closest('li')?.dataset.aid;
+  const lid = b.closest('.layer')?.dataset.lid, layer = S.layers.find(l => l.id === lid), li = S.layers.indexOf(layer);
+  const {ch, layer: chLayer} = findCh(b.closest('.row')?.dataset.cid);
+  const ar = S.archive.find(a => a.id === b.closest('.row')?.dataset.arid);
 
-  if (act === 'copyIssue') copy(issueLine(i));
-  else if (act === 'copyLayer') {
-    const list = visibleIssues(b.dataset.status).filter(x => x.layer === b.dataset.layer).sort((a, c) => natCmp(a.chamber, c.chamber));
-    copy(`■ ${b.dataset.layer}\n` + list.map(issueLine).join('\n'));
+  if (act === 'copyCh') copy(chLine(ch));
+  else if (act === 'copyLayer') copy(`■ ${layer.name}\n` + [...layer.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(chLine).join('\n'));
+  else if (act === 'layerUp' || act === 'layerDown') {
+    const j = li + (act === 'layerUp' ? -1 : 1);
+    if (j >= 0 && j < S.layers.length) { [S.layers[li], S.layers[j]] = [S.layers[j], S.layers[li]]; save(); }
   }
   else if (act === 'renameLayer') {
-    const old = b.dataset.layer;
-    const r = await ask('레이어 이름 변경', [{name: 'layer', label: '레이어 이름 (기존 다른 레이어 이름을 적으면 합쳐집니다)', value: old, list: 'layerList', required: true}]);
-    if (r && r.layer && r.layer !== old) { S.issues.forEach(x => { if (x.layer === old) x.layer = r.layer; }); save(); }
+    const r = await ask('레이어 이름 변경', [{name: 'name', label: '레이어 이름', value: layer.name, required: true}]);
+    if (!r || !r.name || r.name === layer.name) return;
+    if (S.layers.some(l => l !== layer && same(l.name, r.name))) return toast('같은 이름의 레이어가 이미 있습니다');
+    S.archive.forEach(a => { if (a.layer === layer.name) a.layer = r.name; });
+    layer.name = r.name; save();
   }
-  else if (act === 'editIssue') {
-    const r = await ask('이슈 수정', [
-      {name: 'layer', label: '레이어', value: i.layer, list: 'layerList', required: true},
-      {name: 'chamber', label: '챔버', value: i.chamber, required: true},
-      {name: 'wafers', label: '최초 누적매수', value: i.wafers},
-      {name: 'symptom', label: '증상', value: i.symptom, required: true}]);
-    if (r) { Object.assign(i, r, {wafers: r.wafers.replace(/[^\d]/g, '')}); save(); }
+  else if (act === 'delLayer') {
+    const n = layer.chambers.filter(hasContent).length;
+    if (confirm(`레이어 "${layer.name}" 을(를) 삭제할까요?` + (n ? `\n\n진행중인 챔버 ${n}개의 내용도 함께 사라집니다. 되돌릴 수 없습니다.` : ''))) { S.layers.splice(li, 1); save(); }
   }
-  else if (act === 'closeIssue') {
-    const r = await ask(`${i.chamber} 종료 처리`, [
+  else if (act === 'editCh') {
+    const r = await ask('챔버', [{name: 'name', label: '챔버 이름', value: ch.name, required: true}], '저장', '챔버 삭제');
+    if (!r) return;
+    if (r._extra) {
+      if (confirm(`챔버 "${ch.name}" 줄을 삭제할까요?` + (hasContent(ch) ? '\n적힌 내용도 함께 사라집니다.' : ''))) { chLayer.chambers = chLayer.chambers.filter(c => c !== ch); save(); }
+    } else if (r.name) {
+      if (chLayer.chambers.some(c => c !== ch && same(c.name, r.name))) return toast('같은 이름의 챔버가 이미 있습니다');
+      ch.name = r.name; save();
+    }
+  }
+  else if (act === 'editAct') {
+    const a = ch.actions.find(x => x.id === b.dataset.aid);
+    const r = await ask(`${ch.name} 변경 내용`, [{name: 'date', label: '날짜', type: 'date', value: a.date, required: true}, {name: 'text', label: '내용', value: a.text, required: true}], '저장', '삭제');
+    if (!r) return;
+    if (r._extra) ch.actions = ch.actions.filter(x => x !== a); else Object.assign(a, r);
+    save();
+  }
+  else if (act === 'closeCh') {
+    if (!hasContent(ch)) return toast('적힌 내용이 없는 챔버입니다');
+    const r = await ask(`${ch.name} 종료 처리`, [
       {name: 'closeReason', label: '사유', type: 'select', options: ['PM', '수리', '기타'], value: 'PM'},
       {name: 'closedAt', label: '종료일', type: 'date', value: today(), required: true},
       {name: 'closeMemo', label: '메모 (선택)', value: ''}], '종료 이력으로 이동');
-    if (r) { Object.assign(i, r, {status: 'closed'}); save(); toast('종료 이력으로 옮겼습니다'); }
+    if (!r) return;
+    S.archive.push({id: uid(), layer: chLayer.name, chamber: ch.name, wafers: ch.wafers, symptom: ch.symptom, actions: ch.actions, ...r});
+    Object.assign(ch, {wafers: '', symptom: '', actions: []});
+    save(); toast(`${ch.name} 을(를) 종료 이력으로 옮기고 줄을 비웠습니다`);
   }
-  else if (act === 'reopen') { i.status = 'open'; delete i.closedAt; delete i.closeReason; delete i.closeMemo; save(); toast('진행중으로 되돌렸습니다'); }
-  else if (act === 'delIssue') { if (confirm(`${headLine(i)}\n\n이 이력을 완전히 삭제할까요? 되돌릴 수 없습니다.`)) { S.issues = S.issues.filter(x => x !== i); save(); } }
-  else if (act === 'editAct') {
-    const a = i.actions.find(x => x.id === aid);
-    const r = await ask('조치 수정', [{name: 'date', label: '날짜', type: 'date', value: a.date, required: true}, {name: 'text', label: '내용', value: a.text, required: true}]);
-    if (r) { Object.assign(a, r); save(); }
+  else if (act === 'copyAr') copy(arLine(ar));
+  else if (act === 'copyArLayer') copy(`■ ${b.dataset.layer}\n` + S.archive.filter(a => a.layer === b.dataset.layer).map(arLine).join('\n'));
+  else if (act === 'restore') {
+    let l = S.layers.find(l => same(l.name, ar.layer));
+    if (!l) S.layers.push(l = {id: uid(), name: ar.layer, chambers: []});
+    let c = l.chambers.find(c => same(c.name, ar.chamber));
+    if (c && hasContent(c)) return toast(`${ar.chamber} 줄에 이미 진행중인 내용이 있어 되돌릴 수 없습니다`);
+    if (!c) l.chambers.push(c = {id: uid(), name: ar.chamber});
+    Object.assign(c, {wafers: ar.wafers, symptom: ar.symptom, actions: ar.actions});
+    S.archive = S.archive.filter(a => a !== ar); save(); toast('진행중으로 되돌렸습니다');
   }
-  else if (act === 'delAct') {
-    const a = i.actions.find(x => x.id === aid);
-    if (confirm(`"${fmtDate(a.date)} ${a.text}" 조치를 삭제할까요?`)) { i.actions = i.actions.filter(x => x !== a); save(); }
-  }
+  else if (act === 'delAr') { if (confirm(`${arLine(ar)}\n\n이 이력을 완전히 삭제할까요? 되돌릴 수 없습니다.`)) { S.archive = S.archive.filter(a => a !== ar); save(); } }
   else if (act === 'dayShift') { const d = new Date(dayDate + 'T00:00:00'); d.setDate(d.getDate() + (+b.dataset.n)); dayDate = iso(d); render(); }
   else if (act === 'dayToday') { dayDate = today(); render(); }
   else if (act === 'copyDay') copy(dayText(dayDate));
@@ -385,10 +477,9 @@ $('#importFile').addEventListener('change', async e => {
   const file = e.target.files[0]; e.target.value = ''; if (!file) return;
   try {
     const d = JSON.parse(await file.text());
-    if (!d || !Array.isArray(d.issues)) throw 0;
-    if (!confirm(`백업 파일(${d.issues.length}건)로 현재 데이터(${S.issues.length}건)를 덮어씁니다. 계속할까요?`)) return;
-    d.issues.forEach(i => { i.actions = Array.isArray(i.actions) ? i.actions : []; i.status = i.status === 'closed' ? 'closed' : 'open'; });
-    S = {issues: d.issues}; save(); toast('불러왔습니다');
+    if (!d || !Array.isArray(d.layers)) throw 0;
+    if (!confirm(`백업 파일(레이어 ${d.layers.length}개)로 현재 데이터를 덮어씁니다. 계속할까요?`)) return;
+    S = normalize(d); save(); toast('불러왔습니다');
   } catch (err) { alert('올바른 백업 파일이 아닙니다.'); }
 });
 

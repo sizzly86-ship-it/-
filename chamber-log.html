@@ -41,6 +41,8 @@ main{max-width:1400px;margin:0 auto;padding:16px}
 .layer-h{display:flex;align-items:center;gap:6px;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--accent)}
 .layer-h h2{font-size:15px;margin:0 4px 0 0}
 .layer-h .cnt{color:var(--sub);font-size:12px}
+.lmemo{display:block;width:100%;margin-bottom:6px;border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;padding:3px 4px;color:var(--text)}
+.lmemo:not(:placeholder-shown){font-weight:600}
 .grid{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .row{display:grid;grid-template-columns:72px 84px 190px 1fr auto;border-top:1px solid var(--line);align-items:stretch}
 .row:first-child{border-top:0}
@@ -224,7 +226,7 @@ const actsLine = c => sortedActs(c).map(a => `${fmtDate(a.date)} ${a.text}`).joi
 const chLine = c => [headLine(c.name, c), actsLine(c)].filter(Boolean).join(' ');
 const arLine = a => [headLine(a.chamber, a), actsLine(a)].filter(Boolean).join(' ') + ` → ${fmtDate(a.closedAt)} ${a.closeReason}${a.closeMemo ? ' ' + a.closeMemo : ''}`;
 /* 공지용: 레이어 제목 아래로 챔버당 한 줄 (챔버 안에서는 줄바꿈 없음) */
-const noticeLine = l => `[${l.name}]\n` + [...l.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(c => '- ' + chLine(c)).join('\n');
+const noticeLine = l => `[${l.name}]\n` + (l.memo ? `※ ${l.memo}\n` : '') + [...l.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(c => '- ' + chLine(c)).join('\n');
 function findCh(cid) {
   for (const layer of S.layers) { const ch = layer.chambers.find(c => c.id === cid); if (ch) return {layer, ch}; }
   return {};
@@ -284,6 +286,7 @@ function openHtml() {
         <button class="btn sm primary" data-act="copyNotice" title="이 레이어를 챔버당 한 줄씩 텍스트로 복사">공지 복사</button>
         <button class="btn sm" data-act="layerUp" title="위로">▲</button><button class="btn sm" data-act="layerDown" title="아래로">▼</button>
         <button class="btn sm" data-act="renameLayer">이름 변경</button><button class="btn sm danger" data-act="delLayer">삭제</button></div>
+      <input class="lmemo" data-lmemo value="${esc(l.memo || '')}" placeholder="레이어 메모 (한 줄)" autocomplete="off">
       ${rows.length ? `<div class="grid"><div class="row head"><div>챔버</div><div>최초매수</div><div>증상</div><div>변경 이력 →</div><div></div></div>
       ${rows.map(c => `<div class="row" data-cid="${c.id}">
         <button class="chname" data-act="editCh" title="챔버 이름 변경/삭제">${esc(c.name)}</button>
@@ -475,6 +478,11 @@ $('#main').addEventListener('keydown', e => {
 $('#main').addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'dayDate' && t.value) { dayDate = t.value; render(); return; }
+  if (t.dataset.lmemo !== undefined) {
+    const l = S.layers.find(l => l.id === t.closest('.layer').dataset.lid);
+    if (l) { l.memo = t.value.trim(); t.value = l.memo; persist(); }
+    return;
+  }
   if (t.dataset.key) {
     const set = new Set(S.checked[dayDate] || []);
     t.checked ? set.add(t.dataset.key) : set.delete(t.dataset.key);
@@ -632,6 +640,7 @@ function parseBulk(text, defLayer) {
   for (const line of lines) {
     const h = line.match(/^\[(.+)\]$/) || line.match(/^■\s*(.+)$/);
     if (h) { layer = h[1].trim(); cur = null; continue; }
+    if (/^※/.test(line)) continue; // 공지 복사에 들어간 레이어 메모 줄은 건너뜀
     const bullet = BUL.test(line), body = line.replace(BUL, '');
     if (!body) continue;
     const whole = split(body);

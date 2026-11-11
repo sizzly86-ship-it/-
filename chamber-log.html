@@ -87,9 +87,13 @@ dialog label input,dialog label select{display:block;width:100%;margin-top:2px;f
 dialog pre{white-space:pre-wrap;word-break:break-all;max-height:50vh;overflow:auto;background:var(--chip);padding:10px;border-radius:6px;font:13px/1.6 inherit;margin:0}
 @media (max-width:900px){ .daycols{grid-template-columns:1fr} }
 dialog.wide{width:min(760px,94vw)}
-dialog textarea{display:block;width:100%;height:240px;margin-top:2px;font:13px/1.5 inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre;overflow:auto}
+dialog textarea{display:block;width:100%;height:180px;margin-top:2px;font:13px/1.5 inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px;white-space:pre;overflow:auto}
 dialog .note{font-size:12px;color:var(--sub);margin:0 0 8px}
 dialog .sum{font-size:13px;margin-top:6px;min-height:20px}
+.pv{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-top:6px}
+.pv>div{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:3px 8px;border-top:1px solid var(--line)}
+.pv>div:first-child{border-top:0}
+.pv .pl{color:var(--sub);font-size:12px}.pv b{color:var(--accent)}.pv .pw{color:var(--sub)}.pv i{color:var(--sub)}
 dialog menu{display:flex;justify-content:flex-end;gap:6px;padding:0;margin:12px 0 0}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
 #toast.show{opacity:.94}
@@ -210,7 +214,7 @@ const actsLine = c => sortedActs(c).map(a => `${fmtDate(a.date)} ${a.text}`).joi
 const chLine = c => [headLine(c.name, c), actsLine(c)].filter(Boolean).join(' ');
 const arLine = a => [headLine(a.chamber, a), actsLine(a)].filter(Boolean).join(' ') + ` → ${fmtDate(a.closedAt)} ${a.closeReason}${a.closeMemo ? ' ' + a.closeMemo : ''}`;
 /* 공지용: 레이어 제목 아래로 챔버당 한 줄 (챔버 안에서는 줄바꿈 없음) */
-const noticeLine = l => `[${l.name}]\n` + [...l.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(chLine).join('\n');
+const noticeLine = l => `[${l.name}]\n` + [...l.chambers].filter(hasContent).sort((a, c) => natCmp(a.name, c.name)).map(c => '- ' + chLine(c)).join('\n');
 function findCh(cid) {
   for (const layer of S.layers) { const ch = layer.chambers.find(c => c.id === cid); if (ch) return {layer, ch}; }
   return {};
@@ -595,24 +599,44 @@ function bulkDate(d) {
   if (p.length === 3) return `20${pad(p[0])}-${pad(p[1])}-${pad(p[2])}`;
   return splitDate(`${d} x`).date;
 }
-/* 한 줄 = 한 챔버: "11A 2232매 센터맵 다발 1/1 클린타임 변경, 10/30 어쩌구 변경"
-   "[레이어]" 또는 "■ 레이어" 줄이 나오면 그 아래 줄들은 해당 레이어로 들어간다. */
+/* 메모장 양식을 유연하게 읽는다.
+   - 챔버 줄: "- cvd09_d 상단맵 7/1 어쩌구" (맨 앞 "-" 는 있어도 없어도 됨, 매수는 "2232매" 또는 "2232" 로 있어도 없어도 됨)
+   - 레이어 줄: "[CVD]", "■ CVD", 또는 ("-" 로 챔버를 구분하는 메모라면) "-" 없이 적힌 제목 줄
+   - 날짜로 시작하는 줄, "-" 없이 날짜가 들어 있는 줄은 바로 위 챔버의 이력으로 이어 붙인다. */
 function parseBulk(text, defLayer) {
-  let layer = defLayer; const items = [], bad = [];
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim(); if (!line) continue;
-    const h = line.match(/^\[(.+)\]$/) || line.match(/^■\s*(.+)$/);
-    if (h) { layer = h[1].trim(); continue; }
-    const m = line.match(/^(\S+)\s*(.*)$/);
-    if (!layer) { bad.push(line); continue; }
-    let rest = m[2], wafers = '';
-    const w = rest.match(/^([\d,]+)\s*매\s*(.*)$/);
-    if (w) { wafers = w[1].replace(/,/g, ''); rest = w[2]; }
-    const parts = rest.split(/(?:^|(?<=[\s,]))((?:\d{2}\/)?\d{1,2}\/\d{1,2})\s+/);
-    const clean = t => t.replace(/[\s,]+$/, '').trim();
-    const actions = [];
+  let layer = defLayer, cur = null; const items = [], bad = [];
+  const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const BUL = /^[-•·*▶]+\s*/, DATE = /(?:^|(?<=[\s,]))((?:\d{2}\/)?\d{1,2}\/\d{1,2})(?:\s+|$)/;
+  const dashMode = lines.some(l => BUL.test(l));
+  const clean = t => t.replace(/^[\s,]+|[\s,]+$/g, '');
+  const split = rest => {
+    const parts = rest.split(DATE), actions = [];
     for (let k = 1; k < parts.length; k += 2) { const t = clean(parts[k + 1] || ''); if (t) actions.push({id: uid(), date: bulkDate(parts[k]), text: t}); }
-    items.push({layer, name: m[1], wafers, symptom: clean(parts[0]), actions});
+    return {pre: clean(parts[0]), actions};
+  };
+  const append = body => {
+    const r = split(body);
+    if (r.pre && r.actions.length) r.actions[0].text = r.pre + ' ' + r.actions[0].text;
+    cur.actions.push(...r.actions);
+  };
+  for (const line of lines) {
+    const h = line.match(/^\[(.+)\]$/) || line.match(/^■\s*(.+)$/);
+    if (h) { layer = h[1].trim(); cur = null; continue; }
+    const bullet = BUL.test(line), body = line.replace(BUL, '');
+    if (!body) continue;
+    if (cur && /^(?:\d{2}\/)?\d{1,2}\/\d{1,2}\s/.test(body)) { append(body); continue; }
+    if (dashMode && !bullet) {
+      if (cur && DATE.test(body)) append(body);
+      else { layer = body.replace(/[:：]\s*$/, '').trim(); cur = null; }
+      continue;
+    }
+    if (!layer) { bad.push(line); continue; }
+    const m = body.match(/^(\S+)\s*(.*)$/);
+    let rest = m[2], wafers = '';
+    const w = rest.match(/^(\d[\d,]*)\s*매\s*(.*)$/) || rest.match(/^(\d[\d,]+)(?:\s+(.*))?$/);
+    if (w) { wafers = w[1].replace(/,/g, ''); rest = w[2] || ''; }
+    const r = split(rest);
+    items.push(cur = {layer, name: m[1], wafers, symptom: r.pre, actions: r.actions});
   }
   return {items, bad};
 }
@@ -620,8 +644,8 @@ $('#bulkBtn').addEventListener('click', () => {
   const dlg = $('#dlg');
   dlg.className = 'wide';
   dlg.innerHTML = `<form method="dialog"><h3>기존 메모 가져오기</h3>
-    <p class="note">메모장 내용을 그대로 붙여넣으세요. <b>한 줄에 챔버 하나</b>: <code>11A 2232매 센터맵 다발 1/1 클린타임 변경, 10/30 어쩌구 변경</code><br>
-    여러 레이어를 한 번에 넣으려면 레이어 이름 줄을 <code>[POLY]</code> 처럼 적고 그 아래에 챔버 줄을 적으면 됩니다. 없는 레이어와 챔버는 자동으로 만들어집니다.</p>
+    <p class="note">메모장 내용을 그대로 붙여넣으세요. <b>한 줄에 챔버 하나</b>: <code>- cvd09_d 상단맵 7/1 어쩌구 저쩌구</code> (맨 앞 "-" 와 매수는 있어도 없어도 됩니다)<br>
+    "-" 없이 적힌 제목 줄이나 <code>[CVD]</code> 줄은 레이어로 읽습니다. 아래 미리보기에서 제대로 나뉘었는지 확인한 뒤 가져오세요.</p>
     <label>레이어 (붙여넣은 내용에 [레이어] 줄이 없을 때 여기로 들어감)<input name="layer" list="bulkLayers" value="${esc(lf())}" autocomplete="off"><datalist id="bulkLayers">${S.layers.map(l => `<option value="${esc(l.name)}">`).join('')}</datalist></label>
     <label>내용<textarea name="text" spellcheck="false"></textarea></label>
     <div class="sum" id="bulkSum"></div>
@@ -629,9 +653,10 @@ $('#bulkBtn').addEventListener('click', () => {
   const parsed = () => parseBulk(dlg.querySelector('[name=text]').value, dlg.querySelector('[name=layer]').value.trim());
   const upd = () => {
     const {items, bad} = parsed();
-    $('#bulkSum').innerHTML = items.length || bad.length
-      ? `인식: 챔버 <b>${items.length}</b>줄, 변경 이력 <b>${items.reduce((n, i) => n + i.actions.length, 0)}</b>건` +
-        (bad.length ? ` · <span style="color:var(--danger)">레이어를 알 수 없는 ${bad.length}줄은 제외됩니다 (위 칸에 레이어를 적으세요)</span>` : '') : '';
+    $('#bulkSum').innerHTML = !(items.length || bad.length) ? '' :
+      `인식: 챔버 <b>${items.length}</b>줄, 변경 이력 <b>${items.reduce((n, i) => n + i.actions.length, 0)}</b>건` +
+      (bad.length ? ` · <span style="color:var(--danger)">레이어를 알 수 없는 ${bad.length}줄은 제외됩니다 (위 칸에 레이어를 적으세요)</span>` : '') +
+      `<div class="pv">${items.map(i => `<div><span class="pl">${esc(i.layer)}</span><b>${esc(i.name)}</b>${i.wafers ? `<span class="pw">${esc(i.wafers)}매</span>` : ''}<span>${esc(i.symptom) || '<i>증상 없음</i>'}</span>${i.actions.map(a => `<span class="chip"><span class="d">${fmtDate(a.date)}</span>${esc(a.text)}</span>`).join('')}</div>`).join('')}</div>`;
   };
   dlg.addEventListener('input', upd);
   dlg.returnValue = '';

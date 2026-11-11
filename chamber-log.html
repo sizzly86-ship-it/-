@@ -140,13 +140,23 @@ function fmtDate(s) {
   return (y === String(new Date().getFullYear()) ? '' : y.slice(2) + '/') + (+m) + '/' + (+d);
 }
 /* "10/30 내용" 처럼 앞에 날짜가 있으면 분리. 미래 날짜가 되면 작년으로 본다. */
+/* 날짜 뒤에 이런 말이 오면 날짜가 아니라 변경 값(예: "20/20 을 100/100 으로")으로 본다 */
+const NOT_DATE_NEXT = /^\s*(?:이라|에서|으로|을|를|로(?:\s|$)|→|->|~)/;
+/* "M/D" 또는 "YY/M/D" 가 실제로 있는 날짜일 때만 yyyy-mm-dd 로 바꾼다. 26/26 같은 값은 null. */
+function toIso(str) {
+  const p = str.split('/').map(Number), now = new Date();
+  const [mo, da] = p.slice(-2);
+  let y = p.length === 3 ? 2000 + p[0] : now.getFullYear();
+  if (mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+  let d = new Date(y, mo - 1, da);
+  if (d.getMonth() !== mo - 1) return null;                 // 2/30 처럼 없는 날짜
+  if (p.length === 2 && d - now > 86400000) d = new Date(y - 1, mo - 1, da); // 미래면 작년
+  return iso(d);
+}
 function splitDate(text) {
-  const m = text.match(/^(\d{1,2})\/(\d{1,2})\s+(.+)$/);
-  if (!m || +m[1] < 1 || +m[1] > 12 || +m[2] < 1 || +m[2] > 31) return {date: today(), text};
-  const now = new Date();
-  let d = new Date(now.getFullYear(), +m[1] - 1, +m[2]);
-  if (d - now > 86400000) d = new Date(now.getFullYear() - 1, +m[1] - 1, +m[2]);
-  return {date: iso(d), text: m[3].trim()};
+  const m = text.match(/^((?:\d{2}\/)?\d{1,2}\/\d{1,2})\s+(.+)$/);
+  const d = m && !NOT_DATE_NEXT.test(m[2]) && toIso(m[1]);
+  return d ? {date: d, text: m[2].trim()} : {date: today(), text};
 }
 
 let S = normalize(load());
@@ -594,28 +604,28 @@ $('#noticeAllBtn').addEventListener('click', () => {
   if (ls.length) copy(ls.map(noticeLine).join('\n\n')); else toast('복사할 내용이 없습니다');
 });
 /* ---------- 기존 메모 붙여넣기 가져오기 ---------- */
-function bulkDate(d) {
-  const p = d.split('/').map(Number);
-  if (p.length === 3) return `20${pad(p[0])}-${pad(p[1])}-${pad(p[2])}`;
-  return splitDate(`${d} x`).date;
-}
 /* 메모장 양식을 유연하게 읽는다.
    - 챔버 줄: "- cvd09_d 상단맵 7/1 어쩌구" (맨 앞 "-" 는 있어도 없어도 됨, 매수는 "2232매" 또는 "2232" 로 있어도 없어도 됨)
    - 레이어 줄: "[CVD]", "■ CVD", 또는 ("-" 로 챔버를 구분하는 메모라면) "-" 없이 적힌 제목 줄
-   - 날짜로 시작하는 줄, "-" 없이 날짜가 들어 있는 줄은 바로 위 챔버의 이력으로 이어 붙인다. */
+   - 날짜로 시작하는 줄, "-" 없이 날짜가 들어 있는 줄은 바로 위 챔버의 이력으로 이어 붙인다.
+   - 26/26, 100/100 처럼 날짜가 될 수 없는 값, "20/20 을" 처럼 조사가 붙은 값은 날짜로 보지 않는다. */
 function parseBulk(text, defLayer) {
   let layer = defLayer, cur = null; const items = [], bad = [];
   const lines = text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-  const BUL = /^[-•·*▶]+\s*/, DATE = /(?:^|(?<=[\s,]))((?:\d{2}\/)?\d{1,2}\/\d{1,2})(?:\s+|$)/;
+  const BUL = /^[-•·*▶]+\s*/;
   const dashMode = lines.some(l => BUL.test(l));
   const clean = t => t.replace(/^[\s,]+|[\s,]+$/g, '');
   const split = rest => {
-    const parts = rest.split(DATE), actions = [];
-    for (let k = 1; k < parts.length; k += 2) { const t = clean(parts[k + 1] || ''); if (t) actions.push({id: uid(), date: bulkDate(parts[k]), text: t}); }
-    return {pre: clean(parts[0]), actions};
+    const re = /(?:^|(?<=[\s,]))((?:\d{2}\/)?\d{1,2}\/\d{1,2})(?=\s|$)/g, marks = [];
+    let m;
+    while ((m = re.exec(rest))) {
+      const end = m.index + m[0].length, d = !NOT_DATE_NEXT.test(rest.slice(end)) && toIso(m[1]);
+      if (d) marks.push({start: m.index, end, d});
+    }
+    const actions = marks.map((k, n) => ({id: uid(), date: k.d, text: clean(rest.slice(k.end, n + 1 < marks.length ? marks[n + 1].start : rest.length))})).filter(a => a.text);
+    return {pre: clean(rest.slice(0, marks.length ? marks[0].start : rest.length)), actions};
   };
-  const append = body => {
-    const r = split(body);
+  const append = r => {
     if (r.pre && r.actions.length) r.actions[0].text = r.pre + ' ' + r.actions[0].text;
     cur.actions.push(...r.actions);
   };
@@ -624,9 +634,10 @@ function parseBulk(text, defLayer) {
     if (h) { layer = h[1].trim(); cur = null; continue; }
     const bullet = BUL.test(line), body = line.replace(BUL, '');
     if (!body) continue;
-    if (cur && /^(?:\d{2}\/)?\d{1,2}\/\d{1,2}\s/.test(body)) { append(body); continue; }
+    const whole = split(body);
+    if (cur && whole.actions.length && !whole.pre) { append(whole); continue; }
     if (dashMode && !bullet) {
-      if (cur && DATE.test(body)) append(body);
+      if (cur && whole.actions.length) append(whole);
       else { layer = body.replace(/[:：]\s*$/, '').trim(); cur = null; }
       continue;
     }

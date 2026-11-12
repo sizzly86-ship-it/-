@@ -17,6 +17,8 @@ import java.util.Calendar;
 /** 하루 세 번(아침 점수, 퇴근길 스트레스, 자기 전 기록) 알림을 예약하고 띄운다. */
 public class ReminderReceiver extends BroadcastReceiver {
     static final String ACTION = "app.condition.REMIND";
+    static final String ACTION_SNOOZE = "app.condition.SNOOZE";
+    private static final long SNOOZE_MS = 30 * 60_000L;
     static final String PREFS = "reminders";
     static final String CHANNEL = "remind_alert";
     private static final String OLD_CHANNEL = "remind";
@@ -32,13 +34,54 @@ public class ReminderReceiver extends BroadcastReceiver {
         if (ACTION.equals(intent.getAction())) {
             String id = intent.getStringExtra("id");
             int idx = indexOf(id);
+            boolean snoozed = intent.getBooleanExtra("snoozed", false);
             if (idx >= 0) {
                 int dow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
                 boolean weekend = dow == Calendar.SATURDAY || dow == Calendar.SUNDAY;
-                if (!(weekend && weekdaysOnly(c, id))) show(c, idx);
+                // 주말 제외 설정이거나 오늘 이미 기록했으면 울리지 않는다 ("30분 뒤 다시"로 미룬 것은 요일과 무관하게 울린다)
+                if (!alreadyDone(c, id) && (snoozed || !(weekend && weekdaysOnly(c, id)))) show(c, idx);
             }
+        } else if (ACTION_SNOOZE.equals(intent.getAction())) {
+            int idx = indexOf(intent.getStringExtra("id"));
+            if (idx >= 0) snooze(c, idx);
+            return;
         }
         scheduleAll(c); // 부팅·앱 업데이트 후에도, 알림을 띄운 뒤에도 다음 것을 다시 예약한다
+    }
+
+    /** 화면 쪽에서 넘겨 둔 "오늘 이미 기록함" 표시를 확인한다. 날짜는 화면과 같이 새벽 4시에 넘어간다. */
+    private static boolean alreadyDone(Context c, String id) {
+        try {
+            JSONObject all = new JSONObject(c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("json", "{}"));
+            JSONObject done = all.optJSONObject("done");
+            if (done == null) return false;
+            String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                    .format(new java.util.Date(System.currentTimeMillis() - 4 * 3600_000L));
+            return today.equals(done.optString("date")) && done.optBoolean(id);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private static PendingIntent alarmIntent(Context c, int idx, boolean snoozed) {
+        Intent in = new Intent(c, ReminderReceiver.class).setAction(ACTION).putExtra("id", IDS[idx]).putExtra("snoozed", snoozed);
+        return PendingIntent.getBroadcast(c, (snoozed ? 10 : 0) + idx, in,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private static void setAlarm(Context c, long at, PendingIntent pi) {
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        // 정확한 시각 알람을 쓸 수 있으면 제시간에, 아니면 조금 늦을 수 있는 방식으로
+        if (android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        } else {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        }
+    }
+
+    private static void snooze(Context c, int idx) {
+        ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(idx);
+        setAlarm(c, System.currentTimeMillis() + SNOOZE_MS, alarmIntent(c, idx, true));
     }
 
     private static boolean weekdaysOnly(Context c, String id) {
@@ -71,9 +114,7 @@ public class ReminderReceiver extends BroadcastReceiver {
             return;
         }
         for (int i = 0; i < IDS.length; i++) {
-            Intent in = new Intent(c, ReminderReceiver.class).setAction(ACTION).putExtra("id", IDS[i]);
-            PendingIntent pi = PendingIntent.getBroadcast(c, i, in,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            PendingIntent pi = alarmIntent(c, i, false);
             am.cancel(pi);
             JSONObject r = all.optJSONObject(IDS[i]);
             if (r == null || !r.optBoolean("on")) continue;
@@ -86,12 +127,7 @@ public class ReminderReceiver extends BroadcastReceiver {
                 cal.set(Calendar.SECOND, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 if (cal.getTimeInMillis() <= System.currentTimeMillis() + 30_000) cal.add(Calendar.DAY_OF_YEAR, 1);
-                // 정확한 시각 알람을 쓸 수 있으면 제시간에, 아니면 조금 늦을 수 있는 방식으로
-                if (android.os.Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) {
-                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
-                } else {
-                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), pi);
-                }
+                setAlarm(c, cal.getTimeInMillis(), pi);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -106,12 +142,17 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(c, 100 + idx, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent snoozePi = PendingIntent.getBroadcast(c, 200 + idx,
+                new Intent(c, ReminderReceiver.class).setAction(ACTION_SNOOZE).putExtra("id", IDS[idx]),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new Notification.Builder(c, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notify)
                 .setContentTitle(TITLES[idx])
                 .setContentText(TEXTS[idx])
                 .setContentIntent(pi)
                 .setAutoCancel(true)
+                .setCategory(Notification.CATEGORY_REMINDER)
+                .addAction(new Notification.Action.Builder((android.graphics.drawable.Icon) null, "30분 뒤 다시", snoozePi).build())
                 .build();
         try {
             nm.notify(idx, n);

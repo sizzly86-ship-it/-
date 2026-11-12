@@ -49,7 +49,8 @@ public class MainActivity extends Activity {
         ws.setDomStorageEnabled(true);
         ws.setAllowFileAccess(false);
         ws.setAllowContentAccess(false);
-        ws.setTextZoom(100);
+        // 폰의 글자 크기 설정을 따르되, 화면이 깨지지 않게 130%까지만
+        ws.setTextZoom(Math.round(100 * Math.min(1.3f, Math.max(0.85f, getResources().getConfiguration().fontScale))));
         web.setWebChromeClient(new WebChromeClient()); // confirm() 대화상자용
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -68,6 +69,19 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "Native");
         setContentView(web);
         web.loadUrl("file:///android_asset/www/index.html");
+    }
+
+    /** 뒤로 가기: 화면 안에서 닫을 것(열린 창, 다른 탭)이 있으면 그것부터 닫고, 없으면 앱을 내린다. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onBackPressed() {
+        if (!pageReady) {
+            super.onBackPressed();
+            return;
+        }
+        web.evaluateJavascript("!!(window.onBack && window.onBack())", handled -> {
+            if (!"true".equals(handled)) moveTaskToBack(true);
+        });
     }
 
     @Override
@@ -249,6 +263,32 @@ public class MainActivity extends Activity {
             });
         }
 
+        @JavascriptInterface
+        public void exportFile(String name, String mime, String text) {
+            pendingExport = text;
+            Intent in = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType(mime)
+                    .putExtra(Intent.EXTRA_TITLE, name);
+            runOnUiThread(() -> startActivityForResult(in, REQ_EXPORT));
+        }
+
+        @JavascriptInterface
+        public String appVersion() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception ex) {
+                return "";
+            }
+        }
+
+        /** 버튼을 눌렀을 때의 짧은 진동 느낌. */
+        @JavascriptInterface
+        public void haptic() {
+            runOnUiThread(() -> web.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP));
+        }
+
+        /** 1.x 화면 코드와의 호환용. */
         @JavascriptInterface
         public void exportData(String json) {
             pendingExport = json;

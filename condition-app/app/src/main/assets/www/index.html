@@ -2,21 +2,19 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.open-meteo.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src https://api.open-meteo.com https://air-quality-api.open-meteo.com">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>컨디션 노트</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main id="view"></main>
-<nav id="tabs">
-  <button data-tab="today">기록</button>
-  <button data-tab="history">지난 날</button>
-  <button data-tab="stats">분석</button>
-  <button data-tab="settings">설정</button>
-</nav>
-<div id="toast" hidden></div>
+<nav id="tabs" aria-label="화면 이동"></nav>
+<div id="sheet"></div>
+<div id="toast" role="status" hidden></div>
+<script src="logic.js"></script>
 <script src="sleep.js"></script>
+<script src="views.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,1662 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- page -->
+<title>오픽 IM1 7일 완성</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+/* Layout: one-screen app shell (top bar / scrolling main / bottom tabs) in a single 640px column.
+   Korean UI is set in the sans face, English to be spoken is set in the serif face. */
+:root {
+  --bg: #F1F4F8; --surface: #FFFFFF; --surface-2: #E7ECF3; --line: #D7DEE8;
+  --ink: #121B26; --ink-2: #465467; --ink-3: #6E7D91;
+  --brand: #1D4ED8; --brand-ink: #FFFFFF; --brand-soft: #E2E9FB;
+  --rec: #D43C3C; --rec-soft: #FBE6E4;
+  --good: #1B8756; --good-soft: #DDF2E7; --warn: #A2640C; --warn-soft: #FAEFD6;
+  --hero: #14274A; --hero-ink: #F3F6FB; --hero-dim: #A9B8D2; --hero-bar: #33486F; --goal: #FFC857;
+  --font-ui: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --font-en: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --r: 14px; --r-sm: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E141B; --surface: #18212C; --surface-2: #222D3A; --line: #2D3A49;
+    --ink: #E9EEF4; --ink-2: #B1BDCB; --ink-3: #8593A4;
+    --brand: #86A4FF; --brand-ink: #0B1324; --brand-soft: #1E2B4D;
+    --rec: #FF6F6F; --rec-soft: #3B2023;
+    --good: #52C792; --good-soft: #153223; --warn: #E7B659; --warn-soft: #352B10;
+    --hero: #1B2A47; --hero-ink: #F3F6FB; --hero-dim: #A9B8D2; --hero-bar: #3A4F78; --goal: #FFC857;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E141B; --surface: #18212C; --surface-2: #222D3A; --line: #2D3A49;
+  --ink: #E9EEF4; --ink-2: #B1BDCB; --ink-3: #8593A4;
+  --brand: #86A4FF; --brand-ink: #0B1324; --brand-soft: #1E2B4D;
+  --rec: #FF6F6F; --rec-soft: #3B2023;
+  --good: #52C792; --good-soft: #153223; --warn: #E7B659; --warn-soft: #352B10;
+  --hero: #1B2A47; --hero-ink: #F3F6FB; --hero-dim: #A9B8D2; --hero-bar: #3A4F78; --goal: #FFC857;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-ui); -webkit-text-size-adjust: 100%; }
+[hidden] { display: none !important; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, p, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+h1 { font-size: 24px; line-height: 1.3; letter-spacing: -.02em; text-wrap: balance; }
+h2 { font-size: 18px; line-height: 1.35; letter-spacing: -.01em; text-wrap: balance; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+svg { flex: 0 0 auto; }
+
+.app { height: 100%; display: flex; flex-direction: column; }
+.wrap { width: 100%; max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top { flex: 0 0 auto; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-in { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.top-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.top-title strong { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-title span { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-badge { flex: 0 0 auto; padding: 3px 10px; border-radius: 99px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.icon-btn { width: 36px; height: 36px; margin-left: -8px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; }
+.icon-btn:hover { background: var(--surface-2); }
+main { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#view { display: flex; flex-direction: column; gap: 14px; padding-block: 16px 28px; }
+.tabs { flex: 0 0 auto; background: var(--surface); border-top: 1px solid var(--line); }
+.tabs-in { display: grid; grid-template-columns: repeat(5, 1fr); }
+.tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 7px; color: var(--ink-3); text-decoration: none; font-size: 11px; font-weight: 600; }
+.tabs a[aria-current="page"] { color: var(--brand); }
+.tabs svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+body.onb .tabs { display: none; }
+
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--ink-3); text-transform: uppercase; }
+.muted { color: var(--ink-2); font-size: 14px; }
+.fine { color: var(--ink-3); font-size: 12px; }
+.en { font-family: var(--font-en); font-size: 17px; line-height: 1.55; }
+.ko { color: var(--ink-2); font-size: 14px; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sect-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.sect-title h2 { font-size: 16px; }
+.sect-title span { color: var(--ink-3); font-size: 13px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; padding: 0 18px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); font-weight: 600; text-decoration: none; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--brand); }
+.btn.small { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.btn.block { width: 100%; }
+.btn.danger { color: var(--rec); }
+.btn:disabled { opacity: .5; cursor: default; }
+.linkbtn { border: 0; background: none; padding: 6px 4px; color: var(--brand); font-weight: 600; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+.row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.row-btns.end { justify-content: flex-end; }
+.row-btns.split > * { flex: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 99px; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.chip.ghost { background: var(--surface-2); color: var(--ink-2); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.good { background: var(--good-soft); color: var(--good); }
+.meter { display: block; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 99px; background: var(--brand); }
+
+/* hero + level ladder */
+.hero { background: var(--hero); color: var(--hero-ink); border-radius: var(--r); padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+.hero .eyebrow { color: var(--goal); }
+.hero p { color: var(--hero-dim); font-size: 14px; }
+.hero .btn.primary { background: var(--goal); border-color: var(--goal); color: #1B1403; }
+.ladder { display: grid; grid-template-columns: repeat(9, 1fr); align-items: end; gap: 4px; margin: 8px 0 4px; }
+.rung { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.rung .bar { width: 100%; border-radius: 4px 4px 2px 2px; background: var(--hero-bar); }
+.rung b { font-size: 11px; font-weight: 600; color: var(--hero-dim); font-variant-numeric: tabular-nums; }
+.rung i { height: 14px; font-style: normal; font-size: 10px; font-weight: 700; line-height: 14px; white-space: nowrap; }
+.rung.goal .bar { background: var(--goal); }
+.rung.goal b, .rung.goal i { color: var(--goal); }
+.rung.cur .bar { outline: 2px solid var(--hero-ink); outline-offset: 2px; }
+.rung.cur b, .rung.cur i { color: var(--hero-ink); }
+
+.hero .fine-hero { font-size: 12px; }
+.recorder .field { align-self: stretch; text-align: left; }
+.recorder .row-btns { justify-content: center; }
+.card ul:not([class]) { display: flex; flex-direction: column; gap: 4px; padding-left: 18px; list-style: disc; color: var(--ink-2); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px; min-width: 0; }
+.tile b { display: block; font-size: 20px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.tile small { color: var(--ink-3); font-size: 12px; }
+
+/* course */
+.daycard, .step, .qrow { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); text-align: left; }
+.daycard:hover, .step:hover, .qrow:hover { border-color: var(--brand); }
+.daycard.now { border-color: var(--brand); box-shadow: inset 3px 0 0 var(--brand); }
+.dnum { flex: 0 0 auto; width: 46px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--ink-3); }
+.daycard.now .dnum { color: var(--brand); }
+.dbody, .sbody, .qbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.dbody small, .sbody small, .qbody small { color: var(--ink-2); font-size: 13px; }
+.dbody .meter { margin-top: 5px; }
+.dstat, .sgo { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.daycard.done .dstat { color: var(--good); }
+.dayhead { display: flex; flex-direction: column; gap: 6px; padding: 4px 2px 6px; }
+.lead { color: var(--ink-2); }
+.steps { display: flex; flex-direction: column; gap: 8px; }
+.snum { flex: 0 0 auto; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--ink-2); font-size: 13px; font-weight: 700; }
+.step.done .snum { background: var(--good-soft); color: var(--good); }
+.step.next { border-color: var(--brand); }
+.step.next .snum { background: var(--brand); color: var(--brand-ink); }
+.step.next .sgo { color: var(--brand); }
+.dots { display: flex; gap: 5px; }
+.dots i { flex: 1; height: 4px; border-radius: 99px; background: var(--surface-2); }
+.dots i.on { background: var(--brand); }
+.lesson h2 { font-size: 20px; }
+.lesson p, .lesson li { color: var(--ink-2); }
+.lesson b { color: var(--ink); }
+.lesson ul { display: flex; flex-direction: column; gap: 6px; padding-left: 18px; list-style: disc; }
+.lesson .en { color: var(--ink); background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 12px; font-size: 16px; }
+.lesson table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.lesson td, .lesson th { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.lesson th { color: var(--ink-3); font-size: 12px; font-weight: 600; }
+.tablebox { overflow-x: auto; }
+.pattern { display: flex; gap: 10px; align-items: flex-start; }
+.pattern .pbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pattern .en { font-weight: 600; }
+.pattern .ex { font-family: var(--font-en); font-size: 15px; color: var(--ink-2); margin-top: 4px; }
+.playbtn { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--brand); }
+.playbtn:hover { background: var(--brand-soft); }
+
+/* question + studio */
+.qtext { font-size: 18px; }
+.sents { display: flex; flex-direction: column; gap: 6px; }
+.sent { display: flex; flex-direction: column; gap: 1px; width: 100%; padding: 9px 12px; border: 1px solid transparent; border-radius: var(--r-sm); background: var(--surface-2); text-align: left; }
+.sent:hover { border-color: var(--brand); }
+.sent.on { background: var(--brand-soft); border-color: var(--brand); }
+.sent .ko { font-size: 13px; }
+.fold { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.fold > summary { padding: 13px 16px; font-weight: 600; cursor: pointer; list-style-position: inside; }
+.fold > :not(summary) { margin: 0 16px 14px; }
+.tips { display: flex; flex-direction: column; gap: 4px; padding-left: 20px; list-style: decimal; color: var(--ink-2); }
+.recorder { align-items: center; text-align: center; gap: 8px; padding-block: 20px; }
+.timer { font-size: 30px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.recbtn { position: relative; width: 76px; height: 76px; border: 0; border-radius: 50%; background: var(--rec); display: grid; place-items: center; }
+.recbtn::before { content: ""; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: border-radius .15s; }
+.recbtn.on::before { border-radius: 5px; }
+.recbtn.on::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 3px solid var(--rec); opacity: .5; animation: pulse 1.4s ease-out infinite; }
+@keyframes pulse { from { transform: scale(.92); opacity: .6; } to { transform: scale(1.15); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .recbtn.on::after { animation: none; } .recbtn::before { transition: none; } }
+.live { width: 100%; padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); text-align: left; max-height: 9.5em; overflow-y: auto; }
+.note { width: 100%; padding: 8px 12px; border-radius: var(--r-sm); background: var(--warn-soft); color: var(--warn); font-size: 13px; text-align: left; }
+.recorder textarea, .field textarea, .fold textarea { width: 100%; }
+audio { width: 100%; height: 40px; }
+
+.fb-head { display: flex; align-items: center; gap: 16px; }
+.ring { position: relative; flex: 0 0 auto; width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--brand) calc(var(--p) * 1%), var(--surface-2) 0); }
+.ring::before { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--surface); }
+.ring b { position: relative; font-size: 26px; font-variant-numeric: tabular-nums; }
+.metrics { display: flex; flex-direction: column; }
+.metrics li { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+.metrics .dot { flex: 0 0 auto; width: 10px; height: 10px; margin-top: 7px; border-radius: 50%; background: var(--rec); }
+.metrics .good .dot { background: var(--good); }
+.metrics .mid .dot { background: var(--goal); }
+.metrics div { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.metrics strong { font-size: 14px; }
+.metrics .mv { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+.metrics small { flex-basis: 100%; color: var(--ink-2); font-size: 13px; }
+.mine { padding: 12px; border-radius: var(--r-sm); background: var(--surface-2); }
+.ai { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--r-sm); border: 1px solid var(--brand); background: var(--brand-soft); }
+.ai li { padding: 6px 0; }
+.ai del { color: var(--rec); text-decoration-thickness: 1px; }
+.ai ins { color: var(--good); text-decoration: none; font-weight: 600; }
+.ai .en { font-size: 15px; }
+
+/* quiz, forms */
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opt { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); text-align: left; }
+.opt:hover:not(:disabled) { border-color: var(--brand); }
+.opt.right { border-color: var(--good); background: var(--good-soft); color: var(--good); font-weight: 600; }
+.opt.wrong { border-color: var(--rec); background: var(--rec-soft); color: var(--rec); }
+.opt:disabled { cursor: default; }
+.why { padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink-2); font-size: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label, .field > span { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+input[type="text"], input[type="date"], textarea, select { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+textarea { font-family: var(--font-en); font-size: 16px; line-height: 1.5; resize: vertical; }
+input[type="range"] { width: 100%; accent-color: var(--brand); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.choice { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice button { padding: 9px 14px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); font-weight: 600; font-size: 14px; }
+.choice button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.check input { width: 18px; height: 18px; accent-color: var(--brand); }
+.scroller { overflow-x: auto; margin: 0 -4px; padding: 2px 4px 6px; }
+.scroller .choice { flex-wrap: nowrap; }
+.scroller .choice button { white-space: nowrap; }
+
+/* mock */
+.mockbar { display: flex; align-items: center; gap: 16px; }
+.mockbar > div:first-child { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.clock { text-align: right; line-height: 1.2; }
+.clock small { display: block; color: var(--ink-3); font-size: 11px; }
+.clock b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.ava { align-items: center; text-align: center; }
+.ava-face { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--hero); color: var(--goal); font: 600 28px var(--font-en); }
+.bars { display: flex; flex-direction: column; gap: 8px; }
+.bars li { display: grid; grid-template-columns: 96px 1fr 34px; align-items: center; gap: 10px; font-size: 13px; }
+.bars .meter { height: 10px; }
+.bars b { text-align: right; font-variant-numeric: tabular-nums; }
+.bars li.low .meter i { background: var(--rec); }
+
+/* review */
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: var(--r-sm); background: var(--surface-2); }
+.seg button { min-height: 36px; border: 0; border-radius: 7px; background: none; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
+.flash { min-height: 230px; justify-content: center; align-items: center; text-align: center; gap: 12px; padding: 24px 18px; }
+.flash .ko { font-size: 18px; color: var(--ink); font-weight: 600; }
+.flash .en { font-size: 21px; font-weight: 600; }
+.flash .ex { font-family: var(--font-en); color: var(--ink-2); }
+.chart { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 18px; border-bottom: 1px solid var(--line); }
+.chart .col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+.chart .col span { font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.chart .col i { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; background: var(--brand); min-height: 2px; }
+.chart .col.hit i { background: var(--good); }
+.chart .goalline { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--ink-3); }
+.empty { align-items: center; text-align: center; padding: 28px 18px; color: var(--ink-2); }
+.feature-list { display: flex; flex-direction: column; gap: 8px; }
+.feature-list li { display: flex; flex-direction: column; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); }
+.feature-list small { color: var(--ink-2); font-size: 13px; }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 99px; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600; z-index: 20; text-align: center; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="wrap top-in">
+      <button class="icon-btn" id="backBtn" data-act="back" aria-label="뒤로" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="top-title"><strong id="topTitle">오픽 IM1 7일 완성</strong><span id="topSub"></span></div>
+      <span class="top-badge" id="topBadge" hidden></span>
+    </div>
+  </header>
+  <main id="main"><div class="wrap" id="view"></div></main>
+  <nav class="tabs" aria-label="주요 메뉴">
+    <div class="wrap tabs-in">
+      <a href="#today" data-act="tab" data-tab="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>오늘</a>
+      <a href="#course" data-act="tab" data-tab="course"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>7일 코스</a>
+      <a href="#practice" data-act="tab" data-tab="practice"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>문제 연습</a>
+      <a href="#mock" data-act="tab" data-tab="mock"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>모의고사</a>
+      <a href="#review" data-act="tab" data-tab="review"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="13" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/></svg>복습</a>
+    </div>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+/* ===== 학습 콘텐츠 =====
+   문제와 모범 답변은 모두 이 앱을 위해 새로 쓴 것입니다. 모범 답변은 한 줄에 "영어 | 한국어" 한 문장씩. */
+(() => {
+const Q = (id, type, topic, q, ko, tips, m, unexp) => ({
+  id, type, topic, q, ko, tips, unexp: !!unexp,
+  m: m.trim().split('\n').map(l => { const [en, k] = l.split('|'); return [en.trim(), (k || '').trim()]; })
+});
+const P = (en, ko, ex, exKo) => ({ en, ko, ex, exKo });
+const Z = (q, o, a, why) => ({ q, o, a, why });
+
+const TYPES = { intro: '자기소개', desc: '묘사', routine: '루틴', past: '과거 경험', 'rp-ask': '롤플레이 · 질문', 'rp-solve': '롤플레이 · 문제 해결', 'rp-exp': '롤플레이 · 경험', ava: '면접관에게 질문' };
+
+const QUESTIONS = [
+Q('intro-1', 'intro', '자기소개', "Let's start the interview now. Tell me a little bit about yourself.", '이제 인터뷰를 시작하겠습니다. 자신에 대해 간단히 이야기해 주세요.',
+  ['이름 → 사는 곳 → 하는 일', '취미 1~2개와 성격 한마디', '마무리: That\'s all about me.'], `
+Hi, my name is Minsu Kim. | 안녕하세요, 제 이름은 김민수입니다.
+I live in Seoul with my family. | 저는 가족과 함께 서울에 살아요.
+I am an office worker. | 저는 회사원입니다.
+I work for a trading company. | 무역 회사에서 일해요.
+I usually work from nine to six. | 보통 9시부터 6시까지 일합니다.
+In my free time, I like to watch movies and listen to music. | 여가 시간에는 영화 보기와 음악 듣기를 좋아해요.
+I also take a walk in the park on weekends. | 주말에는 공원에서 산책도 합니다.
+I am a quiet person, but I like meeting new people. | 저는 조용한 편이지만 새로운 사람을 만나는 걸 좋아해요.
+That's all about me. Thank you. | 제 소개는 여기까지입니다. 감사합니다.`),
+
+Q('home-desc', 'desc', '집', 'I would like to know about where you live. Please describe your home. What does it look like? How many rooms does it have?', '당신이 사는 곳에 대해 알고 싶어요. 집을 묘사해 주세요. 어떻게 생겼나요? 방은 몇 개인가요?',
+  ['한 줄 소개: 어떤 집, 어디에', '방 개수 · 거실에 있는 것 · 분위기', '가장 좋아하는 공간과 이유'], `
+I live in an apartment in Seoul. | 저는 서울에 있는 아파트에 살아요.
+It is on the tenth floor. | 10층에 있습니다.
+My home is not very big, but it is clean and cozy. | 집이 아주 크지는 않지만 깨끗하고 아늑해요.
+There are three rooms, a living room, and a kitchen. | 방 세 개, 거실, 부엌이 있어요.
+In the living room, there is a sofa and a big TV. | 거실에는 소파와 큰 TV가 있습니다.
+My favorite place is my room because I can relax there. | 제가 가장 좋아하는 곳은 제 방인데, 거기서 쉴 수 있기 때문이에요.
+There is a bed and a small desk in my room. | 제 방에는 침대와 작은 책상이 있어요.
+I really like my home. | 저는 우리 집이 정말 좋아요.`),
+Q('home-routine', 'routine', '집', 'What do you usually do at home on weekdays and on weekends? Tell me about your daily routine at home.', '평일과 주말에 집에서 보통 무엇을 하나요? 집에서의 일과를 말해 주세요.',
+  ['평일: 퇴근 후 순서대로 (First → After that)', '주말: 평일과 다른 점', '마무리: 집에서 쉬는 게 좋다'], `
+On weekdays, I usually come home at seven. | 평일에는 보통 7시에 집에 와요.
+First, I take a shower and have dinner. | 먼저 샤워를 하고 저녁을 먹습니다.
+After that, I watch TV or use my phone on the sofa. | 그 다음에는 소파에서 TV를 보거나 휴대폰을 해요.
+Sometimes I clean my room. | 가끔 방 청소를 합니다.
+On weekends, I get up late. | 주말에는 늦게 일어나요.
+I usually do the laundry and clean the house in the morning. | 보통 오전에 빨래를 하고 집을 청소합니다.
+Then I cook something simple for lunch. | 그러고 나서 점심으로 간단한 요리를 해요.
+In the evening, I watch a movie at home. | 저녁에는 집에서 영화를 봅니다.
+I like relaxing at home. | 저는 집에서 쉬는 걸 좋아해요.`),
+Q('home-past', 'past', '집', 'Tell me about a problem you had at your home. What happened, and how did you solve it?', '집에서 겪었던 문제에 대해 말해 주세요. 무슨 일이 있었고, 어떻게 해결했나요?',
+  ['언제, 어떤 문제였는지', '그때 기분 → 내가 한 행동', '결과와 한 줄 소감'], `
+Last winter, I had a problem at home. | 지난겨울에 집에 문제가 있었어요.
+One morning, there was no hot water. | 어느 날 아침, 뜨거운 물이 나오지 않았습니다.
+It was very cold, so I couldn't take a shower. | 너무 추워서 샤워를 할 수 없었어요.
+I was really upset. | 정말 속상했습니다.
+I called the apartment office right away. | 바로 아파트 관리사무소에 전화했어요.
+A repairman came in the afternoon, and he fixed it in an hour. | 오후에 수리 기사님이 와서 한 시간 만에 고쳐 주셨어요.
+After that, I could use hot water again. | 그 후에 다시 뜨거운 물을 쓸 수 있었습니다.
+I was so happy. | 정말 기뻤어요.
+It was a small problem, but I still remember it. | 작은 문제였지만 아직도 기억나요.`),
+
+Q('cafe-desc', 'desc', '카페', 'You indicated in the survey that you go to cafés. Describe a café you often go to. Where is it, and what does it look like?', '설문에서 카페에 간다고 하셨네요. 자주 가는 카페를 묘사해 주세요. 어디에 있고 어떻게 생겼나요?',
+  ['위치: 어디 근처, 걸어서 몇 분', '크기 · 분위기 · 안에 있는 것', '좋아하는 이유'], `
+There is a café I often go to. | 제가 자주 가는 카페가 있어요.
+It is near my office. | 회사 근처에 있습니다.
+It takes about five minutes on foot. | 걸어서 5분 정도 걸려요.
+The café is small, but it is very quiet and clean. | 카페는 작지만 아주 조용하고 깨끗합니다.
+There are many tables and comfortable chairs. | 테이블이 많고 의자가 편해요.
+There are also some plants by the window. | 창가에는 식물도 몇 개 있습니다.
+The coffee is good, and it is not expensive. | 커피가 맛있고 비싸지 않아요.
+I like the café because I can relax there. | 거기서 쉴 수 있어서 그 카페를 좋아합니다.`),
+Q('cafe-routine', 'routine', '카페', 'What do you usually do when you go to a café? Who do you go with, and what do you order?', '카페에 가면 보통 무엇을 하나요? 누구와 가고 무엇을 주문하나요?',
+  ['얼마나 자주, 누구와', '주문 → 자리 → 대화 순서로', '머무는 시간과 한 줄 소감'], `
+I go to a café two or three times a week. | 저는 일주일에 두세 번 카페에 가요.
+I usually go there with my coworkers after lunch. | 보통 점심 식사 후에 동료들과 갑니다.
+First, we order our drinks at the counter. | 먼저 카운터에서 음료를 주문해요.
+I always order an iced americano. | 저는 항상 아이스 아메리카노를 주문합니다.
+Sometimes I have a piece of cake, too. | 가끔 케이크 한 조각도 먹어요.
+Then we sit down and talk about work or our weekend plans. | 그러고 나서 자리에 앉아 일이나 주말 계획에 대해 이야기합니다.
+We usually stay for about thirty minutes. | 보통 30분 정도 머물러요.
+It is a good time to take a break. | 잠깐 쉬기에 좋은 시간이에요.`),
+Q('cafe-past', 'past', '카페', 'Tell me about a memorable experience you had at a café. When was it, and what happened?', '카페에서 있었던 기억에 남는 경험을 말해 주세요. 언제였고 무슨 일이 있었나요?',
+  ['언제, 누구와, 어떤 카페', '사건: 무슨 일이 있었는지', '기분과 마무리'], `
+I had a memorable experience at a café last month. | 지난달에 카페에서 기억에 남는 일이 있었어요.
+I went to a new café with my friend. | 친구와 새로 생긴 카페에 갔습니다.
+It was a rainy day. | 비 오는 날이었어요.
+I ordered a hot latte, but the staff gave me an iced one. | 따뜻한 라테를 주문했는데 직원이 아이스로 줬어요.
+I told the staff about it, and she was very sorry. | 직원에게 말했더니 정말 미안해했습니다.
+She made a new latte and gave me a free cookie, too. | 새 라테를 만들어 주고 쿠키도 서비스로 줬어요.
+I was surprised and happy. | 놀랍고 기뻤습니다.
+So I want to go there again. | 그래서 그곳에 또 가고 싶어요.`),
+
+Q('movie-desc', 'desc', '영화', 'You indicated that you like watching movies. What kind of movies do you like? Why do you like them?', '영화 보는 것을 좋아한다고 하셨네요. 어떤 종류의 영화를 좋아하나요? 왜 좋아하나요?',
+  ['좋아하는 장르와 이유', '싫어하는 장르 한 가지', '좋아하는 배우, 얼마나 자주 보는지'], `
+I like watching movies very much. | 저는 영화 보는 것을 아주 좋아해요.
+My favorite kind of movie is action movies. | 가장 좋아하는 장르는 액션 영화입니다.
+They are exciting and fun. | 신나고 재미있어요.
+When I watch action movies, I can forget about my stress. | 액션 영화를 보면 스트레스를 잊을 수 있습니다.
+I also like comedy movies because they make me laugh. | 코미디 영화도 좋아하는데, 저를 웃게 해 주기 때문이에요.
+But I don't like horror movies. | 하지만 공포 영화는 좋아하지 않아요.
+They are too scary for me. | 저한테는 너무 무섭습니다.
+I watch a movie almost every weekend. | 거의 매주 주말에 영화를 봐요.`),
+Q('movie-routine', 'routine', '영화', 'Tell me about what you usually do when you go to the movies. What do you do before and after the movie?', '영화를 보러 갈 때 보통 무엇을 하는지 말해 주세요. 영화 전후에 무엇을 하나요?',
+  ['언제, 누구와 가는지', '영화 전: 예매 → 팝콘 → 자리', '영화 후: 식사하며 이야기'], `
+I usually go to the movies on weekends with my friend. | 저는 보통 주말에 친구와 영화를 보러 가요.
+First, I book the tickets on my phone. | 먼저 휴대폰으로 표를 예매합니다.
+Before the movie, we buy popcorn and drinks. | 영화 전에 팝콘과 음료를 사요.
+Then we go into the theater and find our seats. | 그러고 나서 상영관에 들어가 자리를 찾습니다.
+I turn off my phone during the movie. | 영화를 보는 동안에는 휴대폰을 꺼요.
+After the movie, we go to a restaurant and have dinner. | 영화가 끝나면 식당에 가서 저녁을 먹습니다.
+We talk about the movie there. | 거기서 영화 이야기를 해요.
+It is my favorite weekend routine. | 제가 가장 좋아하는 주말 일과예요.`),
+Q('movie-past', 'past', '영화', 'Tell me about a movie you saw recently. What was it about, and how did you like it?', '최근에 본 영화에 대해 말해 주세요. 어떤 내용이었고 어땠나요?',
+  ['언제, 어디서, 누구와 봤는지', '줄거리 2~3문장', '느낀 점과 마무리'], `
+Last weekend, I saw a movie at the theater near my house. | 지난 주말에 집 근처 영화관에서 영화를 봤어요.
+I went there with my friend. | 친구와 함께 갔습니다.
+It was an action movie. | 액션 영화였어요.
+The story was about a police officer. | 한 경찰관에 대한 이야기였습니다.
+He tried to catch some bad guys. | 그는 나쁜 사람들을 잡으려고 했어요.
+The action scenes were really exciting. | 액션 장면이 정말 흥미진진했습니다.
+After the movie, we had dinner and talked about it. | 영화가 끝나고 저녁을 먹으며 영화 이야기를 했어요.
+I really enjoyed the movie. | 영화가 정말 재미있었습니다.
+I want to see it again. | 또 보고 싶어요.`),
+
+Q('music-desc', 'desc', '음악', 'You indicated that you enjoy listening to music. What kind of music do you like? Who is your favorite singer?', '음악 감상을 즐긴다고 하셨네요. 어떤 음악을 좋아하나요? 가장 좋아하는 가수는 누구인가요?',
+  ['좋아하는 장르와 느낌', '좋아하는 가수와 이유', '음악이 나에게 주는 것'], `
+I enjoy listening to music every day. | 저는 매일 음악 듣는 것을 즐겨요.
+I like many kinds of music, but my favorite is ballads. | 여러 종류의 음악을 좋아하지만 발라드를 가장 좋아합니다.
+Ballads are slow and calm. | 발라드는 느리고 차분해요.
+When I listen to them, I feel relaxed. | 발라드를 들으면 마음이 편안해집니다.
+My favorite singer is IU. | 가장 좋아하는 가수는 아이유예요.
+She has a beautiful voice, and her songs are very popular in Korea. | 목소리가 아름답고 노래가 한국에서 아주 인기 있어요.
+I also like pop songs because they give me energy. | 팝송도 좋아하는데, 저에게 에너지를 주기 때문입니다.
+Music is an important part of my life. | 음악은 제 삶의 중요한 부분이에요.`),
+Q('music-routine', 'routine', '음악', 'When and where do you usually listen to music? What do you use to listen to music?', '보통 언제 어디서 음악을 듣나요? 음악을 들을 때 무엇을 사용하나요?',
+  ['주로 듣는 시간과 장소', '사용하는 기기', '다른 상황 1~2개와 하루 듣는 시간'], `
+I usually listen to music on my way to work. | 저는 보통 출근길에 음악을 들어요.
+I take the subway every morning, so I listen to music there. | 매일 아침 지하철을 타서 거기서 음악을 듣습니다.
+I use my smartphone and wireless earphones. | 스마트폰과 무선 이어폰을 사용해요.
+They are very convenient. | 아주 편리합니다.
+I also listen to music when I exercise or clean my house. | 운동하거나 집 청소를 할 때도 음악을 들어요.
+At night, I listen to quiet songs before I go to bed. | 밤에는 자기 전에 조용한 노래를 듣습니다.
+It helps me sleep well. | 잠을 잘 자는 데 도움이 돼요.
+I listen to music for about an hour a day. | 하루에 한 시간 정도 음악을 들어요.`),
+Q('music-past', 'past', '음악', 'When did you first become interested in music? Tell me about how your interest in music started.', '언제 처음 음악에 관심을 갖게 되었나요? 음악에 대한 관심이 어떻게 시작됐는지 말해 주세요.',
+  ['언제 처음: when I was in ~', '계기가 된 일', '그 후의 변화, 지금'], `
+I first became interested in music when I was in middle school. | 저는 중학생 때 처음 음악에 관심을 갖게 됐어요.
+One day, my friend gave me a CD. | 어느 날 친구가 CD 한 장을 줬습니다.
+It was a famous Korean singer's album. | 유명한 한국 가수의 앨범이었어요.
+I listened to it every day after school. | 방과 후에 매일 그 앨범을 들었습니다.
+I really loved the songs. | 노래들이 정말 좋았어요.
+After that, I started to buy CDs with my pocket money. | 그 후로 용돈으로 CD를 사기 시작했습니다.
+I also went to a concert in high school. | 고등학생 때는 콘서트에도 갔어요.
+It was amazing. | 정말 굉장했습니다.
+Now I still love music. | 지금도 여전히 음악을 사랑해요.`),
+
+Q('park-desc', 'desc', '공원', 'You indicated that you go to parks. Describe a park you often visit. What does it look like?', '공원에 간다고 하셨네요. 자주 가는 공원을 묘사해 주세요. 어떻게 생겼나요?',
+  ['공원 이름과 위치', '크기 · 나무와 꽃 · 산책로 · 사람들', '좋아하는 이유'], `
+I often go to a park near my house. | 저는 집 근처 공원에 자주 가요.
+It is called Han River Park. | 한강공원이라고 합니다.
+The park is very big and beautiful. | 공원은 아주 크고 아름다워요.
+There are many trees and flowers. | 나무와 꽃이 많습니다.
+There is also a long path for walking and riding bikes. | 걷거나 자전거를 탈 수 있는 긴 길도 있어요.
+You can see the river from the park. | 공원에서 강을 볼 수 있습니다.
+Many people come there with their families or dogs. | 많은 사람들이 가족이나 강아지와 함께 와요.
+The air is fresh, so I feel good there. | 공기가 맑아서 거기 가면 기분이 좋습니다.
+It is my favorite place in my neighborhood. | 우리 동네에서 제가 가장 좋아하는 곳이에요.`),
+Q('park-routine', 'routine', '공원', 'What do you usually do at the park? When do you go, and who do you go with?', '공원에서 보통 무엇을 하나요? 언제, 누구와 가나요?',
+  ['언제, 누구와', '스트레칭 → 걷기 → 쉬기 순서로', '끝나고 하는 일과 좋은 점'], `
+I usually go to the park on weekend mornings. | 저는 보통 주말 아침에 공원에 가요.
+I go there alone or with my family. | 혼자 가거나 가족과 함께 갑니다.
+First, I do some light stretching. | 먼저 가볍게 스트레칭을 해요.
+Then I walk along the river for about an hour. | 그러고 나서 강을 따라 한 시간 정도 걷습니다.
+While I walk, I listen to music. | 걸으면서 음악을 들어요.
+Sometimes I sit on a bench and drink coffee. | 가끔 벤치에 앉아 커피를 마십니다.
+When the weather is nice, we have a picnic there. | 날씨가 좋으면 거기서 소풍을 즐겨요.
+After that, I go home and take a shower. | 그 후에 집에 가서 샤워를 합니다.
+Walking in the park makes me healthy. | 공원에서 걷는 것은 저를 건강하게 해 줘요.`),
+Q('park-past', 'past', '공원', 'Tell me about a memorable thing that happened at a park. What happened, and why was it memorable?', '공원에서 있었던 기억에 남는 일을 말해 주세요. 무슨 일이 있었고 왜 기억에 남나요?',
+  ['언제, 누구와, 날씨', '무엇을 했는지 → 갑자기 생긴 일', '기분과 마무리'], `
+Last spring, I went to the park with my family. | 지난봄에 가족과 공원에 갔어요.
+The weather was warm and sunny. | 날씨가 따뜻하고 화창했습니다.
+There were cherry blossoms everywhere. | 어디에나 벚꽃이 피어 있었어요.
+We brought gimbap and fruit, and we had a picnic under a tree. | 김밥과 과일을 가져가서 나무 아래에서 소풍을 했습니다.
+Suddenly, it started to rain. | 갑자기 비가 내리기 시작했어요.
+We didn't have umbrellas, so we ran to the car. | 우산이 없어서 차까지 뛰어갔습니다.
+We got wet, but we laughed a lot. | 비에 젖었지만 많이 웃었어요.
+It was a funny day. | 재미있는 하루였습니다.
+So I still remember it. | 그래서 아직도 기억나요.`),
+
+Q('trip-desc', 'desc', '국내 여행', 'You indicated that you take trips in your country. Describe a place you like to visit. Why do you like it?', '국내 여행을 한다고 하셨네요. 가고 싶어 하는 장소를 묘사해 주세요. 왜 좋아하나요?',
+  ['좋아하는 여행지와 위치', '거기에 있는 것 · 음식', '좋아하는 이유'], `
+I like traveling around my country. | 저는 국내 여행을 좋아해요.
+My favorite place is Jeju Island. | 가장 좋아하는 곳은 제주도입니다.
+It is a beautiful island in the south of Korea. | 한국 남쪽에 있는 아름다운 섬이에요.
+It takes about one hour by plane from Seoul. | 서울에서 비행기로 한 시간 정도 걸립니다.
+There are beautiful beaches and a high mountain. | 아름다운 해변과 높은 산이 있어요.
+The sea is clean and blue. | 바다가 깨끗하고 파랗습니다.
+The food is delicious, too. | 음식도 맛있어요.
+I especially like the seafood there. | 저는 특히 그곳의 해산물을 좋아합니다.
+I like Jeju because I can relax and forget about work. | 쉬면서 일을 잊을 수 있어서 제주를 좋아해요.`),
+Q('trip-routine', 'routine', '국내 여행', 'What do you usually do to prepare for a trip? Tell me about the things you do before you travel.', '여행을 준비할 때 보통 무엇을 하나요? 여행 가기 전에 하는 일들을 말해 주세요.',
+  ['장소 정하기 → 예약하기', '맛집 찾기 → 짐 싸기', '나만의 습관 한 가지'], `
+Before a trip, I do many things. | 여행 전에 저는 여러 가지를 해요.
+First, I choose a place and check the weather. | 먼저 장소를 정하고 날씨를 확인합니다.
+Then I book a hotel and tickets on the Internet. | 그러고 나서 인터넷으로 호텔과 표를 예약해요.
+I also look for good restaurants on my phone. | 휴대폰으로 맛집도 찾아봅니다.
+The day before the trip, I pack my bag. | 여행 전날에는 짐을 싸요.
+I usually pack clothes, a charger, and some medicine. | 보통 옷, 충전기, 약을 챙깁니다.
+I always make a list, so I don't forget anything. | 항상 목록을 만들어서 아무것도 잊지 않아요.
+Preparing for a trip is fun for me. | 여행 준비는 저에게 즐거운 일이에요.`),
+Q('trip-past', 'past', '국내 여행', 'Tell me about a memorable trip you took. Where did you go, who did you go with, and what did you do?', '기억에 남는 여행에 대해 말해 주세요. 어디로, 누구와 갔고 무엇을 했나요?',
+  ['언제, 어디로, 누구와, 교통편', '첫째 날 · 둘째 날에 한 일', '날씨, 음식, 한 줄 소감'], `
+Two years ago, I went to Busan with my family. | 2년 전에 가족과 부산에 갔어요.
+We went there by train. | 기차를 타고 갔습니다.
+It took about three hours. | 세 시간 정도 걸렸어요.
+On the first day, we went to Haeundae Beach. | 첫째 날에는 해운대 해수욕장에 갔습니다.
+We swam in the sea and took many pictures. | 바다에서 수영하고 사진을 많이 찍었어요.
+In the evening, we ate fresh seafood at a market. | 저녁에는 시장에서 신선한 해산물을 먹었습니다.
+It was really delicious. | 정말 맛있었어요.
+On the second day, we visited a famous temple. | 둘째 날에는 유명한 절을 방문했습니다.
+It was the best trip of my life. | 제 인생 최고의 여행이었어요.`),
+
+Q('phone-desc', 'desc', '휴대폰', 'Tell me about your cell phone. What does it look like, and what do you like about it?', '당신의 휴대폰에 대해 말해 주세요. 어떻게 생겼고 어떤 점이 마음에 드나요?',
+  ['언제 샀는지, 색과 모양', '좋은 점 2~3개 (화면, 카메라, 배터리)', '마무리: 없으면 못 산다'], `
+I have a smartphone. | 저는 스마트폰이 있어요.
+I bought it two years ago. | 2년 전에 샀습니다.
+It is black and thin. | 검은색이고 얇아요.
+The screen is big, so it is good for watching videos. | 화면이 커서 영상을 보기에 좋습니다.
+The camera is also very good. | 카메라도 아주 좋아요.
+I can take nice pictures with it. | 이걸로 멋진 사진을 찍을 수 있습니다.
+The battery lasts all day. | 배터리가 하루 종일 가요.
+I use my phone for everything. | 저는 모든 일에 휴대폰을 사용합니다.
+I can't live without it. | 휴대폰 없이는 못 살아요.`, 1),
+Q('phone-routine', 'routine', '휴대폰', 'What do you usually do with your phone? How often do you use it?', '휴대폰으로 보통 무엇을 하나요? 얼마나 자주 사용하나요?',
+  ['아침 → 지하철 → 회사 → 저녁 순서로', '편리한 기능 한 가지', '하루 사용 시간과 내 생각'], `
+I use my phone all day. | 저는 하루 종일 휴대폰을 사용해요.
+In the morning, I check the weather and the news. | 아침에는 날씨와 뉴스를 확인합니다.
+On the subway, I watch videos or listen to music. | 지하철에서는 영상을 보거나 음악을 들어요.
+At work, I send messages to my coworkers. | 회사에서는 동료들에게 메시지를 보냅니다.
+I also use my phone to pay for things. | 물건값을 낼 때도 휴대폰을 써요.
+It is very convenient. | 아주 편리합니다.
+In the evening, I call my parents or chat with my friends. | 저녁에는 부모님께 전화하거나 친구들과 채팅해요.
+I use my phone for about four hours a day. | 하루에 네 시간 정도 휴대폰을 사용합니다.
+I think it is too much. | 너무 많이 쓰는 것 같아요.`, 1),
+Q('phone-past', 'past', '휴대폰', 'Tell me about a problem you had with your phone. What happened, and how did you deal with it?', '휴대폰 때문에 겪었던 문제에 대해 말해 주세요. 무슨 일이 있었고 어떻게 대처했나요?',
+  ['언제, 어떤 문제', '기분 → 서비스 센터에서 한 일', '그 후 달라진 점'], `
+I had a problem with my phone last year. | 작년에 휴대폰에 문제가 있었어요.
+I dropped my phone on the street. | 길에서 휴대폰을 떨어뜨렸습니다.
+The screen was broken, and I couldn't see anything. | 화면이 깨져서 아무것도 볼 수 없었어요.
+I was so sad because it was a new phone. | 새 휴대폰이라서 너무 슬펐습니다.
+The next day, I went to a service center. | 다음 날 서비스 센터에 갔어요.
+I waited for about an hour. | 한 시간 정도 기다렸습니다.
+They changed the screen, and it cost a lot of money. | 화면을 교체해 줬는데 돈이 많이 들었어요.
+After that, I bought a strong phone case. | 그 후에 튼튼한 휴대폰 케이스를 샀습니다.
+Now I am very careful with my phone. | 이제는 휴대폰을 아주 조심해서 다뤄요.`, 1),
+
+Q('weather-desc', 'desc', '날씨', 'Tell me about the weather and seasons in your country. What is each season like?', '당신 나라의 날씨와 계절에 대해 말해 주세요. 각 계절은 어떤가요?',
+  ['사계절이 있다', '계절마다 한 문장씩', '가장 좋아하는 계절과 이유'], `
+Korea has four seasons. | 한국에는 사계절이 있어요.
+They are spring, summer, fall, and winter. | 봄, 여름, 가을, 겨울입니다.
+Spring is warm, and there are many flowers. | 봄은 따뜻하고 꽃이 많이 펴요.
+Summer is very hot and humid. | 여름은 아주 덥고 습합니다.
+It rains a lot in July. | 7월에는 비가 많이 와요.
+Fall is cool, and the sky is clear. | 가을은 선선하고 하늘이 맑습니다.
+Winter is very cold, and it snows sometimes. | 겨울은 아주 춥고 가끔 눈이 와요.
+My favorite season is fall because the weather is perfect for walking. | 걷기에 딱 좋은 날씨라서 가을을 가장 좋아해요.`, 1),
+Q('weather-routine', 'routine', '날씨', 'What do you usually do in your favorite season? Tell me about your activities.', '가장 좋아하는 계절에 보통 무엇을 하나요? 하는 활동들을 말해 주세요.',
+  ['좋아하는 계절', '그 계절에 하는 활동 2~3개', '마무리 한 문장'], `
+My favorite season is fall. | 제가 가장 좋아하는 계절은 가을이에요.
+In fall, I usually spend a lot of time outside. | 가을에는 보통 밖에서 시간을 많이 보냅니다.
+On weekends, I go to the park and take a walk. | 주말에는 공원에 가서 산책해요.
+Sometimes I go hiking with my friends. | 가끔 친구들과 등산을 갑니다.
+The mountains are very beautiful in fall. | 가을에는 산이 아주 아름다워요.
+After hiking, we always eat something delicious. | 등산 후에는 항상 맛있는 것을 먹습니다.
+I also ride my bike along the river. | 강을 따라 자전거도 타요.
+Fall is short, so I try to enjoy it. | 가을은 짧아서 즐기려고 노력해요.`, 1),
+Q('weather-past', 'past', '날씨', 'Tell me about a time when the weather caused a problem for you. What happened?', '날씨 때문에 문제가 생겼던 때에 대해 말해 주세요. 무슨 일이 있었나요?',
+  ['언제, 어떤 계획이 있었는지', '날씨가 어땠고 어떻게 됐는지', '대신 한 일과 배운 점'], `
+Last summer, I had a problem because of the weather. | 지난여름에 날씨 때문에 문제가 있었어요.
+I had a plan to go to the beach with my friends. | 친구들과 바다에 갈 계획이 있었습니다.
+But on that day, it rained very hard. | 그런데 그날 비가 아주 많이 왔어요.
+It was also very windy. | 바람도 많이 불었습니다.
+So we canceled the trip. | 그래서 여행을 취소했어요.
+I was really disappointed. | 정말 실망했습니다.
+We went to a café and watched a movie instead. | 대신 카페에 가고 영화를 봤어요.
+It was fun, but I still wanted to go to the beach. | 재미있었지만 여전히 바다에 가고 싶었습니다.
+Now I always check the weather before I make plans. | 이제는 계획을 세우기 전에 항상 날씨를 확인해요.`, 1),
+
+Q('rest-desc', 'desc', '음식점', 'Tell me about a restaurant you often go to. What kind of food does it serve?', '자주 가는 식당에 대해 말해 주세요. 어떤 음식을 파나요?',
+  ['어떤 식당, 어디에, 얼마나 자주', '파는 음식과 가장 좋아하는 메뉴', '가격 · 사장님 · 가는 이유'], `
+There is a Korean restaurant near my office. | 회사 근처에 한식당이 있어요.
+I go there once or twice a week. | 일주일에 한두 번 갑니다.
+The restaurant is small, but it is always crowded. | 식당은 작지만 항상 사람이 많아요.
+It serves kimchi stew and grilled fish. | 김치찌개와 생선구이를 팝니다.
+My favorite dish is kimchi stew. | 제가 가장 좋아하는 메뉴는 김치찌개예요.
+It is a little spicy, but it is really delicious. | 조금 맵지만 정말 맛있습니다.
+The price is cheap, and the owner is very kind. | 가격이 싸고 사장님이 아주 친절해요.
+That's why I often go there with my coworkers. | 그래서 동료들과 자주 갑니다.`, 1),
+Q('rest-routine', 'routine', '음식점', 'What do you usually do when you eat out? Who do you go with, and how do you choose a restaurant?', '외식할 때 보통 어떻게 하나요? 누구와 가고 식당은 어떻게 고르나요?',
+  ['얼마나 자주, 누구와', '식당 고르기 → 예약 → 주문', '식사 후에 하는 일'], `
+I eat out about once a week. | 저는 일주일에 한 번 정도 외식해요.
+I usually go with my family on weekends. | 보통 주말에 가족과 갑니다.
+First, I search for a good restaurant on my phone. | 먼저 휴대폰으로 좋은 식당을 검색해요.
+I read the reviews and look at the pictures. | 후기를 읽고 사진을 봅니다.
+Then I make a reservation. | 그러고 나서 예약을 해요.
+At the restaurant, we order different dishes and share them. | 식당에서는 여러 가지 음식을 시켜서 나눠 먹습니다.
+We talk a lot while we eat. | 먹으면서 이야기를 많이 해요.
+After the meal, we usually go to a café for dessert. | 식사 후에는 보통 카페에 가서 디저트를 먹습니다.
+Eating out makes me happy. | 외식은 저를 행복하게 해요.`, 1),
+Q('rest-past', 'past', '음식점', 'Tell me about a memorable meal you had at a restaurant. When was it, and what made it special?', '식당에서 했던 기억에 남는 식사에 대해 말해 주세요. 언제였고 왜 특별했나요?',
+  ['언제, 누구와, 어떤 식당', '주문한 음식과 맛', '특별했던 순간과 소감'], `
+Last month, I went to an Italian restaurant for my mother's birthday. | 지난달에 어머니 생신이라 이탈리안 레스토랑에 갔어요.
+I made a reservation one week before. | 일주일 전에 예약했습니다.
+The restaurant was quiet and beautiful. | 식당은 조용하고 예뻤어요.
+We ordered pizza, pasta, and steak. | 피자, 파스타, 스테이크를 주문했습니다.
+The food was really delicious. | 음식이 정말 맛있었어요.
+After dinner, the staff brought a small cake and sang a birthday song. | 식사 후에 직원들이 작은 케이크를 가져와 생일 노래를 불러 줬습니다.
+My mother was surprised and very happy. | 어머니는 놀라고 아주 기뻐하셨어요.
+It was a little expensive, but it was a great dinner. | 조금 비쌌지만 멋진 저녁이었습니다.`, 1),
+
+Q('rp-movie-ask', 'rp-ask', '영화 예매', "I'm going to give you a situation and ask you to act it out. You want to see a movie with your friend this weekend. Call the movie theater and ask three or four questions to get the information you need.", '상황을 드릴 테니 연기해 주세요. 이번 주말에 친구와 영화를 보고 싶습니다. 영화관에 전화해서 필요한 정보를 얻기 위해 질문을 서너 개 하세요.',
+  ['인사 + 용건: I\'d like to ~', '질문 3~4개: 상영작, 시간, 가격, 예매', '감사 인사로 마무리'], `
+Hello. I'd like to see a movie this weekend. | 안녕하세요. 이번 주말에 영화를 보고 싶은데요.
+Can I ask you some questions? | 몇 가지 여쭤봐도 될까요?
+First, what movies are playing this Saturday? | 먼저, 이번 토요일에 어떤 영화가 상영되나요?
+What time does the action movie start? | 액션 영화는 몇 시에 시작하나요?
+How much is a ticket for an adult? | 성인 표는 얼마인가요?
+Also, can I book the tickets on the phone? | 그리고 전화로 표를 예매할 수 있나요?
+Do you have a parking lot? | 주차장이 있나요?
+Okay, I see. Thank you for your help. | 네, 알겠습니다. 도와주셔서 감사합니다.`),
+Q('rp-movie-solve', 'rp-solve', '영화 예매', "I'm sorry, but there is a problem you need to resolve. You bought movie tickets, but you found that the tickets are for the wrong time. Explain the situation to the staff and offer two or three alternatives to solve this problem.", '죄송하지만 해결해야 할 문제가 있습니다. 영화표를 샀는데 시간이 잘못된 표라는 걸 알게 됐어요. 직원에게 상황을 설명하고 해결을 위한 대안을 두세 가지 제시하세요.',
+  ['문제 알리기: I have a problem with ~', '상황 설명 2문장', '대안 2~3개: Can I ~? / Or ~?'], `
+Excuse me. I have a problem with my tickets. | 실례합니다. 제 표에 문제가 있어요.
+I booked two tickets for the seven o'clock movie. | 7시 영화표 두 장을 예매했거든요.
+But these tickets are for five o'clock. | 그런데 이 표는 5시 영화예요.
+I think there was a mistake. | 착오가 있었던 것 같아요.
+Can I change them to seven o'clock? | 7시 표로 바꿀 수 있을까요?
+If there are no seats, can I change them to tomorrow? | 자리가 없으면 내일로 바꿀 수 있나요?
+Or can I get a refund? | 아니면 환불받을 수 있을까요?
+I'm sorry to bother you. Please help me. | 번거롭게 해서 죄송해요. 도와주세요.`),
+Q('rp-movie-exp', 'rp-exp', '영화 예매', "That's the end of the situation. Have you ever had a problem with tickets or a reservation? What happened, and how did you solve it?", '상황극은 여기까지입니다. 표나 예약 때문에 문제가 생긴 적이 있나요? 무슨 일이 있었고 어떻게 해결했나요?',
+  ['언제, 어떤 예약이었는지', '문제 발견 → 내가 한 행동', '결과와 배운 점'], `
+Yes, I had a problem with a ticket last year. | 네, 작년에 표 때문에 문제가 있었어요.
+I booked a train ticket to Busan on my phone. | 휴대폰으로 부산행 기차표를 예매했습니다.
+But I chose the wrong date by mistake. | 그런데 실수로 날짜를 잘못 골랐어요.
+I found out at the station. | 역에 가서야 알았습니다.
+I was very surprised. | 정말 놀랐어요.
+So I went to the ticket office and explained my problem. | 그래서 매표소에 가서 문제를 설명했습니다.
+Luckily, there was a seat on the next train. | 다행히 다음 기차에 자리가 있었어요.
+I changed my ticket and paid a small fee. | 표를 바꾸고 수수료를 조금 냈습니다.
+Now I always check the date twice. | 이제는 항상 날짜를 두 번 확인해요.`),
+
+Q('rp-hotel-ask', 'rp-ask', '호텔', "I'm going to give you a situation and ask you to act it out. You are planning a trip and need to book a hotel. Call the hotel and ask three or four questions about the rooms.", '상황을 드릴 테니 연기해 주세요. 여행을 계획 중이고 호텔을 예약해야 합니다. 호텔에 전화해서 객실에 대해 질문을 서너 개 하세요.',
+  ['인사 + 여행 계획 한 문장', '질문 3~4개: 빈방, 가격, 조식, 위치', '예약 의사와 감사 인사'], `
+Hello. I'm planning a trip to Jeju next month. | 안녕하세요. 다음 달에 제주 여행을 계획하고 있어요.
+I'd like to ask some questions about your hotel. | 호텔에 대해 몇 가지 여쭤보고 싶습니다.
+First, do you have a room for two people on May fifth? | 먼저, 5월 5일에 2인실이 있나요?
+How much is it for one night? | 1박에 얼마인가요?
+Is breakfast included? | 조식이 포함되어 있나요?
+Also, how far is the hotel from the airport? | 그리고 공항에서 호텔까지 얼마나 먼가요?
+Is there a swimming pool? | 수영장이 있나요?
+Great. I'd like to book a room, please. Thank you very much. | 좋네요. 방을 예약하고 싶습니다. 정말 감사합니다.`),
+Q('rp-hotel-solve', 'rp-solve', '호텔', "I'm sorry, but there is a problem you need to resolve. You arrived at the hotel, but your room is not clean and the air conditioner doesn't work. Call the front desk, explain the situation, and offer two or three alternatives.", '죄송하지만 해결해야 할 문제가 있습니다. 호텔에 도착했는데 방이 깨끗하지 않고 에어컨이 작동하지 않아요. 프런트에 전화해 상황을 설명하고 대안을 두세 가지 제시하세요.',
+  ['문제 알리기: There is a problem with my room', '어떤 문제인지 2문장', '대안: 수리 / 방 교체 / 할인'], `
+Excuse me. I just checked in, but there is a problem with my room. | 실례합니다. 방금 체크인했는데 방에 문제가 있어요.
+The room is not clean, and the air conditioner doesn't work. | 방이 깨끗하지 않고 에어컨이 작동하지 않아요.
+It is very hot in the room. | 방 안이 너무 더워요.
+Could you send someone to fix it? | 고쳐 줄 분을 보내 주실 수 있나요?
+Or can I change to another room? | 아니면 다른 방으로 바꿀 수 있을까요?
+If you don't have any rooms, I'd like to get a discount. | 빈방이 없다면 할인을 받고 싶습니다.
+I'm very tired, so please help me quickly. | 많이 피곤해서 빨리 도와주시면 좋겠어요.
+Thank you. | 감사합니다.`),
+Q('rp-hotel-exp', 'rp-exp', '호텔', "That's the end of the situation. Have you ever had a problem during a trip? What happened, and how did you handle it?", '상황극은 여기까지입니다. 여행 중에 문제가 생긴 적이 있나요? 무슨 일이 있었고 어떻게 대처했나요?',
+  ['언제, 어디로 간 여행', '문제 상황과 기분', '해결 과정과 그 후 습관'], `
+Yes, I had a problem during my trip to Japan. | 네, 일본 여행 중에 문제가 있었어요.
+Three years ago, I went to Osaka with my friend. | 3년 전에 친구와 오사카에 갔습니다.
+At the airport, I couldn't find my bag. | 공항에서 제 가방을 찾을 수 없었어요.
+I waited for a long time, but it didn't come out. | 오래 기다렸지만 가방이 나오지 않았습니다.
+I was really worried. | 정말 걱정됐어요.
+So I went to the information desk and asked for help. | 그래서 안내 데스크에 가서 도움을 요청했습니다.
+The staff found my bag two hours later. | 직원이 두 시간 뒤에 가방을 찾아 줬어요.
+I was so relieved. | 정말 안심했습니다.
+After that, I put a name tag on my bag. | 그 후로 가방에 이름표를 달았어요.`),
+
+Q('rp-shop-ask', 'rp-ask', '쇼핑', "I'm going to give you a situation and ask you to act it out. You want to buy some new clothes. Go to a clothing store and ask the staff three or four questions about the item you want.", '상황을 드릴 테니 연기해 주세요. 새 옷을 사고 싶습니다. 옷 가게에 가서 원하는 상품에 대해 직원에게 질문을 서너 개 하세요.',
+  ['찾는 물건: I\'m looking for ~', '질문 3~4개: 색, 사이즈, 입어 보기, 가격', '구매 결정과 결제'], `
+Excuse me. I'm looking for a jacket for spring. | 실례합니다. 봄에 입을 재킷을 찾고 있어요.
+Can I ask you some questions? | 몇 가지 여쭤봐도 될까요?
+Do you have this jacket in black? | 이 재킷 검은색이 있나요?
+What sizes do you have? | 어떤 사이즈가 있나요?
+Can I try it on? | 입어 봐도 될까요?
+Where is the fitting room? | 탈의실은 어디인가요?
+How much is it? Is it on sale now? | 얼마인가요? 지금 세일 중인가요?
+Okay, I'll take it. Can I pay by credit card? | 네, 이걸로 할게요. 카드로 결제할 수 있나요?
+Thank you. | 감사합니다.`),
+Q('rp-shop-solve', 'rp-solve', '쇼핑', "I'm sorry, but there is a problem you need to resolve. You bought a shirt, but when you got home, you found a hole in it. Call the store, explain the situation, and offer two or three alternatives.", '죄송하지만 해결해야 할 문제가 있습니다. 셔츠를 샀는데 집에 와 보니 구멍이 나 있었어요. 가게에 전화해 상황을 설명하고 대안을 두세 가지 제시하세요.',
+  ['언제 무엇을 샀는지', '문제: There is a hole in ~', '대안: 교환 / 환불 + 방문 일정'], `
+Hello. I bought a shirt at your store yesterday. | 안녕하세요. 어제 그 가게에서 셔츠를 샀는데요.
+But when I got home, I found a problem. | 집에 와서 문제를 발견했어요.
+There is a small hole in the shirt. | 셔츠에 작은 구멍이 있어요.
+I didn't wear it at all. | 한 번도 입지 않았습니다.
+Can I exchange it for a new one? | 새것으로 교환할 수 있을까요?
+If you don't have the same one, I'd like to get a refund. | 같은 상품이 없으면 환불받고 싶어요.
+I still have the receipt. | 영수증은 아직 가지고 있습니다.
+I can visit the store tomorrow. | 내일 가게에 방문할 수 있어요.
+Please let me know what to do. Thank you. | 어떻게 하면 되는지 알려 주세요. 감사합니다.`),
+Q('rp-shop-exp', 'rp-exp', '쇼핑', "That's the end of the situation. Have you ever bought something and had a problem with it? What happened, and what did you do?", '상황극은 여기까지입니다. 물건을 샀는데 문제가 있었던 적이 있나요? 무슨 일이 있었고 어떻게 했나요?',
+  ['언제, 무엇을, 어디서 샀는지', '문제와 기분', '교환·환불 과정과 지금 습관'], `
+Yes, I had a problem last winter. | 네, 지난겨울에 문제가 있었어요.
+I bought a pair of shoes on the Internet. | 인터넷으로 신발 한 켤레를 샀습니다.
+They looked nice in the picture. | 사진에서는 멋져 보였어요.
+But when I got them, they were too small. | 그런데 받아 보니 너무 작았습니다.
+I was disappointed. | 실망했어요.
+So I called the customer service center and asked for an exchange. | 그래서 고객 센터에 전화해서 교환을 요청했습니다.
+I sent the shoes back, and I got bigger ones a week later. | 신발을 돌려보내고 일주일 뒤에 더 큰 것을 받았어요.
+It took a long time. | 시간이 오래 걸렸습니다.
+Now I buy shoes only at a store. | 이제 신발은 매장에서만 사요.`),
+
+Q('ava-home', 'ava', '집', 'I live in a house in a small town. Ask me three or four questions about my house.', '저는 작은 마을의 주택에 살아요. 제 집에 대해 질문을 서너 개 해 주세요.',
+  ['반응 한마디: Okay. / Oh, I see.', '질문 3~4개: 위치, 방, 좋아하는 공간, 같이 사는 사람', '감사 인사'], `
+Okay. I have some questions about your house. | 네. 당신의 집에 대해 몇 가지 질문이 있어요.
+First, where is your house? | 먼저, 집은 어디에 있나요?
+How many rooms are there in your house? | 집에 방이 몇 개 있나요?
+What is your favorite room, and why? | 가장 좋아하는 방은 어디이고, 이유는 뭔가요?
+Also, who do you live with? | 그리고 누구와 함께 사나요?
+How long have you lived there? | 거기서 얼마나 오래 살았나요?
+Thank you for answering my questions. | 제 질문에 답해 주셔서 감사합니다.`),
+Q('ava-music', 'ava', '음악', 'I also enjoy listening to music. Ask me three or four questions about the music I like.', '저도 음악 감상을 즐겨요. 제가 좋아하는 음악에 대해 질문을 서너 개 해 주세요.',
+  ['반응 한마디: Oh, you like music, too.', '질문 3~4개: 장르, 가수, 듣는 때, 콘서트', '감사 인사'], `
+Oh, you like music, too. | 오, 당신도 음악을 좋아하시는군요.
+I have some questions for you. | 몇 가지 질문이 있어요.
+What kind of music do you like? | 어떤 종류의 음악을 좋아하나요?
+Who is your favorite singer? | 가장 좋아하는 가수는 누구인가요?
+When do you usually listen to music? | 보통 언제 음악을 듣나요?
+Do you often go to concerts? | 콘서트에 자주 가나요?
+And do you play any instruments? | 그리고 연주하는 악기가 있나요?
+Thank you for telling me. | 말씀해 주셔서 감사합니다.`),
+Q('ava-park', 'ava', '공원', 'I like to go to the park on weekends. Ask me three or four questions about what I do there.', '저는 주말에 공원에 가는 걸 좋아해요. 제가 거기서 무엇을 하는지 질문을 서너 개 해 주세요.',
+  ['반응 한마디: That sounds nice.', '질문 3~4개: 어느 공원, 얼마나 자주, 누구와, 무엇을', '감사 인사'], `
+That sounds nice. | 좋네요.
+Let me ask you some questions. | 몇 가지 여쭤볼게요.
+Which park do you usually go to? | 보통 어느 공원에 가나요?
+How often do you go there? | 얼마나 자주 가나요?
+Who do you go with? | 누구와 함께 가나요?
+What do you usually do at the park? | 공원에서 보통 무엇을 하나요?
+And how long do you stay there? | 그리고 얼마나 오래 머무나요?
+Thank you for telling me. | 말씀해 주셔서 감사합니다.`)
+];
+
+const DAYS = [
+{ id: 1, title: '시험 구조와 자기소개', goal: '시험이 어떻게 진행되는지 알고, 1번 자기소개를 완성해요.', min: 40,
+  lessons: [
+    { t: '오픽은 이런 시험이에요', b: `<p>컴퓨터 앞에서 헤드셋을 쓰고, 화면 속 면접관의 질문에 <b>영어로 말해서</b> 답하는 시험이에요.</p>
+      <ul><li>오리엔테이션 약 20분 + <b>본시험 40분</b></li><li>난이도 3 이상을 고르면 <b>15문항</b></li><li>문항별 제한 시간은 없어요. 40분 안에 모두 답하면 돼요.</li><li>질문은 <b>한 번 더</b> 들을 수 있어요. 답변은 다시 녹음할 수 없어요.</li></ul>
+      <p>이 앱의 모의고사는 같은 흐름으로 만들었어요.</p>` },
+    { t: 'IM1은 어느 정도일까요', b: `<p>등급은 NL부터 AL까지 9단계예요. IM1은 가운데, <b>익숙한 주제를 문장으로 말할 수 있는 수준</b>이에요.</p>
+      <ul><li>문법이 완벽할 필요는 없어요.</li><li>단어만 나열하지 않고 <b>주어 + 동사가 있는 문장</b>으로 말해요.</li><li>질문마다 <b>6~8문장, 40초~1분</b>을 채우면 충분해요.</li></ul>
+      <p>그래서 이 코스는 어려운 표현 대신 짧고 확실한 문장을 반복해요.</p>` },
+    { t: '설문은 좁게 고르세요', b: `<p>시험 전에 고르는 설문(Background Survey)에서 문제가 나와요. 준비할 주제를 줄이는 쪽으로 고르세요. 아래는 이 코스에 맞춘 12개 선택이에요.</p>
+      <div class="tablebox"><table><tr><th>항목</th><th>추천 선택</th></tr>
+      <tr><td>여가 활동</td><td>영화 보기, 공연 보기, 콘서트 보기, 공원 가기, 카페 가기, 쇼핑하기</td></tr>
+      <tr><td>취미·관심사</td><td>음악 감상하기</td></tr>
+      <tr><td>운동</td><td>조깅, 걷기, 운동을 전혀 하지 않음</td></tr>
+      <tr><td>휴가·출장</td><td>국내 여행, 집에서 보내는 휴가</td></tr></table></div>
+      <p>실제 화면의 항목 이름은 조금 다를 수 있어요. 비슷한 것끼리 고르면 답변을 돌려 쓸 수 있어요.</p>` },
+    { t: '난이도는 3단계로', b: `<p>설문 다음에 말하기 수준을 1~6단계 중에서 직접 골라요(Self Assessment).</p>
+      <ul><li>IM1이 목표라면 <b>3단계</b>를 권해요.</li><li>7번 문제 뒤에 난이도를 다시 물어봐요. 이때는 <b>비슷한 질문</b>을 고르세요.</li><li>단계를 너무 낮추면 문항이 12개로 줄고 높은 등급이 나오기 어려워요.</li></ul>` },
+    { t: '자기소개 공식', b: `<p>1번은 거의 항상 자기소개예요. 가볍게 30~40초만 말하면 돼요.</p>
+      <p class="en">이름 → 사는 곳 → 하는 일 → 취미 → 마무리</p>
+      <p>미리 만들어 둔 문장을 그대로 말해도 괜찮아요. 오늘 말하기 연습에서 <b>내 자기소개</b>를 직접 만들어 저장해요.</p>` }
+  ],
+  patterns: [
+    P('My name is ___.', '제 이름은 ___입니다.', 'My name is Minsu Kim.', '제 이름은 김민수입니다.'),
+    P('I live in ___ with ___.', '저는 ___에서 ___와 살아요.', 'I live in Seoul with my family.', '저는 가족과 서울에 살아요.'),
+    P("I'm a(n) ___.", '저는 ___입니다. (직업)', "I'm an office worker.", '저는 회사원입니다.'),
+    P('I work for ___.', '저는 ___에서 일해요.', 'I work for a trading company.', '저는 무역 회사에서 일해요.'),
+    P('I usually work from ___ to ___.', '보통 ___시부터 ___시까지 일해요.', 'I usually work from nine to six.', '보통 9시부터 6시까지 일해요.'),
+    P('In my free time, I like to ___.', '여가 시간에는 ___하는 걸 좋아해요.', 'In my free time, I like to watch movies.', '여가 시간에는 영화 보는 걸 좋아해요.'),
+    P("I'm a(n) ___ person.", '저는 ___한 사람이에요.', "I'm a quiet person.", '저는 조용한 사람이에요.'),
+    P("That's all about me.", '제 소개는 여기까지입니다.', "That's all about me. Thank you.", '제 소개는 여기까지입니다. 감사합니다.')
+  ],
+  models: ['intro-1'], practice: ['intro-1'],
+  quiz: [
+    Z('오픽 본시험 시간은 얼마인가요?', ['약 20분', '약 40분', '약 60분', '약 90분'], 1, '오리엔테이션 약 20분 뒤에 본시험 40분이 이어져요.'),
+    Z('난이도 3 이상을 고르면 몇 문항이 나오나요?', ['10문항', '12문항', '15문항', '20문항'], 2, '난이도 1~2는 12문항, 3 이상은 15문항이에요.'),
+    Z('질문은 몇 번 다시 들을 수 있나요?', ['들을 수 없다', '한 번', '두 번', '제한 없음'], 1, '다시 듣기는 한 번만 가능해요.'),
+    Z('IM1을 목표로 할 때 알맞은 답변은?', ['단어 서너 개', '한 문장', '6~8문장으로 40초~1분', '3분 이상 길게'], 2, '문장 단위로 40초~1분을 채우는 것이 목표예요.'),
+    Z('"저는 가족과 서울에 살아요"를 영어로 하면?', ['I live Seoul my family.', 'I live in Seoul with my family.', 'I am live in Seoul with family.', 'I living in Seoul and family.'], 1, 'live in + 장소, with + 사람 순서로 말해요.')
+  ] },
+
+{ id: 2, title: '묘사하기', goal: '집, 카페, 공원을 현재시제 4~5문장으로 그려 내요.', min: 50,
+  lessons: [
+    { t: '묘사는 반드시 나와요', b: `<p>한 주제에서 문제가 세 개씩 묶여 나와요. 그 첫 문제가 대부분 묘사예요.</p><p class="en">Describe your home. / What does it look like?</p><p>묘사는 <b>현재시제</b>로 말해요. 시제를 바꿀 일이 없어서 가장 점수를 지키기 쉬운 유형이에요.</p>` },
+    { t: '묘사 3단 뼈대', b: `<ul><li><b>한 줄 소개</b>: 무엇인지, 어디에 있는지</li><li><b>특징 세 가지</b>: 크기, 안에 있는 것, 분위기</li><li><b>내 느낌</b>: 좋아하는 이유</li></ul><p class="en">There is a café near my office. It is small, but it is quiet. I like it because I can relax there.</p>` },
+    { t: '두 문장틀만 기억하세요', b: `<p><b>There is / There are</b>로 있는 것을 말하고, <b>It is + 형용사</b>로 어떤지 말해요.</p><p class="en">There is a sofa in the living room.<br>There are many trees in the park.<br>It is clean and cozy.</p><p>하나면 is, 여러 개면 are예요.</p>` },
+    { t: '형용사 저금통', b: `<p>묘사에 바로 쓰는 형용사예요. 반대말끼리 묶어서 외우세요.</p><div class="tablebox"><table>
+      <tr><td>big 큰</td><td>small 작은</td></tr><tr><td>quiet 조용한</td><td>crowded 붐비는</td></tr><tr><td>clean 깨끗한</td><td>cozy 아늑한</td></tr><tr><td>cheap 싼</td><td>expensive 비싼</td></tr><tr><td>comfortable 편한</td><td>convenient 편리한</td></tr></table></div>
+      <p><b>not very ~, but ~</b>로 이으면 문장이 길어져요.</p>` }
+  ],
+  patterns: [
+    P('There is a ___ in ___.', '___에 ___가 있어요.', 'There is a sofa in the living room.', '거실에 소파가 있어요.'),
+    P('There are many ___.', '___가 많아요.', 'There are many trees and flowers.', '나무와 꽃이 많아요.'),
+    P('It is ___ and ___.', '___하고 ___해요.', 'It is clean and cozy.', '깨끗하고 아늑해요.'),
+    P('It is near ___.', '___ 근처에 있어요.', 'It is near my office.', '회사 근처에 있어요.'),
+    P('It takes about ___ minutes on foot.', '걸어서 ___분 정도 걸려요.', 'It takes about five minutes on foot.', '걸어서 5분 정도 걸려요.'),
+    P('It is not very ___, but it is ___.', '아주 ___하진 않지만 ___해요.', 'It is not very big, but it is clean.', '아주 크진 않지만 깨끗해요.'),
+    P('My favorite ___ is ___.', '제가 가장 좋아하는 ___는 ___예요.', 'My favorite place is my room.', '제가 가장 좋아하는 곳은 제 방이에요.'),
+    P('I like it because ___.', '___해서 좋아해요.', 'I like it because I can relax there.', '거기서 쉴 수 있어서 좋아해요.')
+  ],
+  models: ['home-desc', 'cafe-desc', 'park-desc'], practice: ['home-desc', 'cafe-desc', 'movie-desc', 'music-desc'],
+  quiz: [
+    Z('"거실에 소파가 있어요"를 바르게 말한 것은?', ['There are a sofa in the living room.', 'There is a sofa in the living room.', 'It has sofa in living room.', 'There have a sofa in the living room.'], 1, '하나일 때는 There is를 써요.'),
+    Z('묘사 답변의 첫 문장으로 가장 좋은 것은?', ['I was happy.', 'I often go to a café near my office.', 'Thank you.', 'Because it is good.'], 1, '무엇을, 어디에 있는지 한 줄로 소개하며 시작해요.'),
+    Z('빈칸에 알맞은 말은? "There ___ many trees in the park."', ['is', 'are', 'be', 'has'], 1, '여러 개일 때는 There are를 써요.'),
+    Z('"아늑한"을 뜻하는 단어는?', ['crowded', 'cozy', 'cheap', 'convenient'], 1, 'cozy는 아늑한, crowded는 붐비는이에요.'),
+    Z('묘사 답변의 마무리로 알맞은 것은?', ['I like it because I can relax there.', 'What time does it open?', 'I went there yesterday and.', 'There is.'], 0, '좋아하는 이유로 마무리하면 자연스러워요.')
+  ] },
+
+{ id: 3, title: '습관과 루틴 말하기', goal: '평소에 하는 일을 순서대로, 빈도 표현을 넣어 말해요.', min: 50,
+  lessons: [
+    { t: '루틴은 현재시제 + 빈도', b: `<p>묘사 다음에는 "보통 무엇을 하나요?"를 물어요.</p><p class="en">What do you usually do at the park?</p><p>평소 습관이니까 <b>현재시제</b>로 말하고, <b>얼마나 자주</b> 하는지를 꼭 넣으세요.</p>` },
+    { t: '순서 뼈대', b: `<p>하는 일을 시간 순서로 늘어놓으면 답변이 길어져요.</p><p class="en">First, I ___. Then I ___. After that, I ___.</p><ul><li>언제, 누구와</li><li>하는 일 3~4개를 순서대로</li><li>좋은 점 한 문장</li></ul>` },
+    { t: '빈도 표현의 자리', b: `<p>always, usually, often, sometimes는 <b>일반동사 앞</b>에 와요.</p><p class="en">I usually go to the park.<br>I always order an iced americano.</p><p>횟수는 문장 끝에 붙여요.</p><p class="en">I go to a café two or three times a week.</p>` },
+    { t: '숫자를 넣으면 구체적이에요', b: `<p>시간과 횟수를 숫자로 말하면 답변이 구체적으로 들려요.</p><ul><li>for about an hour: 한 시간 정도</li><li>once a week: 일주일에 한 번</li><li>every morning: 매일 아침</li><li>on weekends: 주말마다</li></ul>` }
+  ],
+  patterns: [
+    P('I usually ___ on weekends.', '주말에는 보통 ___해요.', 'I usually go to the park on weekends.', '주말에는 보통 공원에 가요.'),
+    P('I ___ two or three times a week.', '일주일에 두세 번 ___해요.', 'I go to a café two or three times a week.', '일주일에 두세 번 카페에 가요.'),
+    P('I go there with ___.', '___와 함께 거기에 가요.', 'I go there with my coworkers.', '동료들과 함께 거기에 가요.'),
+    P('First, I ___. Then I ___.', '먼저 ___하고, 그 다음에 ___해요.', 'First, I order a drink. Then I sit down.', '먼저 음료를 주문하고, 그 다음에 자리에 앉아요.'),
+    P('After that, I ___.', '그 후에 ___해요.', 'After that, I go home and take a shower.', '그 후에 집에 가서 샤워해요.'),
+    P('While I ___, I ___.', '___하면서 ___해요.', 'While I walk, I listen to music.', '걸으면서 음악을 들어요.'),
+    P('I stay there for about ___.', '거기서 ___ 정도 머물러요.', 'I stay there for about thirty minutes.', '거기서 30분 정도 머물러요.'),
+    P('It helps me ___.', '___하는 데 도움이 돼요.', 'It helps me sleep well.', '잠을 잘 자는 데 도움이 돼요.')
+  ],
+  models: ['cafe-routine', 'movie-routine', 'park-routine'], practice: ['home-routine', 'music-routine', 'trip-routine', 'cafe-routine'],
+  quiz: [
+    Z('빈도부사의 위치가 바른 문장은?', ['I go usually to the park.', 'I usually go to the park.', 'Usually go I to the park.', 'I go to usually the park.'], 1, 'usually는 일반동사 go 앞에 와요.'),
+    Z('"일주일에 두세 번"을 영어로 하면?', ['two or three times a week', 'two three time week', 'a week two or three', 'in two or three weeks'], 0, '횟수 + a week 순서예요.'),
+    Z('순서를 나타내는 말이 아닌 것은?', ['First', 'Then', 'After that', 'Because'], 3, 'Because는 이유를 말할 때 써요.'),
+    Z('루틴 답변의 기본 시제는?', ['현재시제', '과거시제', '미래시제', '현재완료'], 0, '평소 습관은 현재시제로 말해요.'),
+    Z('"걸으면서 음악을 들어요"를 영어로 하면?', ['While I walk, I listen to music.', 'I walk because music.', 'I walked and listened music.', 'Walk while listen music.'], 0, 'While I ~, I ~ 로 두 동작을 이어요.')
+  ] },
+
+{ id: 4, title: '과거 경험 말하기', goal: '과거시제로 "언제, 무슨 일, 기분"을 이야기해요.', min: 60,
+  lessons: [
+    { t: '과거시제가 등급을 가릅니다', b: `<p>묶음 문제의 세 번째는 대부분 경험이에요.</p><p class="en">Tell me about a memorable trip you took.</p><p>여기서 <b>과거형 동사</b>를 쓰느냐가 IM으로 가는 문이에요. 틀려도 괜찮으니 went, was, had를 입에 붙이세요.</p>` },
+    { t: '경험 4단 뼈대', b: `<ul><li><b>언제, 어디서, 누구와</b>: Last month, I went to ~ with ~.</li><li><b>무슨 일</b>: 2~3문장</li><li><b>기분</b>: I was so ~.</li><li><b>마무리</b>: I still remember it.</li></ul><p>사건이 생각나지 않으면 평범한 일을 과거형으로 말해도 돼요.</p>` },
+    { t: '꼭 외울 과거형 12개', b: `<div class="tablebox"><table>
+      <tr><td>go → <b>went</b></td><td>have → <b>had</b></td><td>eat → <b>ate</b></td></tr>
+      <tr><td>see → <b>saw</b></td><td>take → <b>took</b></td><td>buy → <b>bought</b></td></tr>
+      <tr><td>get → <b>got</b></td><td>make → <b>made</b></td><td>come → <b>came</b></td></tr>
+      <tr><td>feel → <b>felt</b></td><td>meet → <b>met</b></td><td>tell → <b>told</b></td></tr></table></div>
+      <p>나머지는 대부분 -ed를 붙여요. visited, watched, ordered.</p>` },
+    { t: '감정 한마디', b: `<p>경험 답변에는 기분을 꼭 한 문장 넣으세요.</p><ul><li>I was so <b>happy</b>. 정말 기뻤어요.</li><li>I was <b>surprised</b>. 놀랐어요.</li><li>I was <b>disappointed</b>. 실망했어요.</li><li>I was <b>upset</b>. 속상했어요.</li><li>I was <b>relieved</b>. 안심했어요.</li></ul>` }
+  ],
+  patterns: [
+    P('Last ___, I went to ___ with ___.', '지난 ___에 ___와 ___에 갔어요.', 'Last spring, I went to the park with my family.', '지난봄에 가족과 공원에 갔어요.'),
+    P('___ years ago, I ___.', '___년 전에 ___했어요.', 'Two years ago, I went to Busan.', '2년 전에 부산에 갔어요.'),
+    P('It was ___.', '___였어요.', 'It was a rainy day.', '비 오는 날이었어요.'),
+    P('I was so ___.', '정말 ___했어요. (기분)', 'I was so happy.', '정말 기뻤어요.'),
+    P('Suddenly, ___.', '갑자기 ___했어요.', 'Suddenly, it started to rain.', '갑자기 비가 내리기 시작했어요.'),
+    P('So I ___.', '그래서 ___했어요.', 'So I called the office right away.', '그래서 바로 사무실에 전화했어요.'),
+    P('After that, I ___.', '그 후에 ___했어요.', 'After that, I bought a phone case.', '그 후에 휴대폰 케이스를 샀어요.'),
+    P('I still remember it.', '아직도 기억나요.', 'It was a funny day, so I still remember it.', '재미있는 날이어서 아직도 기억나요.')
+  ],
+  models: ['trip-past', 'cafe-past', 'park-past'], practice: ['movie-past', 'home-past', 'music-past', 'trip-past'],
+  quiz: [
+    Z('go의 과거형은?', ['goed', 'gone', 'went', 'going'], 2, 'go – went. 가장 많이 쓰는 과거형이에요.'),
+    Z('"2년 전에"를 영어로 하면?', ['two years ago', 'before two year', 'ago two years', 'in two years'], 0, '기간 + ago 순서예요.'),
+    Z('경험 답변에 꼭 넣으면 좋은 것은?', ['어려운 단어', '기분을 말하는 문장', '질문 세 개', '미래 계획'], 1, 'I was so happy. 같은 감정 문장이 답변을 살려요.'),
+    Z('바른 문장은?', ['I buy a new phone last year.', 'I buyed a new phone last year.', 'I bought a new phone last year.', 'I was buy a new phone last year.'], 2, 'buy – bought. last year가 있으니 과거형이에요.'),
+    Z('"안심했어요"를 영어로 하면?', ['I was upset.', 'I was relieved.', 'I was disappointed.', 'I was surprised.'], 1, 'relieved는 안심한, upset은 속상한이에요.')
+  ] },
+
+{ id: 5, title: '롤플레이', goal: '전화로 물어보고, 문제를 설명하고, 대안을 제시해요.', min: 60,
+  lessons: [
+    { t: '11~13번은 상황극이에요', b: `<p>세 문제가 한 상황으로 이어져요.</p><ul><li><b>11번</b>: 전화하거나 찾아가서 <b>질문 3~4개</b> 하기</li><li><b>12번</b>: 문제가 생겼어요. <b>상황 설명 + 대안 2~3개</b></li><li><b>13번</b>: 비슷한 일을 겪은 <b>내 경험</b> (Day 4 뼈대 그대로)</li></ul><p>실제 통화처럼 Hello. 로 시작하면 연기가 쉬워져요.</p>` },
+    { t: '질문하기 공식', b: `<p class="en">Hello. I'd like to ___. Can I ask you some questions?</p><p>그다음 질문 틀에 단어만 바꿔 넣어요.</p><ul><li>What time does ___ start?</li><li>How much is ___?</li><li>Do you have ___?</li><li>Can I ___?</li></ul><p>마지막은 Thank you for your help.</p>` },
+    { t: '문제 해결 공식', b: `<ul><li><b>문제 알리기</b>: I have a problem with ___.</li><li><b>상황 설명</b>: 무엇이 잘못됐는지 2문장</li><li><b>대안 두 개</b>: Can I ___? Or can I ___?</li><li><b>부탁</b>: Please help me.</li></ul><p>대안은 <b>바꾸기, 환불받기, 다른 날로 옮기기</b> 세 가지를 돌려 쓰면 돼요.</p>` },
+    { t: '15번은 면접관에게 질문', b: `<p>난이도 3~4에서는 마지막에 면접관이 자기 이야기를 한 줄 하고 질문해 달라고 해요.</p><p class="en">I also enjoy listening to music. Ask me three or four questions.</p><p>반응 한마디 뒤에 <b>What / When / Who / How often</b> 질문을 세 개 이상 하세요.</p>` }
+  ],
+  patterns: [
+    P("I'd like to ___.", '___하고 싶은데요.', "I'd like to book a room.", '방을 예약하고 싶은데요.'),
+    P('Can I ask you some questions?', '몇 가지 여쭤봐도 될까요?', 'Hello. Can I ask you some questions?', '안녕하세요. 몇 가지 여쭤봐도 될까요?'),
+    P('What time does ___ start?', '___는 몇 시에 시작하나요?', 'What time does the movie start?', '영화는 몇 시에 시작하나요?'),
+    P('How much is ___?', '___는 얼마인가요?', 'How much is a ticket?', '표는 얼마인가요?'),
+    P('Do you have ___?', '___가 있나요?', 'Do you have this jacket in black?', '이 재킷 검은색이 있나요?'),
+    P('I have a problem with ___.', '___에 문제가 있어요.', 'I have a problem with my tickets.', '제 표에 문제가 있어요.'),
+    P('Can I change it to ___?', '___로 바꿀 수 있을까요?', "Can I change it to seven o'clock?", '7시로 바꿀 수 있을까요?'),
+    P('Can I get a refund?', '환불받을 수 있을까요?', 'Or can I get a refund?', '아니면 환불받을 수 있을까요?'),
+    P('Could you ___?', '___해 주실 수 있나요?', 'Could you send someone to fix it?', '고쳐 줄 분을 보내 주실 수 있나요?'),
+    P('Thank you for your help.', '도와주셔서 감사합니다.', 'Okay, I see. Thank you for your help.', '네, 알겠습니다. 도와주셔서 감사합니다.')
+  ],
+  models: ['rp-movie-ask', 'rp-movie-solve', 'ava-home'], practice: ['rp-hotel-ask', 'rp-shop-solve', 'rp-movie-exp', 'ava-music'],
+  quiz: [
+    Z('영화 시작 시간을 묻는 문장은?', ['What time does the movie start?', 'How much is the movie?', 'Where is the movie?', 'Who is the movie?'], 0, 'What time does ~ start? 로 시간을 물어요.'),
+    Z('11번 롤플레이에서 해야 하는 일은?', ['자기소개', '질문 3~4개 하기', '과거 경험 말하기', '장소 묘사'], 1, '11번은 정보를 얻기 위해 질문하는 문제예요.'),
+    Z('문제 해결에서 대안을 제시하는 문장은?', ['I was so happy.', 'Can I get a refund?', 'There is a sofa.', 'I usually go there.'], 1, 'Can I ~? 로 대안을 제시해요.'),
+    Z('롤플레이의 첫 문장으로 자연스러운 것은?', ["Hello. I'd like to ask some questions.", "That's all about me.", 'I still remember it.', 'It is clean and cozy.'], 0, '실제 통화처럼 인사와 용건으로 시작해요.'),
+    Z('"조식이 포함되어 있나요?"를 영어로 하면?', ['Is breakfast included?', 'Do breakfast include?', 'Breakfast is have?', 'How breakfast?'], 0, 'Is ~ included? 는 호텔 문제에서 자주 써요.')
+  ] },
+
+{ id: 6, title: '돌발 주제와 위기 대처', goal: '준비하지 않은 주제가 나와도 멈추지 않고 말해요.', min: 50,
+  lessons: [
+    { t: '돌발 주제란', b: `<p>설문에서 고르지 않았는데 나오는 주제예요. 15문항 중 한 묶음 정도 나와요.</p><ul><li>날씨와 계절</li><li>휴대폰, 인터넷</li><li>음식점, 음식</li><li>재활용, 교통, 은행, 명절</li></ul><p>모두 준비할 수는 없어요. 오늘은 자주 나오는 세 주제와 <b>버티는 방법</b>을 익혀요.</p>` },
+    { t: '주제가 달라도 유형은 같아요', b: `<p>돌발 문제도 <b>묘사 → 루틴 → 경험</b> 순서로 나와요. Day 2~4의 뼈대에 단어만 바꿔 넣으세요.</p><p class="en">There is a Korean restaurant near my office. I go there once a week. Last month, I went there with my family.</p>` },
+    { t: '시간을 버는 한마디', b: `<p>생각이 안 날 때 조용히 있으면 감점이에요. 영어로 시간을 버세요.</p><ul><li>Well, let me think.</li><li>That's a good question.</li><li>You know, ...</li></ul><p>한국어로 "음, 뭐지" 하고 혼잣말하지 않도록 연습해 두세요.</p>` },
+    { t: '모르는 주제는 내 쪽으로 좁히기', b: `<p>잘 모르는 주제라면 솔직하게 말하고 <b>아는 이야기로</b> 옮기세요.</p><p class="en">I don't know much about recycling, but in my apartment, we recycle every Monday.</p><p>질문을 놓쳤다면 다시 듣기를 쓰고, 들린 단어 하나를 잡아 그 이야기를 하면 돼요.</p>` }
+  ],
+  patterns: [
+    P('Well, let me think.', '음, 생각 좀 해 볼게요.', 'Well, let me think. I think it was last year.', '음, 생각해 볼게요. 작년이었던 것 같아요.'),
+    P("That's a good question.", '좋은 질문이네요.', "That's a good question. I never thought about it.", '좋은 질문이네요. 생각해 본 적이 없어요.'),
+    P("I don't know much about ___, but ___.", '___에 대해 잘 모르지만 ___.', "I don't know much about banks, but I use a banking app.", '은행은 잘 모르지만 은행 앱은 써요.'),
+    P("I'm not sure, but I think ___.", '확실하진 않지만 ___인 것 같아요.', "I'm not sure, but I think it is popular.", '확실하진 않지만 인기 있는 것 같아요.'),
+    P('In my case, ___.', '제 경우에는 ___.', 'In my case, I use my phone all day.', '제 경우에는 하루 종일 휴대폰을 써요.'),
+    P('For example, ___.', '예를 들면 ___.', 'For example, I check the weather every morning.', '예를 들면 매일 아침 날씨를 확인해요.'),
+    P('I mean, ___.', '제 말은 ___.', 'I mean, it is very convenient.', '제 말은, 아주 편리하다는 거예요.'),
+    P('Anyway, ___.', '어쨌든 ___.', 'Anyway, I like fall the most.', '어쨌든 저는 가을을 가장 좋아해요.'),
+    P("That's all I can think of.", '생각나는 건 여기까지예요.', "That's all I can think of. Thank you.", '생각나는 건 여기까지예요. 감사합니다.')
+  ],
+  models: ['phone-desc', 'weather-desc', 'rest-past'], practice: ['phone-routine', 'weather-past', 'rest-desc', 'phone-past'],
+  quiz: [
+    Z('생각할 시간이 필요할 때 쓰는 말은?', ['Well, let me think.', 'Thank you for your help.', 'Can I get a refund?', "That's all about me."], 0, '영어로 시간을 벌면 침묵을 피할 수 있어요.'),
+    Z('잘 모르는 주제가 나왔을 때 좋은 방법은?', ['조용히 다음 문제를 기다린다', '한국어로 설명한다', '아는 경험 쪽으로 좁혀 말한다', '"I don\'t know."만 말한다'], 2, "I don't know much about it, but ~ 로 내 이야기로 옮겨요."),
+    Z('돌발 주제에 해당하는 것은?', ['설문에서 고른 영화 보기', '설문에서 고른 음악 감상', '고르지 않았는데 나온 재활용', '자기소개'], 2, '설문에서 고르지 않은 주제가 돌발이에요.'),
+    Z('"예를 들면"을 영어로 하면?', ['Anyway', 'For example', 'Suddenly', 'After that'], 1, 'For example 뒤에 내 사례를 붙여요.'),
+    Z('시험 중에 피해야 할 행동은?', ['Well, 로 시작하기', '다시 듣기 사용하기', '한국어로 혼잣말하기', '짧은 문장으로 말하기'], 2, '한국어가 녹음되면 불리해요. 영어 필러를 쓰세요.')
+  ] },
+
+{ id: 7, title: '실전 모의고사와 최종 점검', goal: '15문항을 실제처럼 풀고, 시험 당일 준비를 끝내요.', min: 70, mock: true,
+  lessons: [
+    { t: '시험 당일 흐름', b: `<ul><li>신분증 확인 후 자리에 앉아요.</li><li><b>오리엔테이션 약 20분</b>: 설문 → 난이도 선택 → 마이크 점검 → 샘플 문제</li><li><b>본시험 40분</b>: 15문항</li></ul><p>설문 선택은 미리 외워 가세요. 현장에서 고민하면 연습한 주제가 나오지 않아요.</p>` },
+    { t: '시간은 이렇게 쓰세요', b: `<ul><li>문제마다 <b>40초~1분 30초</b>로 답해요.</li><li>한 문제에 3분 넘게 쓰지 않아요.</li><li>전체를 25~35분에 마치면 적당해요.</li></ul><p>일찍 끝나도 괜찮지만, 답이 모두 20초 안쪽이면 등급이 나오기 어려워요.</p>` },
+    { t: '막혔을 때', b: `<p>문장이 틀렸다고 처음부터 다시 말하지 마세요. 그냥 다음 문장으로 가면 돼요.</p><p class="en">I mean, ... / Anyway, ...</p><p>할 말이 떨어지면 마무리 문장으로 끝내고 다음 문제로 넘어가세요. 긴 침묵보다 짧은 마무리가 나아요.</p>` },
+    { t: '마지막 체크리스트', b: `<ul><li>신분증 챙기기</li><li>설문 12개 선택 외우기</li><li>난이도 3단계, 재조정은 비슷한 질문</li><li>자기소개를 소리 내어 두 번 말해 보기</li><li>평소보다 <b>크고 또렷하게</b> 말하기</li></ul><p>오늘 모의고사를 끝내면 준비는 다 된 거예요.</p>` }
+  ],
+  patterns: [
+    P("That's why I like ___.", '그래서 ___를 좋아해요.', "That's why I like this café.", '그래서 이 카페를 좋아해요.'),
+    P("That's all about ___.", '___에 대해서는 여기까지예요.', "That's all about my trip.", '제 여행 이야기는 여기까지예요.'),
+    P('It was a great experience.', '정말 좋은 경험이었어요.', 'It was a great experience for me.', '저에게 정말 좋은 경험이었어요.'),
+    P('I want to go there again.', '거기에 또 가고 싶어요.', 'It was fun, so I want to go there again.', '재미있어서 또 가고 싶어요.'),
+    P('I think it is very ___.', '아주 ___한 것 같아요.', 'I think it is very convenient.', '아주 편리한 것 같아요.'),
+    P('These days, ___.', '요즘은 ___.', 'These days, I am very busy.', '요즘은 아주 바빠요.'),
+    P('To be honest, ___.', '솔직히 말하면 ___.', "To be honest, I don't exercise often.", '솔직히 말하면 운동을 자주 하지 않아요.'),
+    P("I can't live without ___.", '___ 없이는 못 살아요.', "I can't live without my phone.", '휴대폰 없이는 못 살아요.')
+  ],
+  models: ['weather-routine', 'rest-routine', 'rp-shop-ask'], practice: ['home-desc', 'movie-past', 'rp-hotel-solve'],
+  quiz: [
+    Z('본시험 전 오리엔테이션은 약 몇 분인가요?', ['5분', '20분', '40분', '60분'], 1, '설문, 난이도 선택, 마이크 점검에 약 20분이 걸려요.'),
+    Z('답변 중에 말이 막혔을 때 좋은 방법은?', ['처음부터 다시 말한다', '조용히 기다린다', '마무리 문장으로 끝내고 넘어간다', '한국어로 이어 말한다'], 2, "That's all about ~ 로 정리하고 넘어가세요."),
+    Z('IM1 목표에 권하는 난이도는?', ['1단계', '3단계', '5단계', '6단계'], 1, '3단계를 고르고 재조정 때는 비슷한 질문을 고르세요.'),
+    Z('답변 마무리 표현으로 알맞은 것은?', ["That's all about my trip.", 'Can I ask you some questions?', 'Well, let me think.', 'First, I order a drink.'], 0, "That's all about ~ 은 어느 답변에나 쓸 수 있어요."),
+    Z('한 문제에 권하는 답변 시간은?', ['10초 이내', '40초~1분 30초', '3~4분', '5분 이상'], 1, '너무 짧으면 평가할 내용이 부족하고, 너무 길면 시간이 모자라요.')
+  ] }
+];
+
+window.OPIC = { TYPES, QUESTIONS, DAYS };
+})();
+</script>
+<script>
+(() => {
+'use strict';
+const D = window.OPIC;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const QMAP = {}, PMAP = {};
+D.QUESTIONS.forEach(q => { QMAP[q.id] = q; });
+D.DAYS.forEach(d => d.patterns.forEach((p, i) => { p.id = 'p' + d.id + '-' + i; p.day = d.id; PMAP[p.id] = p; }));
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const today = () => iso(new Date());
+const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return iso(d); };
+const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const count = (re, s) => { const m = s.match(re); return m ? m.length : 0; };
+const wordCount = s => count(/[a-z0-9']+/gi, s);
+const UA = navigator.userAgent || '';
+const isAndroid = /Android/i.test(UA), isMobile = /Android|iPhone|iPad|iPod/i.test(UA);
+const ICON = {
+  play: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+  check: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+/* ---------- 저장 ---------- */
+const KEY = 'opicIm1.v1';
+const blank = () => ({ v: 1, onboarded: false, profile: { name: '', job: 'worker', examDate: '' }, days: {}, best: {}, attempts: [], total: { n: 0, secs: 0 }, cards: {}, scripts: {}, mocks: [], streak: { last: '', count: 0 }, settings: { rate: 0.9, showText: false } });
+let S = load();
+function load() { try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.v === 1) return Object.assign(blank(), r); } catch (e) {} return blank(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function touch() { const t = today(); if (S.streak.last === t) return; S.streak.count = S.streak.last === addDays(t, -1) ? S.streak.count + 1 : 1; S.streak.last = t; }
+function streakNow() { const t = today(); return (S.streak.last === t || S.streak.last === addDays(t, -1)) ? S.streak.count : 0; }
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2200); }
+function armed(el, label) { if (el.dataset.armed) return true; el.dataset.armed = '1'; el.dataset.label = el.textContent; el.textContent = label; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.textContent = el.dataset.label; } }, 3500); return false; }
+
+/* ---------- 음성: 듣기(TTS) · 받아쓰기(STT) · AI 첨삭 ----------
+   claude.ai 아티팩트 안에서는 플랫폼 기능을, 그 밖에서는 브라우저의 Web Speech API를 씁니다. */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+let seqToken = 0;
+const Voice = {
+  tts: null, dict: null, ai: null, srDead: false,
+  init() {
+    try { if (window.speechSynthesis) speechSynthesis.getVoices(); } catch (e) {}
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    const use = n => { try { return Promise.resolve(c.use(n)).catch(() => null); } catch (e) { return Promise.resolve(null); } };
+    use('tts').then(t => { this.tts = t; });
+    use('sample').then(s => { this.ai = s; if (s && ST.an && $('#feedback') && !$('#aiBtn')) $('#feedback').innerHTML = feedbackHTML(curQ()); });
+    use('dictation').then(d => {
+      this.dict = d; if (!d) return;
+      d.onPartial(e => { if (Rec.active && Rec.mode === 'claude') { Rec.interim = e.text || ''; Rec.ping(); } });
+      d.onFinal(e => { if (Rec.mode === 'claude') { Rec.text += e.text || ''; Rec.interim = ''; Rec.ping(); } });
+      d.onState(e => { if (e.state === 'idle' && Rec.active && Rec.mode === 'claude' && (e.reason === 'viewer_stopped' || e.reason === 'hidden' || e.reason === 'time_limit')) { if (Rec.onExternalStop) Rec.onExternalStop(); } });
+    });
+  },
+  canSpeak() { return !!this.tts || 'speechSynthesis' in window; },
+  pick() {
+    let vs = []; try { vs = speechSynthesis.getVoices() || []; } catch (e) {}
+    const en = vs.filter(v => /^en[-_]US/i.test(v.lang));
+    return en.find(v => /Samantha|Google US English|Ava|Jenny|Aria|Zira/i.test(v.name)) || en[0] || vs.find(v => /^en/i.test(v.lang)) || null;
+  },
+  halt() {
+    try { if (this.tts) Promise.resolve(this.tts.stop()).catch(() => {}); } catch (e) {}
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+  },
+  speak(text) {
+    this.halt();
+    const rate = S.settings.rate || 0.9;
+    if (this.tts) {
+      return this.tts.speak(text, { rate: Math.max(0.7, Math.min(1.5, rate)), language: 'en' }).then(() => true, e => { if (e && e.code === 'not_granted') this.tts = null; return false; });
+    }
+    if (!('speechSynthesis' in window)) return Promise.resolve(false);
+    return new Promise(res => {
+      try {
+        const u = new SpeechSynthesisUtterance(text); u.lang = 'en-US'; u.rate = rate;
+        const v = this.pick(); if (v) u.voice = v;
+        u.onend = () => res(true); u.onerror = () => res(false);
+        speechSynthesis.speak(u);
+      } catch (e) { res(false); }
+    });
+  }
+};
+function stopAll() { seqToken++; Voice.halt(); $$('.sent.on').forEach(el => el.classList.remove('on')); }
+function say(text) { stopAll(); return Voice.speak(text); }
+async function playSeq(list, onStep) {
+  stopAll(); const tk = seqToken;
+  for (let i = 0; i < list.length; i++) {
+    if (tk !== seqToken) return;
+    onStep(i); await Voice.speak(list[i]);
+    if (tk !== seqToken) return;
+    await new Promise(r => setTimeout(r, 400));
+  }
+  if (tk === seqToken) onStep(-1);
+}
+
+const Rec = {
+  active: false, mode: 'none', text: '', sess: '', interim: '', secs: 0, t0: 0, timer: null, note: '',
+  sr: null, mr: null, stream: null, chunks: [], cb: null, onExternalStop: null, lastStart: 0, quick: 0,
+  ping() { if (this.cb) this.cb(); },
+  liveText() { return (this.text + ' ' + this.sess + ' ' + this.interim).replace(/\s+/g, ' ').trim(); },
+  /* 반드시 사용자의 클릭 안에서 바로 호출해야 합니다(마이크 권한). */
+  start(cb) {
+    stopAll();
+    Object.assign(this, { active: true, text: '', sess: '', interim: '', secs: 0, t0: Date.now(), note: '', cb, chunks: [], mr: null, stream: null, sr: null, quick: 0 });
+    if (Voice.dict) {
+      this.mode = 'claude';
+      Voice.dict.start({ language: 'en' }).catch(e => { const c = e && e.code; if (c === 'stopped') return; if (c === 'unavailable' || c === 'not_granted') Voice.dict = null; this.failSTT(); });
+    } else if (SR && !Voice.srDead) {
+      this.mode = 'web';
+      try { this.startWeb(); } catch (e) { this.failSTT(); }
+    } else this.mode = 'none';
+    if (!window.claude && !(isMobile && this.mode === 'web')) this.startMedia();
+    this.timer = setInterval(() => { this.secs = Math.round((Date.now() - this.t0) / 1000); this.ping(); }, 500);
+  },
+  failSTT() { if (!this.active) return; this.mode = 'none'; this.interim = ''; this.note = '음성을 글자로 바꿀 수 없어요. 계속 말한 뒤, 끝나면 말한 내용을 적어 주세요.'; this.ping(); },
+  mergeWeb() { if (this.sess) { this.text = (this.text + ' ' + this.sess).trim(); this.sess = ''; } },
+  startWeb() {
+    const sr = new SR(); this.sr = sr; this.lastStart = Date.now();
+    sr.lang = 'en-US'; sr.interimResults = true; sr.continuous = !isAndroid;
+    sr.onresult = e => { let fin = '', inter = ''; for (let i = 0; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) fin += r[0].transcript + ' '; else inter += r[0].transcript; } this.sess = fin.trim(); this.interim = inter; this.ping(); };
+    sr.onerror = e => { if (['not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported'].includes(e.error)) { Voice.srDead = true; this.failSTT(); } };
+    sr.onend = () => {
+      this.mergeWeb(); this.interim = '';
+      if (!this.active || this.mode !== 'web' || this.sr !== sr) return;
+      if (Date.now() - this.lastStart < 400 && ++this.quick > 3) return this.failSTT();
+      try { this.startWeb(); } catch (e) { this.failSTT(); }
+    };
+    sr.start();
+  },
+  startMedia() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      if (!this.active) { stream.getTracks().forEach(t => t.stop()); return; }
+      this.stream = stream; const mr = new MediaRecorder(stream); this.mr = mr;
+      mr.ondataavailable = e => { if (e.data && e.data.size) this.chunks.push(e.data); };
+      mr.start();
+    }).catch(() => {});
+  },
+  async stop() {
+    if (!this.active) return null;
+    this.active = false; clearInterval(this.timer);
+    this.secs = Math.max(1, Math.round((Date.now() - this.t0) / 1000));
+    const mode = this.mode;
+    if (mode === 'claude' && Voice.dict) { try { await Voice.dict.stop(); } catch (e) {} }
+    if (mode === 'web' && this.sr) {
+      const sr = this.sr;
+      await new Promise(res => { let done = false; const fin = () => { if (!done) { done = true; res(); } }; sr.onend = fin; try { sr.stop(); } catch (e) { fin(); } setTimeout(fin, 1500); });
+      this.mergeWeb();
+    }
+    let url = null;
+    if (this.mr) {
+      const mr = this.mr, chunks = this.chunks;
+      url = await new Promise(res => {
+        mr.onstop = () => { try { res(chunks.length ? URL.createObjectURL(new Blob(chunks, { type: mr.mimeType || 'audio/webm' })) : null); } catch (e) { res(null); } };
+        try { mr.stop(); } catch (e) { res(null); }
+        setTimeout(() => res(null), 1500);
+      });
+    }
+    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+    const text = this.liveText();
+    this.cb = null; this.onExternalStop = null;
+    return { text, secs: this.secs, url, stt: mode !== 'none' };
+  },
+  cancel() {
+    if (!this.active) return;
+    this.active = false; clearInterval(this.timer); this.cb = null; this.onExternalStop = null;
+    try { if (this.mode === 'claude' && Voice.dict) Promise.resolve(Voice.dict.stop()).catch(() => {}); } catch (e) {}
+    try { if (this.sr) { this.sr.onend = null; this.sr.abort(); } } catch (e) {}
+    try { if (this.mr && this.mr.state !== 'inactive') this.mr.stop(); } catch (e) {}
+    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+  }
+};
+
+/* ---------- 답변 분석 ---------- */
+const CONN = ['and', 'but', 'so', 'because', 'also', 'then', 'when', 'first', 'second', 'after that', 'before', 'while', 'or', 'however', 'for example', 'actually', 'if', 'too', 'finally', 'these days', 'anyway', "that's why"];
+function analyze(text, secs, q, stt) {
+  const flat = ' ' + text.toLowerCase().replace(/[’`]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const wc = wordCount(flat);
+  const punct = count(/[.!?]+/g, text);
+  const sents = punct >= 2 ? punct : (wc ? Math.max(1, Math.round(wc / 9)) : 0);
+  const wpm = (stt && secs >= 5 && wc) ? Math.round(wc / secs * 60) : null;
+  const conn = CONN.filter(c => flat.includes(' ' + c + ' '));
+  const fill = count(/ (um+|uh+|er+|erm|hmm+|ah+)(?= )/g, flat);
+  const past = count(/ (was|were|went|had|did|didn't|saw|ate|took|got|made|came|felt|bought|met|told|gave|found|lost|said|ran|swam|couldn't|wasn't|left|paid|sent|broke|[a-z]{2,}ed)(?= )/g, flat);
+  const ques = Math.max(count(/\?/g, text), count(/ (what|where|when|who|how|which|why|do you|does it|is there|are there|is it|can i|can you|could you|could i)(?= )/g, flat));
+  const T = q.type; let task = 0, tk, tv, tt, n;
+  if (T === 'intro') {
+    n = [/ (my name is|i am|i'm) /, / live /, / (work|student|job|company|school|worker) /, / (like|enjoy|love|hobby|free time) /].filter(r => r.test(flat)).length;
+    task = n / 4; tk = '자기소개 요소'; tv = n + ' / 4개'; tt = '이름, 사는 곳, 하는 일, 취미를 모두 넣어 보세요.';
+  } else if (T === 'desc') {
+    n = count(/ (there is|there are|it is|it's|they are|it has|i have)(?= )/g, flat);
+    task = Math.min(n / 3, 1); tk = '묘사 문장'; tv = n + '개'; tt = 'There is/are, It is + 형용사 문장을 3개 이상 넣어 보세요.';
+  } else if (T === 'routine') {
+    n = count(/ (usually|always|often|sometimes|every|first|then|after that|on weekends|on weekdays|times a)(?= )/g, flat);
+    task = Math.min(n / 3, 1); tk = '빈도 · 순서 표현'; tv = n + '개'; tt = 'usually, first, then, after that 같은 표현을 3개 이상 써 보세요.';
+  } else if (T === 'past' || T === 'rp-exp') {
+    task = Math.min(past / 4, 1); tk = '과거시제'; tv = past + '개'; tt = 'went, was, had처럼 과거형 동사를 4개 이상 써 보세요.';
+  } else if (T === 'rp-ask' || T === 'ava') {
+    task = Math.min(ques / 3, 1); tk = '질문 개수'; tv = ques + '개'; tt = '질문을 3개 이상 해야 해요. What, How much, Can I 로 시작해 보세요.';
+  } else {
+    const prob = / (problem|mistake|wrong|doesn't work|broken|not clean|hole) /.test(flat);
+    n = count(/ (can i|could you|could i|or|if|refund|exchange|change)(?= )/g, flat);
+    task = (prob ? 0.4 : 0) + Math.min(n / 2, 1) * 0.6; tk = '문제 설명 + 대안'; tv = (prob ? '문제 설명 있음' : '문제 설명 없음') + ' · 대안 ' + n + '개'; tt = 'I have a problem with ~ 로 시작하고, Can I ~? Or ~? 로 대안을 두 개 제시하세요.';
+  }
+  const vol = Math.min(wc / 65, 1) * 40, link = Math.min(conn.length / 4, 1) * 20;
+  let flu = wpm == null ? 12 * Math.min(wc / 40, 1) : Math.min(wpm / 85, 1) * 20;  /* 속도를 잴 수 없으면 중간값까지만 */
+  if (wc) flu = Math.max(0, flu - Math.min(fill / wc * 100, 8));
+  let score = Math.round(vol + link + flu + task * 20);
+  if (wc < 5) score = Math.min(score, 5);
+  const st = (v, good, mid) => v >= good ? 'good' : v >= mid ? 'mid' : 'low';
+  const metrics = [
+    { k: '발화량', v: wc + '단어 · 약 ' + sents + '문장', st: st(wc, 60, 35), tip: 'IM1 목표는 60단어, 6문장 이상이에요. 뼈대의 세 덩어리를 모두 말해 보세요.' },
+    wpm == null ? { k: '말하기 속도', v: '측정하지 않음', st: 'good', tip: '' }
+      : { k: '말하기 속도', v: '분당 ' + wpm + '단어', st: wpm > 160 ? 'mid' : st(wpm, 80, 55), tip: wpm > 160 ? '조금 빨라요. 문장 사이에 숨을 쉬어 주세요.' : '조금 느려요. 문장을 통째로 외워 덩어리로 말해 보세요.' },
+    { k: '연결어', v: conn.length ? conn.length + '종 (' + conn.slice(0, 4).join(', ') + ')' : '없음', st: st(conn.length, 4, 2), tip: 'and, but, so, because 로 문장을 이으면 답변이 자연스러워져요.' },
+    { k: tk, v: tv, st: st(task, 0.99, 0.5), tip: tt },
+    { k: '군말 (um, uh)', v: fill + '회', st: wc && fill / wc > 0.06 ? 'mid' : 'good', tip: 'um 대신 Well, 이나 You know, 를 써 보세요.' }
+  ];
+  return { score, wc, sents, wpm, metrics };
+}
+function levelOf(s) {
+  if (s >= 78) return { name: 'IM2 이상', idx: 5, msg: 'IM1을 넘는 답변이에요. 이대로만 말하면 돼요.' };
+  if (s >= 62) return { name: 'IM1', idx: 4, msg: '목표 수준이에요. 같은 길이로 꾸준히 말해 보세요.' };
+  if (s >= 40) return { name: 'IL', idx: 3, msg: '조금 더 길게, 문장을 이어서 말하면 IM1이에요.' };
+  if (s >= 20) return { name: 'NH', idx: 2, msg: '단어가 아닌 문장으로, 다섯 문장 이상 말해 보세요.' };
+  return { name: 'NM 이하', idx: 1, msg: '모범 답변을 따라 말한 뒤 다시 도전해 보세요.' };
+}
+function logAttempt(q, an, text, secs) {
+  S.attempts.unshift({ qid: q.id, ts: Date.now(), score: an.score, wc: an.wc, secs, text: text.slice(0, 800) });
+  S.attempts = S.attempts.slice(0, 100);
+  S.best[q.id] = Math.max(S.best[q.id] || 0, an.score);
+  S.total.n++; S.total.secs += secs || 0;
+  touch(); save();
+}
+
+/* ---------- 진도 ---------- */
+const STEPS = [['lesson', '개념 익히기', '읽기 5분'], ['patterns', '핵심 패턴', '듣고 따라 말하기'], ['shadow', '모범 답변 쉐도잉', '한 문장씩 따라 하기'], ['practice', '말하기 연습', '녹음하고 피드백 받기'], ['quiz', '체크 퀴즈', '5문제']];
+const daySteps = d => d.mock ? STEPS.concat([['mock', '실전 모의고사', '15문항 · 40분']]) : STEPS;
+const practiceCount = d => d.practice.filter(id => S.best[id] != null).length;
+function stepDone(d, step) {
+  if (step === 'mock') return S.mocks.length > 0;
+  if (step === 'practice') return practiceCount(d) >= Math.min(2, d.practice.length);
+  const p = S.days[d.id] || {}; return p[step] != null && p[step] !== false;
+}
+const dayDone = d => daySteps(d).every(s => stepDone(d, s[0]));
+const dayStarted = d => daySteps(d).some(s => stepDone(d, s[0]));
+const currentDay = () => D.DAYS.find(d => !dayDone(d)) || D.DAYS[D.DAYS.length - 1];
+function markStep(dayId, step, val) { (S.days[dayId] = S.days[dayId] || {})[step] = val == null ? true : val; touch(); save(); }
+function dueCards() { const t = today(); return Object.keys(S.cards).filter(id => PMAP[id] && S.cards[id].due <= t); }
+function addCards(d) { d.patterns.forEach(p => { if (!S.cards[p.id]) S.cards[p.id] = { box: 1, due: today() }; }); }
+function dday() { const e = S.profile.examDate; if (!e) return null; const n = Math.round((new Date(e + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5); return n < 0 ? null : n; }
+
+/* ---------- 화면 상태 ---------- */
+const TABS = ['today', 'course', 'practice', 'mock', 'review'];
+let V = { tab: 'today' }, navId = 0;
+let ST = { qid: null, phase: 'idle' };   // 말하기 연습 화면
+let QZ = { i: 0, ok: 0, picked: null };  // 퀴즈
+let OB = { step: 0, name: '', job: 'worker', date: '' };  // 처음 설정
+let M = null, mockTick = null;           // 진행 중인 모의고사
+let CQ = null;                           // 복습 카드 대기열
+
+function go(patch) {
+  stopAll(); if (Rec.active) { Rec.cancel(); if (M && M.phase === 'rec') M.phase = 'ready'; }
+  navId++;
+  V = Object.assign({}, patch);
+  if ((V.qid || null) !== ST.qid) ST = { qid: V.qid || null, phase: 'idle' };
+  if (S.onboarded && location.hash.slice(1) !== V.tab) location.hash = V.tab;
+  render(); $('#main').scrollTop = 0;
+}
+function curQ() {
+  if (V.qid) return QMAP[V.qid];
+  if (V.tab === 'course' && V.step === 'shadow') return QMAP[D.DAYS[V.day - 1].models[V.idx || 0]];
+  if (V.tab === 'mock' && M) return QMAP[M.items[M.i]];
+  return null;
+}
+function setTop(title, sub, back) {
+  $('#topTitle').textContent = title; $('#topSub').textContent = sub || ''; $('#topSub').hidden = !sub; $('#backBtn').hidden = !back;
+  const b = $('#topBadge'), n = dday(), s = streakNow();
+  const txt = !S.onboarded ? '' : n != null ? (n === 0 ? 'D-DAY' : 'D-' + n) : s > 0 ? '연속 ' + s + '일' : '';
+  b.textContent = txt; b.hidden = !txt;
+}
+function render() {
+  const el = $('#view');
+  document.body.classList.toggle('onb', !S.onboarded);
+  if (!S.onboarded) { el.innerHTML = viewOnboard(); setTop('오픽 IM1 7일 완성', '', OB.step > 0); return; }
+  const r = VIEWS[V.tab]();
+  el.innerHTML = r.html; setTop(r.title, r.sub, r.back);
+  $$('.tabs a').forEach(a => { if (a.dataset.tab === V.tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+}
+function back() {
+  if (!S.onboarded) { OB.step = Math.max(0, OB.step - 1); return render(); }
+  if (V.tab === 'course') {
+    if (V.qid) return go({ tab: 'course', day: V.day, step: 'practice' });
+    if (V.step) return go({ tab: 'course', day: V.day });
+  }
+  if (V.tab === 'practice' && V.qid) return go({ tab: 'practice', filter: V.filter });
+  go({ tab: V.tab });
+}
+
+/* ---------- 공통 조각 ---------- */
+function ladder() {
+  const L = ['NL', 'NM', 'NH', 'IL', 'IM1', 'IM2', 'IM3', 'IH', 'AL'];
+  const rec = S.attempts.slice(0, 5), avg = rec.length ? Math.round(rec.reduce((a, b) => a + b.score, 0) / rec.length) : null;
+  const cur = avg == null ? -1 : levelOf(avg).idx;
+  const cap = avg == null ? '말하기 연습을 하면 지금 예상 수준이 여기에 표시돼요.' : '최근 ' + rec.length + '회 평균 ' + avg + '점 · 예상 ' + levelOf(avg).name;
+  return '<div class="ladder" role="img" aria-label="오픽 등급 9단계 가운데 목표는 IM1. ' + esc(cap) + '">' + L.map((l, i) =>
+    '<div class="rung' + (i === 4 ? ' goal' : '') + (i === cur ? ' cur' : '') + '"><i>' + (i === 4 ? (cur === 4 ? '목표 도달' : '목표') : i === cur ? '현재' : '') + '</i><span class="bar" style="height:' + (12 + i * 6) + 'px"></span><b>' + l + '</b></div>').join('') + '</div><p class="fine-hero">' + esc(cap) + '</p>';
+}
+function field(id, label, val, ph) { return '<div class="field"><label for="' + id + '">' + label + '</label><input type="text" id="' + id + '" value="' + esc(val) + '" placeholder="' + esc(ph) + '" autocomplete="off" autocapitalize="off"></div>'; }
+function stepRow(d, s, i, next) {
+  const done = stepDone(d, s[0]);
+  const extra = s[0] === 'practice' ? ' · ' + practiceCount(d) + '/' + d.practice.length + '문제' : (s[0] === 'quiz' && done ? ' · ' + S.days[d.id].quiz + '/' + d.quiz.length + '점' : '');
+  return '<li><button class="step' + (done ? ' done' : '') + (next && next[0] === s[0] ? ' next' : '') + '" data-act="open-step" data-day="' + d.id + '" data-step="' + s[0] + '"><span class="snum">' + (done ? ICON.check : i + 1) + '</span><span class="sbody"><strong>' + s[1] + '</strong><small>' + s[2] + extra + '</small></span><span class="sgo">' + (done ? '다시 보기' : '시작') + '</span></button></li>';
+}
+function chips(q, extra) { const t = D.TYPES[q.type]; return '<span class="chips"><span class="chip">' + t + '</span>' + (q.topic !== t ? '<span class="chip ghost">' + esc(q.topic) + '</span>' : '') + (q.unexp ? '<span class="chip warn">돌발</span>' : '') + (extra || '') + '</span>'; }
+function qRow(q) {
+  const b = S.best[q.id];
+  return '<button class="qrow" data-act="open-q" data-q="' + q.id + '"><span class="qbody">' + chips(q) + '<small>' + esc(q.ko) + '</small></span><span class="dstat">' + (b != null ? b + '점' : '도전') + '</span></button>';
+}
+function modelHTML(q) {
+  return '<div class="sents">' + q.m.map((s, i) => '<button class="sent" data-act="say-line" data-i="' + i + '"><span class="en">' + esc(s[0]) + '</span><span class="ko">' + esc(s[1]) + '</span></button>').join('') + '</div><div class="row-btns"><button class="btn small" data-act="say-all">' + ICON.play + ' 전체 듣기</button><button class="btn small" data-act="say-stop">멈춤</button></div>';
+}
+
+/* ---------- 처음 설정 ---------- */
+function viewOnboard() {
+  const dots = '<div class="dots">' + [0, 1, 2].map(i => '<i class="' + (i <= OB.step ? 'on' : '') + '"></i>').join('') + '</div>';
+  if (OB.step === 0) return '<section class="hero"><p class="eyebrow">OPIc 말하기 · 비공식 학습 앱</p><h1>7일 뒤, IM1을 말해요</h1><p>하루 40~60분이면 돼요. 읽고, 듣고, 따라 말하고, 녹음해서 확인해요.</p>' + ladder() + '</section>'
+    + '<ul class="feature-list"><li><strong>7일 코스</strong><small>자기소개부터 롤플레이까지, 시험에 나오는 유형을 하루 하나씩</small></li><li><strong>말하기 피드백</strong><small>말한 양, 속도, 연결어, 시제를 IM1 기준으로 바로 확인</small></li><li><strong>실전 모의고사</strong><small>15문항 40분, 음성 질문과 다시 듣기 한 번까지 그대로</small></li></ul>'
+    + '<button class="btn primary block" data-act="ob-next">시작하기</button>';
+  if (OB.step === 1) return dots + '<div class="dayhead"><h1>자기소개에 쓸 정보예요</h1><p class="lead">1번 문제 답변을 만들 때 써요. 나중에 바꿀 수 있어요.</p></div>'
+    + '<section class="card">' + field('obName', '영어 이름', OB.name, 'Minsu Kim')
+    + '<div class="field"><span>지금 하는 일</span><div class="choice">' + [['worker', '직장인'], ['student', '학생'], ['seeker', '구직 중'], ['home', '주부 · 기타']].map(j => '<button data-act="ob-job" data-job="' + j[0] + '" aria-pressed="' + (OB.job === j[0]) + '">' + j[1] + '</button>').join('') + '</div></div></section>'
+    + '<button class="btn primary block" data-act="ob-next">다음</button>';
+  return dots + '<div class="dayhead"><h1>시험 날짜가 정해졌나요?</h1><p class="lead">입력하면 남은 날짜를 위쪽에 보여 드려요. 비워 둬도 돼요.</p></div>'
+    + '<section class="card"><div class="field"><label for="obDate">시험일 (선택)</label><input type="date" id="obDate" value="' + esc(OB.date) + '" min="' + today() + '"></div><p class="fine">학습 기록은 이 기기의 브라우저에만 저장돼요.</p></section>'
+    + '<button class="btn primary block" data-act="ob-done">7일 코스 시작하기</button>';
+}
+
+/* ---------- 오늘 ---------- */
+function viewToday() {
+  const d = currentDay(), st = daySteps(d), allDone = D.DAYS.every(dayDone), next = st.find(s => !stepDone(d, s[0]));
+  const doneN = st.filter(s => stepDone(d, s[0])).length, due = dueCards().length;
+  let html = '<section class="hero"><p class="eyebrow">' + (allDone ? '7일 코스 완료' : 'DAY ' + d.id + ' / 7') + '</p><h1>' + (allDone ? '준비가 끝났어요' : esc(d.title)) + '</h1><p>' + (allDone ? '모의고사를 한 번 더 풀고, 약한 유형은 문제 연습에서 다듬어 보세요.' : esc(d.goal)) + '</p>' + ladder()
+    + (allDone ? '<button class="btn primary" data-act="goto" data-tab="mock">모의고사 다시 풀기</button>' : '<button class="btn primary" data-act="open-step" data-day="' + d.id + '" data-step="' + next[0] + '">' + (dayStarted(d) ? '이어서 하기' : '오늘 학습 시작') + ' · ' + next[1] + '</button>') + '</section>';
+  html += '<div class="tiles"><div class="tile"><b>' + streakNow() + '일</b><small>연속 학습</small></div><div class="tile"><b>' + S.total.n + '회</b><small>말하기 연습</small></div><div class="tile"><b>' + due + '장</b><small>복습할 카드</small></div></div>';
+  if (due) html += '<button class="btn block" data-act="goto" data-tab="review">복습 카드 ' + due + '장 넘겨 보기</button>';
+  if (!allDone) html += '<div class="sect-title"><h2>오늘의 미션</h2><span>' + doneN + ' / ' + st.length + ' 완료</span></div><ol class="steps">' + st.map((s, i) => stepRow(d, s, i, next)).join('') + '</ol>';
+  return { title: '오픽 IM1 7일 완성', sub: S.profile.name ? S.profile.name + '님의 학습' : '', html };
+}
+
+/* ---------- 7일 코스 ---------- */
+function viewCourse() {
+  if (V.day) {
+    const d = D.DAYS[V.day - 1];
+    if (V.qid) return { title: '말하기 연습', sub: 'Day ' + d.id + ' · ' + d.title, back: true, html: studioHTML(QMAP[V.qid]) };
+    if (V.step) return stepView(d);
+    const st = daySteps(d), next = st.find(s => !stepDone(d, s[0]));
+    return { title: 'Day ' + d.id, sub: d.title, back: true, html: '<section class="dayhead"><p class="eyebrow">DAY ' + d.id + ' · 약 ' + d.min + '분</p><h1>' + esc(d.title) + '</h1><p class="lead">' + esc(d.goal) + '</p></section><ol class="steps">' + st.map((s, i) => stepRow(d, s, i, next)).join('') + '</ol>'
+      + (dayDone(d) && d.id < 7 ? '<button class="btn primary block" data-act="open-day" data-day="' + (d.id + 1) + '">Day ' + (d.id + 1) + '로 넘어가기</button>' : '') };
+  }
+  const cur = currentDay();
+  return { title: '7일 코스', sub: '하루 40~60분', html: '<div class="stack">' + D.DAYS.map(d => {
+    const st = daySteps(d), n = st.filter(s => stepDone(d, s[0])).length, done = n === st.length;
+    return '<button class="daycard' + (d.id === cur.id && !done ? ' now' : '') + (done ? ' done' : '') + '" data-act="open-day" data-day="' + d.id + '"><span class="dnum">DAY ' + d.id + '</span><span class="dbody"><strong>' + esc(d.title) + '</strong><small>' + esc(d.goal) + '</small><span class="meter"><i style="width:' + (n / st.length * 100) + '%"></i></span></span><span class="dstat">' + (done ? '완료' : n + '/' + st.length) + '</span></button>';
+  }).join('') + '</div>' };
+}
+function stepView(d) {
+  const step = V.step, i = V.idx || 0, head = { back: true, sub: 'Day ' + d.id + ' · ' + d.title };
+  const dots = n => '<div class="dots">' + Array.from({ length: n }, (_, k) => '<i class="' + (k <= i ? 'on' : '') + '"></i>').join('') + '</div>';
+  const pager = (n, doneLabel) => '<div class="row-btns split">' + (i > 0 ? '<button class="btn" data-act="step-idx" data-i="' + (i - 1) + '">이전</button>' : '') + (i < n - 1 ? '<button class="btn primary" data-act="step-idx" data-i="' + (i + 1) + '">다음</button>' : '<button class="btn primary" data-act="step-done">' + doneLabel + '</button>') + '</div>';
+  if (step === 'lesson') {
+    const l = d.lessons[i];
+    return Object.assign(head, { title: '개념 익히기', html: dots(d.lessons.length) + '<article class="card lesson"><p class="eyebrow">개념 ' + (i + 1) + ' / ' + d.lessons.length + '</p><h2>' + esc(l.t) + '</h2>' + l.b + '</article>' + pager(d.lessons.length, '개념 익히기 완료') });
+  }
+  if (step === 'patterns') {
+    return Object.assign(head, { title: '핵심 패턴', html: '<p class="muted">재생 버튼으로 듣고, 예문을 소리 내어 세 번씩 따라 말해 보세요.</p><div class="stack">' + d.patterns.map(p =>
+      '<div class="card pattern-card"><div class="pattern"><div class="pbody"><span class="en">' + esc(p.en) + '</span><span class="ko">' + esc(p.ko) + '</span><span class="ex">' + esc(p.ex) + '</span><span class="ko">' + esc(p.exKo) + '</span></div><button class="playbtn" data-act="say" data-text="' + esc(p.ex) + '" aria-label="예문 듣기">' + ICON.play + '</button></div></div>').join('')
+      + '</div><button class="btn primary block" data-act="step-done">다 익혔어요 · 복습 카드에 넣기</button>' });
+  }
+  if (step === 'shadow') {
+    const q = QMAP[d.models[i]];
+    return Object.assign(head, { title: '모범 답변 쉐도잉', html: dots(d.models.length) + '<section class="card">' + chips(q) + '<p class="en qtext">' + esc(q.q) + '</p><p class="ko">' + esc(q.ko) + '</p><button class="btn small" data-act="say" data-text="' + esc(q.q) + '">' + ICON.play + ' 질문 듣기</button></section>'
+      + '<p class="muted">문장을 누르면 읽어 줘요. 듣고, 멈추고, 똑같이 따라 말하세요. 답변 하나를 세 번 반복하면 좋아요.</p><section class="card">' + modelHTML(q) + '</section>' + pager(d.models.length, '쉐도잉 완료') });
+  }
+  if (step === 'practice') {
+    const n = practiceCount(d), need = Math.min(2, d.practice.length);
+    return Object.assign(head, { title: '말하기 연습', html: '<p class="muted">문제를 골라 녹음해 보세요. ' + need + '문제 이상 답하면 이 단계가 완료돼요. (' + n + ' / ' + d.practice.length + ')</p><div class="stack">' + d.practice.map(id => qRow(QMAP[id])).join('') + '</div>'
+      + (n >= need ? '<button class="btn primary block" data-act="open-step" data-day="' + d.id + '" data-step="quiz">체크 퀴즈로 가기</button>' : '') });
+  }
+  /* quiz */
+  const Z = d.quiz;
+  if (QZ.i >= Z.length) {
+    return Object.assign(head, { title: '체크 퀴즈', html: '<section class="card empty"><p class="eyebrow">퀴즈 결과</p><div class="ring" style="--p:' + (QZ.ok / Z.length * 100) + '"><b>' + QZ.ok + '/' + Z.length + '</b></div><p>' + (QZ.ok === Z.length ? '모두 맞혔어요.' : QZ.ok >= 3 ? '잘했어요. 틀린 문제는 개념 카드에서 다시 확인해 보세요.' : '개념과 패턴을 한 번 더 보고 다시 풀어 보세요.') + '</p></section><div class="row-btns split"><button class="btn" data-act="open-step" data-day="' + d.id + '" data-step="quiz">다시 풀기</button><button class="btn primary" data-act="open-day" data-day="' + d.id + '">Day ' + d.id + ' 화면으로</button></div>' });
+  }
+  const z = Z[QZ.i], picked = QZ.picked;
+  return Object.assign(head, { title: '체크 퀴즈', html: '<div class="dots">' + Z.map((_, k) => '<i class="' + (k <= QZ.i ? 'on' : '') + '"></i>').join('') + '</div><section class="card"><p class="eyebrow">문제 ' + (QZ.i + 1) + ' / ' + Z.length + '</p><h2>' + esc(z.q) + '</h2><div class="opts">' + z.o.map((o, k) =>
+    '<button class="opt' + (picked != null ? (k === z.a ? ' right' : k === picked ? ' wrong' : '') : '') + '" data-act="quiz-pick" data-i="' + k + '"' + (picked != null ? ' disabled' : '') + '>' + esc(o) + '</button>').join('') + '</div>'
+    + (picked != null ? '<p class="why"><b>' + (picked === z.a ? '정답이에요. ' : '아쉬워요. ') + '</b>' + esc(z.why) + '</p>' : '') + '</section>'
+    + (picked != null ? '<button class="btn primary block" data-act="quiz-next">' + (QZ.i === Z.length - 1 ? '결과 보기' : '다음 문제') + '</button>' : '') });
+}
+
+/* ---------- 말하기 연습 화면 ---------- */
+function studioHTML(q) {
+  const best = S.best[q.id], mine = S.scripts[q.id] || '';
+  return '<section class="card">' + chips(q, best != null ? '<span class="chip good">최고 ' + best + '점</span>' : '') + '<p class="en qtext">' + esc(q.q) + '</p><p class="ko">' + esc(q.ko) + '</p><div class="row-btns"><button class="btn small" data-act="say" data-text="' + esc(q.q) + '">' + ICON.play + ' 질문 듣기</button></div></section>'
+    + '<details class="fold"><summary>답변 뼈대 보기</summary><ol class="tips">' + q.tips.map(t => '<li>' + esc(t) + '</li>').join('') + '</ol></details>'
+    + (q.type === 'intro' ? introBuilderHTML() : '')
+    + '<section class="card recorder" id="recorder">' + recorderHTML() + '</section>'
+    + '<div id="feedback">' + (ST.an ? feedbackHTML(q) : '') + '</div>'
+    + '<details class="fold"><summary>모범 답변 보기</summary>' + modelHTML(q) + '</details>'
+    + '<details class="fold" id="scriptFold"' + (mine ? ' open' : '') + '><summary>내 스크립트</summary><textarea id="myScript" rows="6" placeholder="나만의 답변을 영어로 적어 두세요. 복습 탭에서 다시 볼 수 있어요.">' + esc(mine) + '</textarea><div class="row-btns end"><button class="btn small" data-act="say-script">' + ICON.play + ' 들어 보기</button><button class="btn small primary" data-act="save-script">저장</button></div></details>';
+}
+function introBuilderHTML() {
+  const p = S.profile, job = { worker: 'an office worker', student: 'a university student', seeker: 'a job seeker', home: 'a homemaker' }[p.job] || '';
+  const sel = (id, label, opts) => '<div class="field"><label for="' + id + '">' + label + '</label><select id="' + id + '">' + opts.map(o => '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>').join('') + '</select></div>';
+  return '<details class="fold"><summary>내 자기소개 만들기</summary><div class="grid2">' + field('ibName', '이름 (영어)', p.name, 'Minsu Kim') + field('ibCity', '사는 곳', '', 'Seoul')
+    + sel('ibWith', '같이 사는 사람', [['with my family', '가족과 (with my family)'], ['alone', '혼자 (alone)'], ['with my parents', '부모님과 (with my parents)'], ['with my wife and kids', '아내, 아이들과'], ['with my husband and kids', '남편, 아이들과']])
+    + field('ibJob', '하는 일', job, 'an office worker') + field('ibWork', '회사 · 학교 (선택)', '', 'a trading company') + field('ibHobby1', '취미 1', '', 'watch movies') + field('ibHobby2', '취미 2 (선택)', '', 'listen to music')
+    + sel('ibChar', '성격', [['a quiet', '조용한 (quiet)'], ['an outgoing', '외향적인 (outgoing)'], ['a positive', '긍정적인 (positive)'], ['a friendly', '다정한 (friendly)'], ['a calm', '차분한 (calm)']])
+    + '</div><div class="row-btns end"><button class="btn small primary" data-act="intro-build">문장 만들기</button></div><p class="fine">만든 문장은 아래 내 스크립트 칸에 들어가요. 고친 뒤 저장하세요.</p></details>';
+}
+function recHTML(hint, extra) { return '<div class="timer" id="recTimer">00:00</div><button class="recbtn" data-act="rec-toggle" aria-label="녹음 시작"></button><p class="muted">' + hint + '</p>' + extra; }
+const REC_ON = '<div class="timer" id="recTimer">00:00</div><button class="recbtn on" data-act="rec-toggle" aria-label="녹음 끝내기"></button><p class="muted">말하는 중이에요. 버튼을 다시 누르면 끝나요.</p><p class="note" id="recNote" hidden></p><p class="live en" id="recLive" hidden></p>';
+function recorderHTML() {
+  const p = ST.phase, audio = ST.url ? '<audio controls src="' + ST.url + '"></audio>' : '';
+  if (p === 'rec') return REC_ON;
+  if (p === 'type' || p === 'needtext') return (p === 'needtext' ? '<p class="note">음성이 글자로 바뀌지 않았어요. 말한 내용을 적으면 분석해 드려요.</p>' : '') + audio
+    + '<div class="field"><label for="typedAnswer">영어 답변</label><textarea id="typedAnswer" rows="6" placeholder="I live in an apartment in Seoul. It is on the tenth floor."></textarea></div><div class="row-btns"><button class="btn small" data-act="retry">취소</button><button class="btn small primary" data-act="typed-submit">분석하기</button></div>';
+  if (p === 'done') return '<p class="eyebrow">답변 시간</p><div class="timer">' + fmt(ST.secs || 0) + '</div>' + audio + '<button class="btn" data-act="retry">다시 도전하기</button>';
+  return recHTML('버튼을 누르고 영어로 답해 보세요. 목표는 40초~1분이에요.', '<button class="linkbtn" data-act="type-toggle">말하지 않고 글로 입력하기</button>');
+}
+function paintRecorder() { const el = $('#recorder'); if (el) el.innerHTML = (V.tab === 'mock' && M) ? mockRecHTML() : recorderHTML(); }
+function live() {
+  const t = $('#recTimer'), tr = $('#recLive'), n = $('#recNote'), txt = Rec.liveText();
+  if (t) t.textContent = fmt(Rec.secs);
+  if (tr) { tr.textContent = txt; tr.hidden = !txt; tr.scrollTop = tr.scrollHeight; }
+  if (n && Rec.note) { n.textContent = Rec.note; n.hidden = false; }
+}
+function feedbackHTML(q) {
+  const a = ST.an, lv = levelOf(a.score);
+  return '<section class="card fb"><div class="fb-head"><div class="ring" style="--p:' + a.score + '"><b>' + a.score + '</b></div><div><p class="eyebrow">예상 수준</p><h2>' + lv.name + '</h2><p class="muted">' + lv.msg + '</p></div></div>'
+    + '<ul class="metrics">' + a.metrics.map(m => '<li class="' + m.st + '"><span class="dot"></span><div><strong>' + m.k + '</strong><span class="mv">' + esc(m.v) + '</span>' + (m.st !== 'good' ? '<small>' + esc(m.tip) + '</small>' : '') + '</div></li>').join('') + '</ul>'
+    + '<div class="mine"><p class="eyebrow">내 답변</p><p class="en">' + esc(ST.text) + '</p></div>'
+    + '<div class="row-btns"><button class="btn small" data-act="use-script">내 스크립트로 가져가기</button>' + (Voice.ai ? '<button class="btn small primary" data-act="ai-coach" id="aiBtn">AI 코치 첨삭 받기</button>' : '') + '</div>'
+    + '<div id="aiBox">' + (ST.ai ? aiHTML(ST.ai) : '') + '</div><p class="fine">예상 수준은 말한 양, 속도, 연결어, 유형별 필수 요소로 계산한 참고값이에요. 실제 등급과 다를 수 있어요.</p></section>';
+}
+function aiHTML(r) {
+  const arr = v => Array.isArray(v) ? v : [];
+  return '<div class="ai"><p class="eyebrow">AI 코치 · 예상 ' + esc(r.level || '') + '</p><p>' + esc(r.summary || '') + '</p>'
+    + (arr(r.strengths).length ? '<div><strong>잘한 점</strong><ul>' + arr(r.strengths).map(s => '<li>' + esc(s) + '</li>').join('') + '</ul></div>' : '')
+    + (arr(r.fixes).length ? '<div><strong>이렇게 고쳐 보세요</strong><ul>' + arr(r.fixes).map(f => '<li><span class="en"><del>' + esc(f.from) + '</del> → <ins>' + esc(f.to) + '</ins></span><br><span class="ko">' + esc(f.why) + '</span></li>').join('') + '</ul></div>' : '')
+    + (r.upgraded ? '<div><strong>다듬은 답변</strong><p class="en">' + esc(r.upgraded) + '</p><div class="row-btns"><button class="btn small" data-act="say" data-text="' + esc(r.upgraded) + '">' + ICON.play + ' 듣기</button><button class="btn small" data-act="ai-to-script">내 스크립트로 가져가기</button></div></div>' : '') + '</div>';
+}
+function grade(text, secs, stt) {
+  const q = curQ(); if (!q) return;
+  ST.text = text; ST.secs = secs; ST.an = analyze(text, secs, q, stt); ST.ai = null; ST.phase = 'done';
+  logAttempt(q, ST.an, text, secs);
+  paintRecorder();
+  const fb = $('#feedback'); if (fb) { fb.innerHTML = feedbackHTML(q); fb.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+async function aiCoach() {
+  const q = curQ(), box = $('#aiBox'); if (!Voice.ai || !q || !box || ST.aiBusy) return;
+  ST.aiBusy = true; const my = navId; box.innerHTML = '<p class="muted">AI 코치가 답변을 읽고 있어요.</p>';
+  const prompt = 'You are an OPIc (Oral Proficiency Interview - computer) speaking coach for a Korean adult learner whose goal is the IM1 level. Evaluate the transcript of the learner\'s spoken answer.\n'
+    + 'Reply with JSON only, in this exact shape: {"level": one of "NL","NM","NH","IL","IM1","IM2","IM3","IH","AL", "summary": two short sentences in Korean (polite 해요 style), "strengths": up to 2 short Korean strings, "fixes": up to 3 objects {"from": an exact phrase from the transcript, "to": the corrected English, "why": a short reason in Korean}, "upgraded": the learner\'s own answer rewritten in simple, natural English at IM1-IM2 level, 70 to 90 words, keeping their content}.\n'
+    + 'The transcript comes from speech recognition, so ignore punctuation, capitalization and obvious mis-hearings.\n\n'
+    + 'Question: ' + q.q + '\nSpeaking time: ' + (ST.secs || 0) + ' seconds\nTranscript: ' + ST.text;
+  let msg = '';
+  try { ST.ai = await Voice.ai.json(prompt); }
+  catch (e) { ST.ai = null; const c = e && e.code; if (c === 'not_granted') Voice.ai = null; msg = c === 'rate_limited' ? '요청이 많아요. 잠시 뒤에 다시 눌러 주세요.' : c === 'not_granted' ? 'AI 코치 사용이 꺼져 있어요.' : '첨삭을 받지 못했어요. 다시 눌러 주세요.'; }
+  ST.aiBusy = false;
+  if (my !== navId) return;
+  const b = $('#aiBox'); if (b) b.innerHTML = ST.ai ? aiHTML(ST.ai) : '<p class="note">' + msg + '</p>';
+}
+function putScript(text) {
+  const ta = $('#myScript'), f = $('#scriptFold'); if (!ta) return;
+  ta.value = text; if (f) { f.open = true; f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  toast('내 스크립트 칸에 넣었어요. 고친 뒤 저장하세요.');
+}
+
+/* ---------- 문제 연습 ---------- */
+const FILTERS = [['all', '전체'], ['intro', '자기소개'], ['desc', '묘사'], ['routine', '루틴'], ['past', '과거 경험'], ['rp', '롤플레이'], ['ava', '질문하기'], ['unexp', '돌발']];
+const matchF = (q, f) => f === 'all' || (f === 'rp' ? q.type.indexOf('rp-') === 0 : f === 'unexp' ? q.unexp : q.type === f);
+function viewPractice() {
+  if (V.qid) return { title: '문제 연습', sub: D.TYPES[QMAP[V.qid].type] + ' · ' + QMAP[V.qid].topic, back: true, html: studioHTML(QMAP[V.qid]) };
+  const f = V.filter || 'all', list = D.QUESTIONS.filter(q => matchF(q, f)), tried = list.filter(q => S.best[q.id] != null).length;
+  return { title: '문제 연습', sub: '유형별 ' + D.QUESTIONS.length + '문제', html: '<div class="scroller"><div class="choice">' + FILTERS.map(x => '<button data-act="filter" data-f="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + x[1] + '</button>').join('') + '</div></div><p class="muted">' + list.length + '문제 가운데 ' + tried + '문제를 풀었어요.</p><div class="stack">' + list.map(qRow).join('') + '</div>' };
+}
+
+/* ---------- 모의고사 ---------- */
+const MOCK_SECS = 40 * 60;
+function buildMock() {
+  const by = (t, ty) => D.QUESTIONS.find(q => q.topic === t && q.type === ty);
+  const topics = x => shuffle([...new Set(D.QUESTIONS.filter(q => q.type === 'desc' && q.unexp === x).map(q => q.topic))]);
+  const sv = topics(false), un = topics(true), rp = shuffle([...new Set(D.QUESTIONS.filter(q => q.type === 'rp-ask').map(q => q.topic))]);
+  const combo = t => ['desc', 'routine', 'past'].map(ty => by(t, ty).id);
+  const ava = shuffle(D.QUESTIONS.filter(q => q.type === 'ava'))[0];
+  return ['intro-1'].concat(combo(sv[0]), combo(sv[1]), combo(un[0]), ['rp-ask', 'rp-solve', 'rp-exp'].map(ty => by(rp[0], ty).id), [by(sv[2], 'desc').id, ava.id]);
+}
+const mockLeft = () => Math.max(0, MOCK_SECS - Math.floor((Date.now() - M.t0) / 1000));
+function mockClock() { if (!M) { clearInterval(mockTick); return; } const el = $('#mockClock'); if (el) el.textContent = fmt(mockLeft()); if (mockLeft() <= 0) mockFinish(); }
+function mockPlayBtn() {
+  if (!Voice.canSpeak()) return '<p class="note">이 브라우저는 음성 읽기를 지원하지 않아 질문을 글로 보여 드려요.</p>';
+  if (!M.played) return '<button class="btn primary" data-act="mock-play">' + ICON.play + ' 질문 듣기</button>';
+  return M.replay > 0 ? '<button class="btn" data-act="mock-play">' + ICON.play + ' 다시 듣기 (1회 남음)</button>' : '<button class="btn" disabled>다시 듣기를 모두 썼어요</button>';
+}
+function mockPlay() {
+  if (!M || Rec.active || !Voice.canSpeak()) return;
+  if (M.played) { if (M.replay <= 0) return; M.replay--; }
+  M.played = true; say(QMAP[M.items[M.i]].q);
+  const b = $('#mockPlayBox'); if (b) b.innerHTML = mockPlayBtn();
+}
+function mockRecHTML() {
+  const p = M.phase, last = M.i === M.items.length - 1;
+  if (p === 'rec') return REC_ON;
+  if (p === 'after') {
+    const c = M.cur, has = wordCount(c.text) >= 3;
+    return '<p class="eyebrow">답변 완료</p><div class="timer">' + fmt(c.secs) + '</div>' + (has ? '<p class="muted">' + wordCount(c.text) + '단어를 말했어요.</p>' : '<p class="note">음성이 글자로 바뀌지 않았어요. 말한 내용을 적으면 채점에 반영돼요.</p><textarea id="mockTyped" rows="4" placeholder="말한 내용을 영어로 적어 주세요 (선택)"></textarea>')
+      + '<button class="btn primary block" data-act="mock-next">' + (last ? '시험 끝내고 결과 보기' : '다음 문제') + '</button>';
+  }
+  return recHTML('질문을 들은 뒤 버튼을 누르고 답하세요.', '<button class="linkbtn" data-act="mock-next">이 문제 건너뛰기</button>');
+}
+function mockCommit() {
+  if (!M || M.ans.length > M.i) return;
+  const q = QMAP[M.items[M.i]]; let c = M.cur || { text: '', secs: 0, stt: false };
+  const ta = $('#mockTyped'); if (ta && ta.value.trim()) c = { text: ta.value.trim(), secs: c.secs, stt: false };
+  const an = analyze(c.text, c.secs, q, c.stt), ok = wordCount(c.text) >= 3;
+  M.ans.push({ qid: q.id, score: ok ? an.score : 0, wc: an.wc, secs: c.secs, text: c.text.slice(0, 600) });
+  if (ok) { S.best[q.id] = Math.max(S.best[q.id] || 0, an.score); S.total.n++; S.total.secs += c.secs; }
+}
+function mockNext() {
+  if (!M || Rec.active) return;
+  mockCommit(); M.i++; M.cur = null; M.phase = 'ready'; M.played = false; M.replay = 1;
+  if (M.i >= M.items.length) return mockFinish();
+  stopAll(); render(); $('#main').scrollTop = 0; mockPlay();
+}
+function mockFinish() {
+  if (!M) return;
+  clearInterval(mockTick); if (Rec.active) Rec.cancel();
+  if (M.i < M.items.length && M.cur) mockCommit();
+  while (M.ans.length < M.items.length) M.ans.push({ qid: M.items[M.ans.length], score: 0, wc: 0, secs: 0, text: '' });
+  const score = Math.round(M.ans.reduce((a, b) => a + b.score, 0) / M.ans.length);
+  S.mocks.unshift({ ts: Date.now(), score, items: M.ans }); S.mocks = S.mocks.slice(0, 10);
+  touch(); save(); M = null; go({ tab: 'mock', result: 0 });
+}
+const GROUP = { intro: '자기소개', desc: '묘사', routine: '루틴', past: '과거 경험', 'rp-ask': '롤플레이', 'rp-solve': '롤플레이', 'rp-exp': '롤플레이', ava: '질문하기' };
+const GROUP_DAY = { '자기소개': 1, '묘사': 2, '루틴': 3, '과거 경험': 4, '롤플레이': 5, '질문하기': 5 };
+function viewMock() {
+  if (M) {
+    const q = QMAP[M.items[M.i]], n = M.i + 1, showText = S.settings.showText || !Voice.canSpeak();
+    return { title: '모의고사', sub: '문제 ' + n + ' / ' + M.items.length, html: '<section class="mockbar"><div><p class="eyebrow">문제 ' + n + ' / ' + M.items.length + '</p><span class="meter"><i style="width:' + ((n - 1) / M.items.length * 100) + '%"></i></span></div><div class="clock"><small>남은 시간</small><b id="mockClock">' + fmt(mockLeft()) + '</b></div></section>'
+      + '<section class="card ava"><div class="ava-face" aria-hidden="true">A</div><p class="muted">면접관이 질문을 읽어 줘요. 다시 듣기는 한 번만 할 수 있어요.</p><div id="mockPlayBox">' + mockPlayBtn() + '</div>' + (showText ? '<p class="en qtext">' + esc(q.q) + '</p>' : '') + '</section>'
+      + '<section class="card recorder" id="recorder">' + mockRecHTML() + '</section><div class="row-btns end"><button class="linkbtn" data-act="mock-quit">시험 그만두기</button></div>' };
+  }
+  if (V.result != null && S.mocks[V.result]) return mockResult(S.mocks[V.result]);
+  return { title: '모의고사', sub: '실전처럼 15문항', html: '<section class="hero"><p class="eyebrow">실전 모의고사</p><h1>15문항 · 40분</h1><p>실제 시험과 같은 순서로 문제가 나와요. 조용한 곳에서 이어폰을 끼고 시작하세요.</p></section>'
+    + '<section class="card lesson"><h2>문제 구성</h2><div class="tablebox"><table><tr><th>번호</th><th>내용</th></tr><tr><td>1</td><td>자기소개</td></tr><tr><td>2~10</td><td>주제 세 개 × (묘사 → 루틴 → 경험), 한 주제는 돌발</td></tr><tr><td>11~13</td><td>롤플레이: 질문하기 → 문제 해결 → 내 경험</td></tr><tr><td>14~15</td><td>묘사 한 문제 + 면접관에게 질문하기</td></tr></table></div>'
+    + '<ul><li>질문은 음성으로만 나오고, 다시 듣기는 한 번이에요.</li><li>답변은 다시 녹음할 수 없고, 앞 문제로 돌아갈 수 없어요.</li></ul><label class="check"><input type="checkbox" id="setShowText"' + (S.settings.showText ? ' checked' : '') + '> 질문을 글로도 보기 (연습용)</label></section>'
+    + '<button class="btn primary block" data-act="mock-start">모의고사 시작하기</button>'
+    + (S.mocks.length ? '<div class="sect-title"><h2>지난 결과</h2><span>최근 ' + S.mocks.length + '회</span></div><div class="stack">' + S.mocks.map((m, i) => '<button class="qrow" data-act="mock-result" data-i="' + i + '"><span class="qbody"><strong>' + new Date(m.ts).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) + ' 모의고사</strong><small>예상 ' + levelOf(m.score).name + '</small></span><span class="dstat">' + m.score + '점</span></button>').join('') + '</div>' : '') };
+}
+function mockResult(m) {
+  const lv = levelOf(m.score), g = {};
+  m.items.forEach(a => { const k = GROUP[QMAP[a.qid].type]; (g[k] = g[k] || []).push(a.score); });
+  const rows = Object.keys(g).map(k => ({ k, v: Math.round(g[k].reduce((a, b) => a + b, 0) / g[k].length) }));
+  const weak = rows.slice().sort((a, b) => a.v - b.v)[0], answered = m.items.filter(a => a.wc >= 3).length;
+  return { title: '모의고사 결과', sub: new Date(m.ts).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }), back: true, html: '<section class="card fb"><div class="fb-head"><div class="ring" style="--p:' + m.score + '"><b>' + m.score + '</b></div><div><p class="eyebrow">예상 수준</p><h2>' + lv.name + '</h2><p class="muted">15문항 가운데 ' + answered + '문항에 답했어요. ' + lv.msg + '</p></div></div><p class="fine">예상 수준은 이 앱의 기준으로 계산한 참고값이에요. 실제 등급과 다를 수 있어요.</p></section>'
+    + '<section class="card"><h2>유형별 점수</h2><ul class="bars">' + rows.map(r => '<li class="' + (r.v < 62 ? 'low' : '') + '"><span>' + r.k + '</span><span class="meter"><i style="width:' + r.v + '%"></i></span><b>' + r.v + '</b></li>').join('') + '</ul>'
+    + (weak && weak.v < 78 ? '<p class="muted">가장 약한 유형은 <b>' + weak.k + '</b>예요. Day ' + GROUP_DAY[weak.k] + '를 다시 보면 좋아요.</p><button class="btn" data-act="open-day" data-day="' + GROUP_DAY[weak.k] + '">Day ' + GROUP_DAY[weak.k] + ' 복습하기</button>' : '') + '</section>'
+    + '<div class="sect-title"><h2>문항별 답변</h2><span>눌러서 펼치기</span></div>' + m.items.map((a, i) => { const q = QMAP[a.qid]; return '<details class="fold"><summary>' + (i + 1) + '. ' + D.TYPES[q.type] + ' · ' + a.score + '점</summary><p class="en">' + esc(q.q) + '</p><p class="ko">' + esc(q.ko) + '</p><div class="mine"><p class="eyebrow">내 답변 · ' + fmt(a.secs) + ' · ' + a.wc + '단어</p><p class="en">' + (a.text ? esc(a.text) : '답변 없음') + '</p></div><div class="row-btns"><button class="btn small" data-act="open-q" data-q="' + q.id + '" data-to="practice">이 문제 다시 연습하기</button></div></details>'; }).join('') };
+}
+
+/* ---------- 복습 ---------- */
+const SECS = [['cards', '카드'], ['scripts', '스크립트'], ['stats', '기록'], ['settings', '설정']];
+function viewReview() {
+  const sec = V.sec || 'cards';
+  const seg = '<div class="seg">' + SECS.map(s => '<button data-act="sec" data-sec="' + s[0] + '" aria-pressed="' + (sec === s[0]) + '">' + s[1] + '</button>').join('') + '</div>';
+  let body = '';
+  if (sec === 'cards') {
+    if (!CQ || !CQ.queue.length) CQ = { queue: shuffle(dueCards()), show: false };
+    const total = Object.keys(S.cards).length;
+    if (!total) body = '<section class="card empty"><h2>아직 카드가 없어요</h2><p>7일 코스에서 핵심 패턴 단계를 마치면 그날의 패턴이 카드로 들어와요.</p><button class="btn primary" data-act="goto" data-tab="course">7일 코스로 가기</button></section>';
+    else if (!CQ.queue.length) {
+      const nextDue = Object.keys(S.cards).map(id => S.cards[id].due).sort()[0];
+      body = '<section class="card empty"><h2>오늘 복습을 마쳤어요</h2><p>카드 ' + total + '장 가운데 오늘 볼 카드는 없어요. 다음 복습일은 ' + esc(nextDue) + '예요.</p><button class="btn" data-act="card-all">전체 카드 다시 넘겨 보기</button></section>';
+    } else {
+      const p = PMAP[CQ.queue[0]];
+      body = '<p class="muted">남은 카드 ' + CQ.queue.length + '장 · 한국어를 보고 영어로 먼저 말해 보세요.</p><section class="card flash"><p class="eyebrow">Day ' + p.day + ' 패턴</p><p class="ko">' + esc(p.ko) + '</p>'
+        + (CQ.show ? '<p class="en">' + esc(p.en) + '</p><p class="ex">' + esc(p.ex) + '</p><button class="playbtn" data-act="say" data-text="' + esc(p.ex) + '" aria-label="예문 듣기">' + ICON.play + '</button>' : '') + '</section>'
+        + (CQ.show ? '<div class="row-btns split"><button class="btn" data-act="card-again">다시 볼게요</button><button class="btn primary" data-act="card-good">외웠어요</button></div>' : '<button class="btn primary block" data-act="card-show">정답 보기</button>');
+    }
+  } else if (sec === 'scripts') {
+    const ids = Object.keys(S.scripts).filter(id => QMAP[id] && S.scripts[id]);
+    body = ids.length ? '<div class="stack">' + ids.map(id => '<section class="card">' + chips(QMAP[id]) + '<p class="ko">' + esc(QMAP[id].ko) + '</p><p class="en">' + esc(S.scripts[id]) + '</p><div class="row-btns"><button class="btn small" data-act="say" data-text="' + esc(S.scripts[id]) + '">' + ICON.play + ' 듣기</button><button class="btn small" data-act="open-q" data-q="' + id + '" data-to="practice">연습하기</button><button class="btn small danger" data-act="script-del" data-q="' + id + '">삭제</button></div></section>').join('') + '</div>'
+      : '<section class="card empty"><h2>저장한 스크립트가 없어요</h2><p>문제 연습 화면의 내 스크립트 칸에 답변을 적고 저장하면 여기에 모여요.</p><button class="btn primary" data-act="goto" data-tab="practice">문제 연습으로 가기</button></section>';
+  } else if (sec === 'stats') {
+    const at = S.attempts.slice(0, 10).reverse(), wcAvg = at.length ? Math.round(at.reduce((a, b) => a + b.wc, 0) / at.length) : 0;
+    body = '<div class="tiles"><div class="tile"><b>' + S.total.n + '회</b><small>말하기 연습</small></div><div class="tile"><b>' + Math.round(S.total.secs / 60) + '분</b><small>말한 시간</small></div><div class="tile"><b>' + wcAvg + '단어</b><small>최근 평균 길이</small></div></div>'
+      + '<section class="card"><h2>최근 답변 점수</h2>' + (at.length ? '<div class="chart" role="img" aria-label="최근 ' + at.length + '회 답변 점수: ' + at.map(a => a.score).join(', ') + '"><div class="goalline" style="bottom:' + (62 * 1.14) + 'px"></div>' + at.map(a => '<div class="col' + (a.score >= 62 ? ' hit' : '') + '" title="' + esc(QMAP[a.qid] ? QMAP[a.qid].topic : '') + '"><span>' + a.score + '</span><i style="height:' + (a.score * 1.14) + 'px"></i></div>').join('') + '</div><p class="fine">점선은 IM1 기준인 62점이에요. 왼쪽이 오래된 답변, 오른쪽이 가장 최근 답변이고, 초록색은 기준을 넘은 답변이에요.</p>' : '<p class="muted">말하기 연습을 하면 점수 변화가 여기에 그려져요.</p>') + '</section>'
+      + '<section class="card"><h2>코스 진도</h2><ul class="bars">' + D.DAYS.map(d => { const st = daySteps(d), n = st.filter(s => stepDone(d, s[0])).length; return '<li><span>Day ' + d.id + '</span><span class="meter"><i style="width:' + (n / st.length * 100) + '%"></i></span><b>' + n + '/' + st.length + '</b></li>'; }).join('') + '</ul></section>';
+  } else {
+    body = '<section class="card">' + field('setName', '영어 이름', S.profile.name, 'Minsu Kim') + '<div class="field"><label for="setDate">시험일</label><input type="date" id="setDate" value="' + esc(S.profile.examDate) + '"></div>'
+      + '<div class="field"><label for="setRate">읽어 주는 속도 <output id="rateOut">' + Number(S.settings.rate).toFixed(2) + '</output>배</label><input type="range" id="setRate" min="0.7" max="1.1" step="0.05" value="' + S.settings.rate + '"></div><div class="row-btns"><button class="btn small" data-act="say" data-text="I usually go to the park on weekends.">' + ICON.play + ' 속도 들어 보기</button></div></section>'
+      + '<section class="card"><h2>학습 기록 지우기</h2><p class="muted">진도, 점수, 카드, 스크립트가 이 기기에서 모두 지워져요. 되돌릴 수 없어요.</p><div class="row-btns"><button class="btn small danger" data-act="reset">모든 기록 지우기</button></div></section>'
+      + '<p class="fine">이 앱은 비공식 학습 도구이며 OPIc 주관 기관과 관계가 없어요. 문제와 모범 답변은 학습용으로 새로 쓴 것이고, 예상 수준은 참고용이에요. 학습 기록은 이 기기의 브라우저에만 저장돼요.</p>';
+  }
+  return { title: '복습', sub: '카드 · 스크립트 · 기록', html: seg + body };
+}
+
+const VIEWS = { today: viewToday, course: viewCourse, practice: viewPractice, mock: viewMock, review: viewReview };
+
+/* ---------- 동작 ---------- */
+const ACT = {
+  tab(el, e) { e.preventDefault(); go({ tab: el.dataset.tab }); },
+  goto(el) { go({ tab: el.dataset.tab }); },
+  back,
+  'ob-job'(el) { const n = $('#obName'); if (n) OB.name = n.value.trim(); OB.job = el.dataset.job; render(); },
+  'ob-next'() { const n = $('#obName'); if (n) OB.name = n.value.trim(); OB.step++; render(); $('#main').scrollTop = 0; },
+  'ob-done'() { const d = $('#obDate'); S.profile = { name: OB.name, job: OB.job, examDate: d ? d.value : '' }; S.onboarded = true; save(); go({ tab: 'today' }); },
+  'open-day'(el) { go({ tab: 'course', day: +el.dataset.day }); },
+  'open-step'(el) {
+    const step = el.dataset.step, day = +el.dataset.day;
+    if (step === 'mock') return go({ tab: 'mock' });
+    if (step === 'quiz') QZ = { i: 0, ok: 0, picked: null };
+    go({ tab: 'course', day, step, idx: 0 });
+  },
+  'step-idx'(el) { go(Object.assign({}, V, { idx: +el.dataset.i })); },
+  'step-done'() {
+    const d = D.DAYS[V.day - 1]; markStep(d.id, V.step);
+    if (V.step === 'patterns') { addCards(d); save(); CQ = null; }
+    toast({ lesson: '개념 익히기 완료', patterns: '패턴 ' + d.patterns.length + '개를 복습 카드에 넣었어요', shadow: '쉐도잉 완료' }[V.step] || '완료');
+    go({ tab: 'course', day: d.id });
+  },
+  say(el) { say(el.dataset.text); },
+  'say-line'(el) { const q = curQ(); if (!q) return; stopAll(); el.classList.add('on'); const tk = seqToken; Voice.speak(q.m[+el.dataset.i][0]).then(() => { if (tk === seqToken) el.classList.remove('on'); }); },
+  'say-all'(el) { const q = curQ(); if (!q) return; const box = el.closest('.card, .fold') || document; const rows = $$('.sent', box); playSeq(q.m.map(s => s[0]), i => rows.forEach((r, j) => r.classList.toggle('on', j === i))); },
+  'say-stop': stopAll,
+  'say-script'() { const t = $('#myScript'); if (t && t.value.trim()) say(t.value.trim()); else toast('먼저 스크립트를 적어 주세요.'); },
+  'open-q'(el) {
+    const qid = el.dataset.q;
+    if (V.tab === 'course' && V.day && !el.dataset.to) return go({ tab: 'course', day: V.day, step: 'practice', qid });
+    go({ tab: 'practice', filter: V.filter, qid });
+  },
+  filter(el) { go({ tab: 'practice', filter: el.dataset.f }); },
+  async 'rec-toggle'() {
+    const mock = V.tab === 'mock' && M;
+    if (!Rec.active) {
+      if (mock ? M.phase !== 'ready' : (ST.phase !== 'idle')) return;
+      Rec.start(live);                      /* 클릭 안에서 바로 시작 */
+      Rec.onExternalStop = () => ACT['rec-toggle']();
+      if (mock) M.phase = 'rec'; else ST.phase = 'rec';
+      paintRecorder(); return;
+    }
+    const my = navId, r = await Rec.stop(); if (!r || my !== navId) return;
+    if (mock) { M.cur = r; M.phase = 'after'; paintRecorder(); return; }
+    ST.secs = r.secs; ST.url = r.url;
+    if (wordCount(r.text) >= 3) grade(r.text, r.secs, r.stt); else { ST.phase = 'needtext'; paintRecorder(); }
+  },
+  'type-toggle'() { ST.phase = 'type'; ST.secs = 0; paintRecorder(); const t = $('#typedAnswer'); if (t) t.focus(); },
+  'typed-submit'() { const t = $('#typedAnswer'), v = t ? t.value.trim() : ''; if (wordCount(v) < 3) return toast('영어로 세 단어 이상 적어 주세요.'); grade(v, ST.secs || 0, false); },
+  retry() { ST = { qid: ST.qid, phase: 'idle' }; paintRecorder(); const fb = $('#feedback'); if (fb) fb.innerHTML = ''; const r = $('#recorder'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'center' }); },
+  'use-script'() { putScript(ST.text || ''); },
+  'ai-to-script'() { if (ST.ai && ST.ai.upgraded) putScript(String(ST.ai.upgraded)); },
+  'save-script'() { const q = curQ(), t = $('#myScript'); if (!q || !t) return; const v = t.value.trim(); if (v) S.scripts[q.id] = v; else delete S.scripts[q.id]; save(); toast(v ? '스크립트를 저장했어요.' : '스크립트를 비웠어요.'); },
+  'intro-build'() {
+    const v = (id, d) => { const el = $('#' + id); return (el && el.value.trim()) || d; };
+    const job = v('ibJob', 'an office worker'), work = v('ibWork', ''), h1 = v('ibHobby1', 'watch movies'), h2 = v('ibHobby2', '');
+    const s = ['Hi, my name is ' + v('ibName', 'Minsu Kim') + '.', 'I live in ' + v('ibCity', 'Seoul') + ' ' + v('ibWith', 'with my family') + '.', 'I am ' + job + '.',
+      work ? (/student/i.test(job) ? 'I go to ' : 'I work for ') + work + '.' : '', 'In my free time, I like to ' + h1 + (h2 ? ' and ' + h2 : '') + '.', 'I am ' + v('ibChar', 'a quiet') + ' person.', "That's all about me. Thank you."];
+    putScript(s.filter(Boolean).join(' '));
+  },
+  'ai-coach': aiCoach,
+  'quiz-pick'(el) { const d = D.DAYS[V.day - 1], z = d.quiz[QZ.i]; if (QZ.picked != null) return; QZ.picked = +el.dataset.i; if (QZ.picked === z.a) QZ.ok++; render(); },
+  'quiz-next'() { const d = D.DAYS[V.day - 1]; QZ.i++; QZ.picked = null; if (QZ.i >= d.quiz.length) markStep(d.id, 'quiz', QZ.ok); render(); $('#main').scrollTop = 0; },
+  'mock-start'() { M = { items: buildMock(), i: 0, t0: Date.now(), ans: [], replay: 1, played: false, phase: 'ready', cur: null }; clearInterval(mockTick); mockTick = setInterval(mockClock, 1000); go({ tab: 'mock' }); mockPlay(); },
+  'mock-play': mockPlay,
+  'mock-next': mockNext,
+  'mock-quit'(el) { if (!armed(el, '한 번 더 누르면 기록 없이 끝나요')) return; clearInterval(mockTick); if (Rec.active) Rec.cancel(); M = null; go({ tab: 'mock' }); },
+  'mock-result'(el) { go({ tab: 'mock', result: +el.dataset.i }); },
+  sec(el) { go({ tab: 'review', sec: el.dataset.sec }); },
+  'card-show'() { CQ.show = true; render(); },
+  'card-good'() { const id = CQ.queue.shift(), c = S.cards[id]; if (c) { c.due = addDays(today(), [1, 2, 4, 7, 14][Math.min(c.box, 5) - 1]); c.box = Math.min(5, c.box + 1); } CQ.show = false; touch(); save(); render(); },
+  'card-again'() { const id = CQ.queue.shift(), c = S.cards[id]; if (c) { c.box = 1; c.due = today(); } CQ.queue.push(id); CQ.show = false; save(); render(); },
+  'card-all'() { CQ = { queue: shuffle(Object.keys(S.cards).filter(id => PMAP[id])), show: false }; render(); },
+  'script-del'(el) { if (!armed(el, '한 번 더 누르면 삭제')) return; delete S.scripts[el.dataset.q]; save(); render(); },
+  reset(el) { if (!armed(el, '한 번 더 누르면 모두 지워져요')) return; try { localStorage.removeItem(KEY); } catch (e) {} S = blank(); OB = { step: 0, name: '', job: 'worker', date: '' }; CQ = null; M = null; clearInterval(mockTick); V = { tab: 'today' }; render(); $('#main').scrollTop = 0; }
+};
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || el.disabled) return; const fn = ACT[el.dataset.act]; if (fn) fn(el, e); });
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'setRate') { S.settings.rate = +t.value; const o = $('#rateOut'); if (o) o.textContent = (+t.value).toFixed(2); save(); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'setShowText') { S.settings.showText = t.checked; save(); }
+  else if (t.id === 'setName') { S.profile.name = t.value.trim(); save(); }
+  else if (t.id === 'setDate') { S.profile.examDate = t.value; save(); setTop('복습', '카드 · 스크립트 · 기록', false); }
+  else if (t.id === 'obDate') OB.date = t.value;
+});
+window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (S.onboarded && TABS.includes(t) && t !== V.tab) go({ tab: t }); });
+window.addEventListener('pagehide', () => { Voice.halt(); if (Rec.active) Rec.cancel(); });
+
+const h0 = location.hash.slice(1);
+V = { tab: TABS.includes(h0) ? h0 : 'today' };
+Voice.init();
+render();
+})();
+</script>
+</body>
+</html>

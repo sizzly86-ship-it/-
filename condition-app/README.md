@@ -6,6 +6,7 @@
 - 수면 시간: 폰 사용 기록(사용 정보 접근 권한)으로 자동 추정
 - 날씨·대기질: Open-Meteo (키 필요 없음, CC BY 4.0)
 - 데이터: 폰 내부 `data.json` 에만 저장. 설정에서 백업 파일/CSV 내보내기
+- 테마: 클린 · 나이트 · 웜 (`docs/theme-*.png` 참고), 글꼴은 Pretendard (OFL 1.1)
 
 ## 구조
 
@@ -15,11 +16,12 @@
 |---|---|
 | `app/src/main/assets/www/logic.js` | 화면과 무관한 순수 로직: 데이터 정리·버전 올림, 통계, 내보내기 |
 | `app/src/main/assets/www/sleep.js` | 폰 사용 세션 → 수면 구간 추정 |
-| `app/src/main/assets/www/views.js` | 화면 그리기 (오늘, 달력, 분석, 설정, 첫 실행 안내) |
+| `app/src/main/assets/www/views.js` | 화면 그리기 (홈, 입력 창, 달력, 분석, 설정, 첫 실행 안내) |
+| `app/src/main/assets/www/style.css` | 디자인. 테마별 색은 맨 위 `[data-theme]` 변수 묶음 |
 | `app/src/main/assets/www/app.js` | 상태·저장·이벤트·날씨 요청 |
 | `app/src/main/java/app/condition/` | 사용 기록 읽기, 알림, 파일 내보내기/가져오기 |
 
-브라우저에서 `index.html?demo` 로 열면 예시 데이터로, `?demo&onboard` 로 열면 첫 실행 안내부터 미리 볼 수 있다.
+브라우저에서 `index.html?demo` 로 열면 예시 데이터로, `?demo&onboard` 로 열면 첫 실행 안내부터, `?demo&theme=b` 처럼 테마(a/b/c)를 지정해 미리 볼 수 있다.
 
 ## 테스트
 

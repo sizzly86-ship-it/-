@@ -43,6 +43,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         readTarget(getIntent());
+        // 지난번에 쓰던 테마 색으로 먼저 칠해서, 화면이 뜨기 전에 다른 색이 번쩍이지 않게 한다
+        String[] chrome = getPreferences(MODE_PRIVATE).getString("chrome", "#f2f4f6|#ffffff|1").split("\\|");
         web = new WebView(this);
         WebSettings ws = web.getSettings();
         ws.setJavaScriptEnabled(true);
@@ -68,6 +70,7 @@ public class MainActivity extends Activity {
         });
         web.addJavascriptInterface(new Bridge(), "Native");
         setContentView(web);
+        if (chrome.length == 3) applyChrome(chrome[0], chrome[1], "1".equals(chrome[2]));
         web.loadUrl("file:///android_asset/www/index.html");
     }
 
@@ -99,6 +102,25 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (pageReady) js("window.onResume && window.onResume()");
+    }
+
+    /** 상태바·내비게이션 바·창 배경을 테마 색에 맞춘다. */
+    @SuppressWarnings("deprecation")
+    private void applyChrome(String bg, String nav, boolean light) {
+        try {
+            int b = android.graphics.Color.parseColor(bg), n = android.graphics.Color.parseColor(nav);
+            android.view.Window w = getWindow();
+            android.view.View decor = w.getDecorView();
+            w.setStatusBarColor(b);
+            w.setNavigationBarColor(n);
+            decor.setBackgroundColor(b);
+            web.setBackgroundColor(b);
+            int mask = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            int flags = decor.getSystemUiVisibility();
+            decor.setSystemUiVisibility(light ? (flags | mask) : (flags & ~mask));
+        } catch (IllegalArgumentException ignored) {
+            // 색 값이 잘못됐으면 그대로 둔다
+        }
     }
 
     private void js(String code) {
@@ -271,6 +293,13 @@ public class MainActivity extends Activity {
                     .setType(mime)
                     .putExtra(Intent.EXTRA_TITLE, name);
             runOnUiThread(() -> startActivityForResult(in, REQ_EXPORT));
+        }
+
+        @JavascriptInterface
+        public void setChrome(String bg, String nav, boolean light) {
+            if (bg == null || nav == null || !bg.matches("#[0-9a-fA-F]{6}") || !nav.matches("#[0-9a-fA-F]{6}")) return;
+            getPreferences(MODE_PRIVATE).edit().putString("chrome", bg + "|" + nav + "|" + (light ? "1" : "0")).apply();
+            runOnUiThread(() -> applyChrome(bg, nav, light));
         }
 
         @JavascriptInterface

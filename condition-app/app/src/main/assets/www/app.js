@@ -144,7 +144,18 @@ function refreshWeather() {
 }
 
 /* ---------- 그리기 ---------- */
-var VIEWS = { today: viewToday, history: viewHistory, stats: viewStats, settings: viewSettings };
+var VIEWS = { today: viewHome, history: viewHistory, stats: viewStats, settings: viewSettings };
+// 테마별 [상태바 색, 아래 내비게이션 바 색, 밝은 배경 여부]
+var CHROME = { a: ['#f2f4f6', '#ffffff', true], b: ['#0d1020', '#12162a', false], c: ['#f5efe6', '#fffdf8', true] };
+var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+function applyTheme() {
+  var th = S.settings.theme || 'a';
+  if (S.settings.autoNight && darkQuery && darkQuery.matches) th = 'b';
+  document.documentElement.dataset.theme = th;
+  var c = CHROME[th];
+  if (N.setChrome) N.setChrome(c[0], S.onboarded ? c[1] : c[0], c[2]);
+}
+if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener('change', function () { applyTheme(); render(); });
 function render() {
   var v = document.getElementById('view'), y = window.scrollY, ob = !S.onboarded;
   document.body.classList.toggle('onboarding', ob);
@@ -154,20 +165,30 @@ function render() {
     if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   if (!ob && ui.tab === 'stats') bindChart();
-  if (ui.focus) {
-    var el = document.getElementById('sec-' + ui.focus); ui.focus = '';
-    if (el) { el.scrollIntoView(); return; }
-  }
   window.scrollTo(0, y);
+  if (ui.sheet && EDIT_SHEETS[ui.sheet.type]) renderSheet(); // 입력 창이 열려 있으면 그 안의 선택 표시도 갱신
 }
-function renderSheet() {
-  var el = document.getElementById('sheet');
-  el.innerHTML = sheetHtml();
+// animate: 처음 열 때만 아래에서 올라오는 움직임을 준다. 다시 그릴 때는 스크롤 위치를 지킨다
+function renderSheet(animate) {
+  var el = document.getElementById('sheet'), old = el.querySelector('.sheet-body'), top = old ? old.scrollTop : 0, html = sheetHtml();
+  if (!html) ui.sheet = null;
+  if (animate) el.classList.remove('open');
+  el.innerHTML = html;
+  if (animate) void el.offsetWidth;
   el.classList.toggle('open', !!ui.sheet);
   document.body.classList.toggle('sheet-open', !!ui.sheet);
+  var body = el.querySelector('.sheet-body');
+  if (body && !animate) body.scrollTop = top;
 }
-function openSheet(sh) { ui.sheet = sh; renderSheet(); var f = document.querySelector('#sheet input[type=text]'); if (f && sh.type === 'newItem') f.focus(); }
-function closeSheet() { ui.sheet = null; renderSheet(); }
+function openSheet(sh) {
+  ui.sheet = sh; ui.editSleep = false; renderSheet(true);
+  var f = document.querySelector('#sheet input[type=text]'); if (f && sh.type === 'newItem') f.focus();
+}
+function closeSheet() {
+  var was = ui.sheet;
+  ui.sheet = null; ui.editSleep = false; renderSheet();
+  if (was && EDIT_SHEETS[was.type]) { flush(); render(); } // 입력 창에서 바꾼 내용을 뒤 화면에 반영
+}
 function ask(title, body, ok, danger, cb) { openSheet({ type: 'confirm', title: title, body: body, ok: ok, danger: danger, cb: cb }); }
 function setTab(tab) {
   ui.tab = tab; ui.editSleep = false;
@@ -182,18 +203,20 @@ function bindChart() {
     var r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * ui.chartW, best = ui.chartPts[0];
     ui.chartPts.forEach(function (p) { if (Math.abs(p.x - x) < Math.abs(best.x - x)) best = p; });
     cross.setAttribute('x1', best.x); cross.setAttribute('x2', best.x); cross.setAttribute('visibility', 'visible');
+    var dot = svg.querySelector('#dot');
+    dot.setAttribute('cx', best.x); dot.setAttribute('cy', best.y); dot.setAttribute('visibility', 'visible');
     tip.textContent = shortLabel(best.d) + ' · ' + best.v + '점';
     tip.hidden = false;
-    tip.style.left = Math.max(64, Math.min(r.width - 64, best.x / ui.chartW * r.width)) + 'px';
+    tip.style.left = Math.max(56, Math.min(r.width - 56, best.x / ui.chartW * r.width)) + 'px';
   }
   svg.addEventListener('pointerdown', show);
   svg.addEventListener('pointermove', show);
-  svg.addEventListener('pointerleave', function () { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); });
+  svg.addEventListener('pointerleave', function () { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); svg.querySelector('#dot').setAttribute('visibility', 'hidden'); });
 }
 
 /* ---------- 탭 바 ---------- */
-document.getElementById('tabs').innerHTML = [['today', '오늘'], ['history', '달력'], ['stats', '분석'], ['settings', '설정']].map(function (t) {
-  return '<button data-tab="' + t[0] + '">' + ic(t[0]) + '<span>' + t[1] + '</span></button>';
+document.getElementById('tabs').innerHTML = [['today', 'home', '홈'], ['history', 'cal', '달력'], ['stats', 'chart', '분석'], ['settings', 'set', '설정']].map(function (t) {
+  return '<button data-tab="' + t[0] + '">' + ic(t[1]) + '<span>' + t[2] + '</span></button>';
 }).join('');
 document.getElementById('tabs').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
@@ -219,12 +242,15 @@ var ACTIONS = {
   prev: function () { ui.date = L.addDays(ui.date, -1); ui.editSleep = false; },
   next: function () { if (ui.date < today()) ui.date = L.addDays(ui.date, 1); ui.editSleep = false; },
   goToday: function () { ui.date = today(); ui.editSleep = false; },
-  jump: function (b) { var el = document.getElementById('sec-' + b.dataset.to); if (el) el.scrollIntoView({ behavior: 'smooth' }); return false; },
+  openY: function () { ui.date = L.addDays(today(), -1); openSheet({ type: 'log' }); },
+  editItems: function () { closeSheet(); setTab('settings'); return false; },
+  theme: function (b) { S.settings.theme = b.dataset.v; save(); applyTheme(); },
   tab: function (b) { setTab(b.dataset.to); return false; },
   open: function (b) { ui.date = b.dataset.d; ui.tab = 'today'; ui.editSleep = false; window.scrollTo(0, 0); },
   mprev: function () { var d = L.parse(ui.month + '-01'); d.setMonth(d.getMonth() - 1); ui.month = L.fmt(d).slice(0, 7); },
   mnext: function () { var d = L.parse(ui.month + '-01'); d.setMonth(d.getMonth() + 1); var m = L.fmt(d).slice(0, 7); if (m <= today().slice(0, 7)) ui.month = m; },
   period: function (b) { ui.period = +b.dataset.v; },
+  bucket: function (b) { ui.bucket = b.dataset.v; },
   usage: function () { N.openUsageAccess(); return false; },
   notif: function () { N.requestNotif(); return false; },
   score: function (b) { var dd = day(ui.date), v = +b.dataset.v; if (dd.score === v) delete dd.score; else dd.score = v; tick(); save(); },
@@ -263,7 +289,7 @@ var ACTIONS = {
   /* 첫 실행 안내 */
   obNext: function () {
     if (ui.ob < OB_STEPS - 1) { ui.ob++; window.scrollTo(0, 0); return; }
-    S.onboarded = true; S.notifAsked = true; ui.tab = 'today'; ui.date = today(); save(); pushReminders(true); refreshSleep(); refreshWeather(); window.scrollTo(0, 0);
+    S.onboarded = true; S.notifAsked = true; ui.tab = 'today'; ui.date = today(); save(); applyTheme(); pushReminders(true); refreshSleep(); refreshWeather(); window.scrollTo(0, 0);
   },
   obPrev: function () { if (ui.ob > 0) ui.ob--; window.scrollTo(0, 0); },
   obItem: function (b) { var it = itemById(b.dataset.id); if (!it) return; if (it.off) delete it.off; else it.off = true; save(); },
@@ -296,7 +322,7 @@ document.addEventListener('click', function (e) {
 });
 
 /* ---------- 입력 ---------- */
-document.getElementById('view').addEventListener('input', function (e) {
+document.addEventListener('input', function (e) {
   var el = e.target;
   if (!el.dataset.field) return;
   var dd = day(ui.date); dd[el.dataset.field] = el.value;
@@ -304,11 +330,12 @@ document.getElementById('view').addEventListener('input', function (e) {
   saveSoon();
 });
 document.addEventListener('visibilitychange', function () { if (document.hidden) flush(); });
-document.getElementById('view').addEventListener('change', function (e) {
+document.addEventListener('change', function (e) {
   var el = e.target, st = S.settings;
   if (el.dataset.field) flush(); // 여기서 화면을 다시 그리면 막 누르려던 버튼이 사라져 터치가 먹히지 않는다
   else if (el.dataset.set === 'city') { st.city = el.value; st.cityChosen = true; S.weatherAt = 0; save(); refreshWeather(); }
   else if (el.dataset.set === 'minorMin') { st.minorMin = +el.value; save(); refreshSleep(); }
+  else if (el.dataset.set === 'autoNight') { st.autoNight = el.checked; save(); applyTheme(); render(); }
   else if (el.dataset.rem) {
     st.rem[el.dataset.rem].on = el.checked; save();
     if (el.checked && S.onboarded && N.notifPermission() !== 'granted') N.requestNotif();
@@ -324,7 +351,7 @@ window.onImport = function (text) {
   try { j = JSON.parse(text); } catch (e) {}
   if (!j || !j.days || typeof j.days !== 'object' || !Array.isArray(j.items)) { toast('컨디션 노트 백업 파일이 아니에요'); return; }
   ask('백업에서 가져올까요?', '지금 기록을 지우고 파일 내용(' + Object.keys(j.days).length + '일 치)으로 바꿉니다.', '가져오기', false, function () {
-    S = L.normalize(j); S.onboarded = true; delete S.whatsNew; save(); pushReminders(true); render(); refreshWeather(); toast('가져왔어요');
+    S = L.normalize(j); S.onboarded = true; delete S.whatsNew; save(); applyTheme(); pushReminders(true); render(); refreshWeather(); toast('가져왔어요');
   });
 };
 window.onExported = function (ok) { toast(ok ? '내보냈어요' : '내보내지 못했어요'); };
@@ -340,7 +367,8 @@ window.onBack = function () {
 window.onResume = function () {
   flush();
   var target = N.launchTarget();
-  if (target && S.onboarded) { ui.tab = 'today'; ui.date = today(); ui.focus = target; ui.editSleep = false; if (ui.sheet) closeSheet(); }
+  var open = target && S.onboarded ? { morning: 'morning', evening: 'stress', night: 'log' }[target] : '';
+  if (open) { ui.tab = 'today'; ui.date = today(); }
   else if (ui.tab === 'today' && ui.date === ui.lastToday && ui.date !== today()) ui.date = today();
   ui.lastToday = today();
   if (S.onboarded) {
@@ -348,12 +376,15 @@ window.onResume = function () {
     if (window.Native && remindersOn() && !S.notifAsked && N.notifPermission() !== 'granted') { S.notifAsked = true; save(); N.requestNotif(); }
     refreshSleep(); pushReminders(); refreshWeather();
   }
+  applyTheme();
   render();
+  if (open) openSheet({ type: open }); // 알림을 눌러 들어오면 해당 입력 창을 바로 연다
 };
 
 /* ---------- 브라우저 미리보기용 예시 데이터 (?demo) ---------- */
 if (!window.Native && /demo/.test(location.search)) {
   S = L.freshState(); S.onboarded = !/onboard/.test(location.search); S.weatherAt = Date.now(); S.weatherCity = '천안';
+  S.settings.theme = (/theme=([abc])/.exec(location.search) || [0, 'a'])[1];
   var seed = 7, rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
   for (var k = 100; k >= 0; k--) {
     var dk = L.addDays(today(), -k), x = day(dk), pv = S.days[L.addDays(dk, -1)];

@@ -15,7 +15,8 @@ const v1 = { version: 1, settings: { city: '서울', cityChosen: true, minorMin:
   items: [{ id: 'i0', cat: 'supp', name: '비타민D', unit: '' }, { id: 'i30', cat: 'alcohol', name: '막걸리', unit: '잔' }], nextId: 31,
   days: { '2026-11-01': { score: 7, stress: 3, touched: true, log: { i0: 1, i30: 2, i99: 1 }, memo: 'm', sleep: { bed: 1000, wake: 9000, wakeups: 1 }, weather: { tmax: 15, tmin: 3, rain: 0, hum: 50, city: '서울', final: true } } } };
 let s = L.normalize(JSON.parse(JSON.stringify(v1)));
-assert.equal(s.version, 2);
+assert.equal(s.version, 3);
+assert.equal(s.settings.theme, 'a');
 assert.equal(s.onboarded, true, '쓰던 사람은 첫 실행 안내를 건너뛴다');
 assert.equal(s.whatsNew, true);
 assert.equal(s.settings.city, '서울');
@@ -27,7 +28,12 @@ assert.equal(s.days['2026-11-01'].score, 7);
 assert.equal(s.days['2026-11-01'].weather.pm25, null);
 // 두 번 정리해도 결과가 같다 (새 기능 안내 표시만 유지)
 assert.deepEqual(L.normalize(JSON.parse(JSON.stringify(s))), s);
-// 2.0 새 상태는 그대로 통과한다
+// 2.0 데이터는 새 디자인 안내만 한 번 띄운다
+let s2 = L.freshState(); s2.version = 2; s2.onboarded = true; s2.settings.theme = 'b';
+s2 = L.normalize(JSON.parse(JSON.stringify(s2)));
+assert.equal(s2.whatsNew, true); assert.equal(s2.settings.theme, 'b'); assert.equal(s2.items.length, L.freshState().items.length);
+assert.equal(L.normalize({ version: 3, days: {}, items: [], settings: { theme: 'zz' } }).settings.theme, 'a');
+// 새 상태는 그대로 통과한다
 const fresh = L.freshState();
 assert.deepEqual(L.normalize(JSON.parse(JSON.stringify(fresh))), fresh);
 assert.equal(fresh.onboarded, false);

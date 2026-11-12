@@ -11,8 +11,8 @@ android {
         minSdk 28
         // 34로 둔다: 35부터는 화면이 상태바 밑으로 강제로 깔린다
         targetSdk 34
-        versionCode 5
-        versionName '2.0'
+        versionCode 6
+        versionName '2.1'
     }
 
     signingConfigs {

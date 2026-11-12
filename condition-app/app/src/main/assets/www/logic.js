@@ -51,9 +51,9 @@
     var items = DEFAULT_ITEMS.map(function (x, i) { return { id: 'i' + i, cat: x[0], name: x[1], unit: x[2] }; });
     DEFAULT_FEEL.forEach(function (n) { items.push({ id: 'i' + items.length, cat: 'feel', name: n, unit: '' }); });
     return {
-      version: 2, onboarded: false,
+      version: 3, onboarded: false,
       settings: {
-        city: '천안', cityChosen: false, minorMin: 5,
+        city: '천안', cityChosen: false, minorMin: 5, theme: 'a', autoNight: false,
         rem: { morning: { on: true, time: '08:00', wd: false, auto: false }, evening: { on: true, time: '18:30', wd: true, auto: false }, night: { on: true, time: '22:00', wd: false, auto: false } }
       },
       items: items, nextId: items.length, days: {}, weatherAt: 0, weatherCity: ''
@@ -68,11 +68,13 @@
     if (!s || typeof s !== 'object' || !s.days || typeof s.days !== 'object') return f;
     var st = s.settings && typeof s.settings === 'object' ? s.settings : {};
     var old = !(num(s.version) >= 2);
-    var out = { version: 2, onboarded: !!s.onboarded, settings: f.settings, items: [], nextId: 0, days: {}, weatherAt: 0, weatherCity: '' };
+    var out = { version: 3, onboarded: !!s.onboarded, settings: f.settings, items: [], nextId: 0, days: {}, weatherAt: 0, weatherCity: '' };
     var known = CITIES.some(function (c) { return c[0] === st.city; });
     out.settings.cityChosen = !!st.cityChosen && known;
     out.settings.city = out.settings.cityChosen ? st.city : '천안';
     out.settings.minorMin = [2, 3, 5, 10, 15].indexOf(+st.minorMin) >= 0 ? +st.minorMin : 5;
+    out.settings.theme = ['a', 'b', 'c'].indexOf(st.theme) >= 0 ? st.theme : 'a';
+    out.settings.autoNight = !!st.autoNight;
     REMINDERS.forEach(function (r) {
       var c = st.rem && st.rem[r[0]];
       if (c && typeof c === 'object') out.settings.rem[r[0]] = { on: !!c.on, time: /^\d\d:\d\d$/.test(c.time) ? c.time : r[3], wd: c.wd == null ? r[4] : !!c.wd, auto: r[0] === 'night' && !!c.auto };
@@ -120,7 +122,7 @@
       out.onboarded = true;
       out.whatsNew = true;
       out.weatherAt = 0; // 미세먼지·기압을 채우려고 날씨를 한 번 다시 받는다
-    } else if (s.whatsNew) out.whatsNew = true;
+    } else if (s.whatsNew || (num(s.version) < 3 && out.onboarded)) out.whatsNew = true; // 2.0 → 2.1: 새 디자인 안내
     return out;
   }
 

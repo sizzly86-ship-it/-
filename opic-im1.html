@@ -248,7 +248,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 .bars li.low .meter i { background: var(--rec); }
 
 /* review */
-.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: var(--r-sm); background: var(--surface-2); }
+.seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; border-radius: var(--r-sm); background: var(--surface-2); }
 .seg button { min-height: 36px; border: 0; border-radius: 7px; background: none; font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .12); }
 .flash { min-height: 230px; justify-content: center; align-items: center; text-align: center; gap: 12px; padding: 24px 18px; }
@@ -734,7 +734,352 @@ How often do you go there? | 얼마나 자주 가나요?
 Who do you go with? | 누구와 함께 가나요?
 What do you usually do at the park? | 공원에서 보통 무엇을 하나요?
 And how long do you stay there? | 그리고 얼마나 오래 머무나요?
-Thank you for telling me. | 말씀해 주셔서 감사합니다.`)
+Thank you for telling me. | 말씀해 주셔서 감사합니다.`),
+Q('ava-movie', 'ava', '영화', 'I also like watching movies. Ask me three or four questions about the movies I like.', '저도 영화 보는 걸 좋아해요. 제가 좋아하는 영화에 대해 질문을 서너 개 해 주세요.',
+  ['반응 한마디: Oh, really?', '질문 3~4개: 장르, 배우, 얼마나 자주, 누구와', '감사 인사'], `
+Oh, really? I like movies, too. | 오, 정말요? 저도 영화를 좋아해요.
+I have some questions for you. | 몇 가지 질문이 있어요.
+What kind of movies do you like? | 어떤 종류의 영화를 좋아하나요?
+Who is your favorite actor? | 가장 좋아하는 배우는 누구인가요?
+How often do you go to the movies? | 얼마나 자주 영화를 보러 가나요?
+Who do you usually go with? | 보통 누구와 가나요?
+And what movie did you see recently? | 그리고 최근에 무슨 영화를 봤나요?
+Thank you for answering. | 답해 주셔서 감사합니다.`),
+Q('ava-trip', 'ava', '국내 여행', 'I went on a trip last month. Ask me three or four questions about my trip.', '저는 지난달에 여행을 다녀왔어요. 제 여행에 대해 질문을 서너 개 해 주세요.',
+  ['반응 한마디: That sounds fun.', '질문 3~4개: 어디로, 누구와, 무엇을, 음식 (과거형 did)', '감사 인사'], `
+That sounds fun. | 재미있었겠네요.
+Let me ask you some questions about your trip. | 여행에 대해 몇 가지 여쭤볼게요.
+Where did you go? | 어디로 갔나요?
+Who did you go with? | 누구와 갔나요?
+How long did you stay there? | 거기서 얼마나 머물렀나요?
+What did you do there? | 거기서 무엇을 했나요?
+And how was the food? | 그리고 음식은 어땠나요?
+Thank you for telling me about your trip. | 여행 이야기를 들려주셔서 감사합니다.`),
+Q('ava-cafe', 'ava', '카페', 'I often go to a café near my house. Ask me three or four questions about the café.', '저는 집 근처 카페에 자주 가요. 그 카페에 대해 질문을 서너 개 해 주세요.',
+  ['반응 한마디: Oh, I see.', '질문 3~4개: 위치, 메뉴, 가격, 누구와', '감사 인사'], `
+Oh, I see. I like cafés, too. | 아, 그렇군요. 저도 카페를 좋아해요.
+Can I ask you some questions? | 몇 가지 여쭤봐도 될까요?
+Where is the café? | 그 카페는 어디에 있나요?
+What do you usually order there? | 거기서 보통 무엇을 주문하나요?
+How much is a cup of coffee? | 커피 한 잔은 얼마인가요?
+Who do you go there with? | 누구와 함께 가나요?
+And why do you like that café? | 그리고 그 카페를 왜 좋아하나요?
+Thank you for your answers. | 답해 주셔서 감사합니다.`),
+
+Q('shop-desc', 'desc', '쇼핑', 'You indicated that you like shopping. Tell me about a store or shopping mall you often go to. What does it look like?', '쇼핑을 좋아한다고 하셨네요. 자주 가는 가게나 쇼핑몰에 대해 말해 주세요. 어떻게 생겼나요?',
+  ['어떤 쇼핑몰, 어디에', '크기 · 안에 있는 가게들', '좋아하는 이유'], `
+I often go to a shopping mall near my house. | 저는 집 근처 쇼핑몰에 자주 가요.
+It takes about ten minutes by bus. | 버스로 10분 정도 걸립니다.
+The mall is very big and clean. | 쇼핑몰은 아주 크고 깨끗해요.
+There are many clothing stores and shoe stores. | 옷 가게와 신발 가게가 많습니다.
+There is also a big supermarket on the first floor. | 1층에는 큰 슈퍼마켓도 있어요.
+On the top floor, there are restaurants and a movie theater. | 맨 위층에는 식당과 영화관이 있습니다.
+It is always crowded on weekends. | 주말에는 항상 붐벼요.
+I like it because I can do everything in one place. | 한곳에서 모든 걸 할 수 있어서 좋아해요.`),
+Q('shop-routine', 'routine', '쇼핑', 'How often do you go shopping? What do you usually buy, and who do you go with?', '얼마나 자주 쇼핑하러 가나요? 보통 무엇을 사고, 누구와 가나요?',
+  ['얼마나 자주, 누구와', '둘러보기 → 입어 보기 → 계산', '온라인 쇼핑 한마디'], `
+I go shopping about twice a month. | 저는 한 달에 두 번 정도 쇼핑을 가요.
+I usually go with my friend on weekends. | 보통 주말에 친구와 갑니다.
+First, we look around the clothing stores. | 먼저 옷 가게를 둘러봐요.
+I usually buy clothes or shoes. | 저는 보통 옷이나 신발을 삽니다.
+I always try them on before I buy them. | 사기 전에 항상 입어 봐요.
+Then I pay by credit card. | 그러고 나서 카드로 계산합니다.
+After shopping, we have coffee together. | 쇼핑 후에는 함께 커피를 마셔요.
+Sometimes I also shop online because it is cheap and convenient. | 싸고 편해서 가끔 온라인 쇼핑도 해요.`),
+Q('shop-past', 'past', '쇼핑', 'Tell me about something special you bought recently. What was it, and why did you buy it?', '최근에 산 특별한 물건에 대해 말해 주세요. 무엇이었고 왜 샀나요?',
+  ['언제, 어디서, 무엇을', '산 이유와 가격', '써 본 소감'], `
+Last month, I bought a new jacket. | 지난달에 새 재킷을 샀어요.
+I went to a department store with my friend. | 친구와 백화점에 갔습니다.
+The weather was getting cold, so I needed a warm jacket. | 날씨가 추워지고 있어서 따뜻한 재킷이 필요했어요.
+I tried on three jackets. | 재킷 세 벌을 입어 봤습니다.
+I chose a black one because it looked good on me. | 저한테 잘 어울려서 검은색을 골랐어요.
+It was a little expensive, but it was on sale. | 조금 비쌌지만 세일 중이었습니다.
+I was very happy with it. | 아주 마음에 들었어요.
+Now I wear it almost every day. | 지금은 거의 매일 입어요.`),
+
+Q('concert-desc', 'desc', '공연', 'You indicated that you go to concerts. What kind of concerts do you like, and where do you usually see them?', '콘서트에 간다고 하셨네요. 어떤 콘서트를 좋아하고, 보통 어디서 보나요?',
+  ['좋아하는 콘서트 종류', '공연장 묘사: 크기, 좌석, 분위기', '좋아하는 이유'], `
+I like going to concerts. | 저는 콘서트에 가는 걸 좋아해요.
+I especially like K-pop concerts. | 특히 케이팝 콘서트를 좋아합니다.
+I usually go to a big concert hall in Seoul. | 보통 서울에 있는 큰 공연장에 가요.
+It is near a subway station, so it is easy to get there. | 지하철역 근처라서 가기 쉽습니다.
+There are thousands of seats and a huge stage. | 수천 개의 좌석과 아주 큰 무대가 있어요.
+The lights and the sound are amazing. | 조명과 음향이 굉장합니다.
+It is always crowded and noisy, but I like the energy. | 항상 붐비고 시끄럽지만 그 에너지가 좋아요.
+I like concerts because I can sing along with the singers. | 가수와 함께 노래할 수 있어서 콘서트를 좋아해요.`),
+Q('concert-routine', 'routine', '공연', 'What do you usually do when you go to a concert? Tell me what you do before and after the concert.', '콘서트에 갈 때 보통 무엇을 하나요? 콘서트 전후에 하는 일을 말해 주세요.',
+  ['얼마나 자주, 누구와', '예매 → 도착 → 공연 중', '끝난 뒤에 하는 일'], `
+I go to a concert once or twice a year. | 저는 일 년에 한두 번 콘서트에 가요.
+I usually go with my best friend. | 보통 가장 친한 친구와 갑니다.
+First, I buy the tickets online. | 먼저 온라인으로 표를 사요.
+On the day of the concert, we arrive early and have dinner. | 콘서트 날에는 일찍 도착해서 저녁을 먹습니다.
+Then we find our seats and take some pictures. | 그러고 나서 자리를 찾고 사진을 찍어요.
+During the concert, we sing and dance together. | 콘서트 중에는 함께 노래하고 춤을 춥니다.
+After the concert, we talk about the songs on the way home. | 콘서트가 끝나면 집에 가는 길에 노래 이야기를 해요.
+I always feel happy after a concert. | 콘서트가 끝나면 항상 행복해요.`),
+Q('concert-past', 'past', '공연', 'Tell me about a memorable concert you went to. When was it, and what made it special?', '기억에 남는 콘서트에 대해 말해 주세요. 언제였고 왜 특별했나요?',
+  ['언제, 누구의 콘서트, 누구와', '공연 중 있었던 일', '기분과 마무리'], `
+Two years ago, I went to my favorite singer's concert. | 2년 전에 제가 가장 좋아하는 가수의 콘서트에 갔어요.
+I went there with my friend. | 친구와 함께 갔습니다.
+It was hard to get the tickets, so I was very excited. | 표를 구하기 어려워서 정말 신났어요.
+We waited in line for an hour. | 한 시간 동안 줄을 서서 기다렸습니다.
+The singer sang my favorite song at the end. | 가수가 마지막에 제가 가장 좋아하는 노래를 불렀어요.
+Everyone sang together, and I almost cried. | 모두가 함께 노래했고 저는 거의 울 뻔했습니다.
+It was the best night of my life. | 제 인생 최고의 밤이었어요.
+I still watch the video on my phone. | 아직도 휴대폰으로 그 영상을 봐요.`),
+
+Q('walk-desc', 'desc', '걷기·조깅', 'You indicated that you like walking or jogging. Where do you usually walk or jog? Describe the place.', '걷기나 조깅을 좋아한다고 하셨네요. 보통 어디서 걷거나 뛰나요? 그 장소를 묘사해 주세요.',
+  ['어디서 걷는지, 집에서 얼마나', '길 · 나무 · 운동 기구 · 사람들', '좋아하는 이유'], `
+I usually walk along a small river near my house. | 저는 보통 집 근처 작은 하천을 따라 걸어요.
+It takes about five minutes on foot. | 걸어서 5분 정도 걸립니다.
+There is a long walking path next to the river. | 하천 옆에 긴 산책로가 있어요.
+There are many trees and benches along the path. | 길을 따라 나무와 벤치가 많습니다.
+There are also some exercise machines. | 운동 기구도 몇 개 있어요.
+In the evening, many people walk or jog there. | 저녁에는 많은 사람들이 거기서 걷거나 뜁니다.
+It is quiet and safe at night. | 밤에도 조용하고 안전해요.
+I like the place because the air is fresh. | 공기가 맑아서 그곳을 좋아해요.`),
+Q('walk-routine', 'routine', '걷기·조깅', 'How often do you go walking or jogging? Tell me about your routine from beginning to end.', '얼마나 자주 걷거나 조깅하나요? 처음부터 끝까지 하는 순서를 말해 주세요.',
+  ['얼마나 자주, 언제', '준비 → 걷기 → 마무리 순서로', '좋은 점'], `
+I go walking three times a week. | 저는 일주일에 세 번 걸으러 가요.
+I usually go after dinner. | 보통 저녁 식사 후에 갑니다.
+First, I put on comfortable clothes and running shoes. | 먼저 편한 옷과 운동화를 신어요.
+Then I stretch for five minutes. | 그러고 나서 5분 동안 스트레칭을 합니다.
+I walk fast for about forty minutes. | 40분 정도 빠르게 걸어요.
+While I walk, I listen to music or a podcast. | 걸으면서 음악이나 팟캐스트를 듣습니다.
+After that, I drink water and go home. | 그 후에 물을 마시고 집에 가요.
+Walking helps me sleep well and stay healthy. | 걷기는 잠을 잘 자고 건강을 지키는 데 도움이 돼요.`),
+Q('walk-past', 'past', '걷기·조깅', 'Tell me about a memorable experience you had while walking or jogging. What happened?', '걷거나 조깅하다가 겪은 기억에 남는 일을 말해 주세요. 무슨 일이 있었나요?',
+  ['언제, 어디서', '갑자기 생긴 일과 내가 한 행동', '그 후 달라진 점'], `
+Last summer, I had a small accident while jogging. | 지난여름에 조깅하다가 작은 사고가 있었어요.
+It was early in the morning. | 이른 아침이었습니다.
+I was running along the river and listening to music. | 강을 따라 달리면서 음악을 듣고 있었어요.
+Suddenly, I fell down because the road was wet. | 길이 젖어 있어서 갑자기 넘어졌습니다.
+My knee hurt a lot. | 무릎이 많이 아팠어요.
+A kind man helped me and gave me a tissue. | 친절한 아저씨가 도와주시고 휴지를 주셨습니다.
+I went home and rested for a few days. | 집에 가서 며칠 쉬었어요.
+After that, I always check the road before I run. | 그 후로는 뛰기 전에 항상 길을 확인해요.`),
+
+Q('vac-desc', 'desc', '집 휴가', 'You indicated that you spend your vacations at home. Describe what you like to do at home during a vacation. Why do you like staying home?', '휴가를 집에서 보낸다고 하셨네요. 휴가 때 집에서 즐겨 하는 일을 말해 주세요. 왜 집에 있는 걸 좋아하나요?',
+  ['집에서 쉬는 걸 좋아한다', '하는 일 3가지', '집이 좋은 이유'], `
+I like to spend my vacation at home. | 저는 휴가를 집에서 보내는 걸 좋아해요.
+There are many things to do at home. | 집에서 할 일이 많습니다.
+I watch movies and dramas on my TV. | TV로 영화와 드라마를 봐요.
+I also cook delicious food and order chicken. | 맛있는 음식을 만들고 치킨도 시켜 먹습니다.
+Sometimes I invite my friends to my home. | 가끔 친구들을 집에 초대해요.
+It is quiet and comfortable at home. | 집은 조용하고 편안합니다.
+I don't like crowded places, and traveling is expensive. | 저는 붐비는 곳을 좋아하지 않고 여행은 비싸요.
+That's why I like staying home. | 그래서 집에 있는 걸 좋아해요.`),
+Q('vac-routine', 'routine', '집 휴가', 'What do you usually do from morning to evening when you spend a vacation at home?', '휴가를 집에서 보낼 때 아침부터 저녁까지 보통 무엇을 하나요?',
+  ['아침: 늦잠, 아침 식사', '낮: 청소, 영화, 낮잠', '저녁: 친구, 가족, 음식'], `
+When I spend a vacation at home, I usually get up late. | 휴가를 집에서 보낼 때는 보통 늦게 일어나요.
+First, I have a simple breakfast and drink coffee. | 먼저 간단한 아침을 먹고 커피를 마십니다.
+Then I clean my house and do the laundry. | 그러고 나서 집을 청소하고 빨래를 해요.
+In the afternoon, I watch movies on the sofa. | 오후에는 소파에서 영화를 봅니다.
+Sometimes I take a nap. | 가끔 낮잠을 자요.
+In the evening, I order food and eat with my family. | 저녁에는 음식을 시켜서 가족과 먹습니다.
+After that, I play games or read a book. | 그 후에 게임을 하거나 책을 읽어요.
+I always go to bed late during my vacation. | 휴가 중에는 항상 늦게 잠자리에 들어요.`),
+Q('vac-past', 'past', '집 휴가', 'Tell me about what you did during your last vacation at home. Who did you meet, and what did you do?', '지난번 집에서 보낸 휴가 때 무엇을 했는지 말해 주세요. 누구를 만났고 무엇을 했나요?',
+  ['언제, 며칠 동안', '첫날 · 다음 날에 한 일', '소감'], `
+Last summer, I stayed home for my vacation. | 지난여름에 저는 휴가를 집에서 보냈어요.
+It was five days long. | 5일간의 휴가였습니다.
+On the first day, I slept until noon. | 첫날에는 정오까지 잤어요.
+Then I cleaned my whole house. | 그러고 나서 집 전체를 청소했습니다.
+The next day, my friends came to my home. | 다음 날에는 친구들이 집에 왔어요.
+We ordered pizza and watched a soccer game together. | 피자를 시키고 함께 축구 경기를 봤습니다.
+We talked and laughed until late at night. | 밤늦게까지 이야기하고 웃었어요.
+I didn't go anywhere, but it was a great vacation. | 아무 데도 가지 않았지만 멋진 휴가였어요.`),
+
+Q('recycle-desc', 'desc', '재활용', 'Tell me about recycling in your country. What do people recycle, and how do they do it?', '당신 나라의 재활용에 대해 말해 주세요. 사람들은 무엇을, 어떻게 재활용하나요?',
+  ['한국은 재활용을 열심히 한다', '종류: 종이, 플라스틱, 캔, 유리', '어디에, 언제 버리는지'], `
+Recycling is very important in Korea. | 한국에서는 재활용이 아주 중요해요.
+Most people recycle every week. | 대부분의 사람들이 매주 재활용을 합니다.
+We recycle paper, plastic, cans, and glass bottles. | 종이, 플라스틱, 캔, 유리병을 재활용해요.
+There is a recycling area in every apartment complex. | 아파트 단지마다 재활용 장소가 있습니다.
+There are different boxes for each item. | 품목마다 다른 수거함이 있어요.
+We also put food waste in a special bag. | 음식물 쓰레기는 전용 봉투에 넣습니다.
+It is a little difficult, but it is good for the environment. | 조금 번거롭지만 환경에 좋아요.
+I think Korean people are good at recycling. | 한국 사람들은 재활용을 잘하는 것 같아요.`, 1),
+Q('recycle-routine', 'routine', '재활용', 'How do you recycle at home? Tell me what you do step by step.', '집에서 어떻게 재활용하나요? 하는 일을 순서대로 말해 주세요.',
+  ['언제 버리는지', '모으기 → 씻기 → 분리 → 내놓기', '한 줄 소감'], `
+I recycle once a week at home. | 저는 집에서 일주일에 한 번 재활용을 해요.
+In my apartment, the recycling day is Thursday. | 우리 아파트는 목요일이 재활용하는 날입니다.
+First, I collect paper, plastic, and cans in different bags. | 먼저 종이, 플라스틱, 캔을 다른 봉지에 모아요.
+Then I wash the plastic bottles and take off the labels. | 그러고 나서 플라스틱병을 씻고 라벨을 뗍니다.
+After that, I take them to the recycling area. | 그 후에 재활용 장소로 가져가요.
+I put each item in the right box. | 각각 맞는 수거함에 넣습니다.
+It usually takes about ten minutes. | 보통 10분 정도 걸려요.
+It is not fun, but I always do it. | 재미있지는 않지만 항상 해요.`, 1),
+Q('recycle-past', 'past', '재활용', 'Tell me about a problem or a memorable experience you had with recycling. What happened?', '재활용과 관련해 겪은 문제나 기억에 남는 일을 말해 주세요. 무슨 일이 있었나요?',
+  ['언제, 어디서', '내 실수와 누가 뭐라고 했는지', '그 후 달라진 점'], `
+I had a problem with recycling last year. | 작년에 재활용 때문에 문제가 있었어요.
+I moved to a new apartment. | 새 아파트로 이사를 갔습니다.
+I didn't know the recycling rules there. | 그곳의 재활용 규칙을 몰랐어요.
+One day, I put plastic and paper in the same box. | 어느 날 플라스틱과 종이를 같은 수거함에 넣었습니다.
+The security guard saw it and told me the rules. | 경비 아저씨가 보고 규칙을 알려 주셨어요.
+I was a little embarrassed. | 조금 창피했습니다.
+So I said sorry and did it again. | 그래서 죄송하다고 하고 다시 했어요.
+After that, I always check the signs carefully. | 그 후로는 항상 표시를 잘 확인해요.`, 1),
+
+Q('trans-desc', 'desc', '교통', 'Tell me about public transportation in your country. What kinds of transportation do people use?', '당신 나라의 대중교통에 대해 말해 주세요. 사람들은 어떤 교통수단을 이용하나요?',
+  ['대중교통이 편리하다', '지하철 · 버스 · 택시 한 문장씩', '내가 가장 좋아하는 교통수단'], `
+Public transportation in Korea is very convenient. | 한국의 대중교통은 아주 편리해요.
+There are subways, buses, and taxis. | 지하철, 버스, 택시가 있습니다.
+Most people use the subway in big cities. | 대도시에서는 대부분 지하철을 이용해요.
+The subway is fast, clean, and cheap. | 지하철은 빠르고 깨끗하고 쌉니다.
+There are also many buses, and they come often. | 버스도 많고 자주 와요.
+You can pay with a card or a smartphone. | 카드나 스마트폰으로 요금을 낼 수 있습니다.
+But it is very crowded in the morning. | 하지만 아침에는 아주 붐벼요.
+My favorite is the subway because there is no traffic jam. | 교통 체증이 없어서 저는 지하철을 가장 좋아해요.`, 1),
+Q('trans-routine', 'routine', '교통', 'How do you usually get to work or school? Tell me about your commute.', '보통 어떻게 출근하거나 등교하나요? 통근 과정을 말해 주세요.',
+  ['무엇을 타고, 몇 시에', '집 → 역 → 환승 → 도착 순서로', '걸리는 시간과 타는 동안 하는 일'], `
+I usually go to work by subway. | 저는 보통 지하철로 출근해요.
+I leave home at seven thirty every morning. | 매일 아침 7시 30분에 집을 나섭니다.
+First, I walk to the subway station for ten minutes. | 먼저 지하철역까지 10분 동안 걸어요.
+Then I take line number two. | 그러고 나서 2호선을 탑니다.
+I transfer once in the middle. | 중간에 한 번 갈아타요.
+On the subway, I usually listen to music or read the news. | 지하철에서는 보통 음악을 듣거나 뉴스를 읽습니다.
+It takes about fifty minutes in total. | 모두 합쳐 50분 정도 걸려요.
+It is tiring, but it is faster than driving. | 피곤하지만 운전하는 것보다 빨라요.`, 1),
+Q('trans-past', 'past', '교통', 'Tell me about a problem you had while using public transportation. What happened, and what did you do?', '대중교통을 이용하다가 겪은 문제에 대해 말해 주세요. 무슨 일이 있었고 어떻게 했나요?',
+  ['언제, 무엇을 타고 있었는지', '문제와 기분', '내가 한 행동과 결과'], `
+I had a problem on the subway last month. | 지난달에 지하철에서 문제가 있었어요.
+I was going to an important meeting. | 중요한 회의에 가는 길이었습니다.
+I was very tired, so I fell asleep on the subway. | 너무 피곤해서 지하철에서 잠이 들었어요.
+When I woke up, I was five stations away. | 일어나 보니 다섯 정거장이나 지나 있었습니다.
+I was so surprised. | 정말 놀랐어요.
+I got off quickly and took a taxi. | 빨리 내려서 택시를 탔습니다.
+I called my boss and said sorry. | 상사에게 전화해서 죄송하다고 했어요.
+I was twenty minutes late, and it cost a lot of money. | 20분 늦었고 돈도 많이 들었습니다.
+Now I never sleep on the subway. | 이제는 지하철에서 절대 자지 않아요.`, 1),
+
+Q('holiday-desc', 'desc', '명절', 'Tell me about a holiday in your country. What do people do on that day?', '당신 나라의 명절에 대해 말해 주세요. 그날 사람들은 무엇을 하나요?',
+  ['가장 큰 명절 이름과 시기', '사람들이 하는 일 · 먹는 음식', '내 생각'], `
+The biggest holiday in Korea is Chuseok. | 한국에서 가장 큰 명절은 추석이에요.
+It is in September or October. | 9월이나 10월에 있습니다.
+It is like Thanksgiving Day in America. | 미국의 추수감사절과 비슷해요.
+Most people visit their hometown to see their family. | 대부분의 사람들이 가족을 보러 고향에 갑니다.
+There are a lot of cars on the road. | 도로에 차가 아주 많아요.
+People eat special food like songpyeon. | 사람들은 송편 같은 특별한 음식을 먹습니다.
+It is a small rice cake, and it is sweet. | 작은 떡인데 달콤해요.
+I like Chuseok because I can see my whole family. | 온 가족을 볼 수 있어서 저는 추석을 좋아해요.`, 1),
+Q('holiday-routine', 'routine', '명절', 'What do you usually do on holidays? Who do you spend them with?', '명절에 보통 무엇을 하나요? 누구와 보내나요?',
+  ['누구 집에 가는지', '음식 준비 → 식사 → 이야기', '집에 돌아와서'], `
+On holidays, I usually visit my parents' house. | 명절에는 보통 부모님 댁에 가요.
+It takes about three hours by car. | 차로 세 시간 정도 걸립니다.
+First, we cook a lot of food together. | 먼저 다 같이 음식을 많이 만들어요.
+Then we have a big meal with all my family. | 그러고 나서 온 가족이 함께 푸짐하게 식사합니다.
+After the meal, we talk and watch TV. | 식사 후에는 이야기하고 TV를 봐요.
+Sometimes we play traditional games. | 가끔 전통 놀이를 합니다.
+I always give some money to my parents. | 저는 항상 부모님께 용돈을 드려요.
+I come back home the next day and rest. | 다음 날 집에 돌아와서 쉬어요.`, 1),
+Q('holiday-past', 'past', '명절', 'Tell me about a memorable holiday you had. What happened, and why do you remember it?', '기억에 남는 명절에 대해 말해 주세요. 무슨 일이 있었고 왜 기억에 남나요?',
+  ['언제, 어디에 갔는지', '있었던 일 2~3문장', '기분과 마무리'], `
+I remember last Chuseok very well. | 지난 추석이 아주 잘 기억나요.
+I went to my grandmother's house with my family. | 가족과 할머니 댁에 갔습니다.
+The traffic was terrible, so it took six hours. | 교통이 너무 막혀서 여섯 시간이 걸렸어요.
+We were very tired and hungry. | 우리는 아주 피곤하고 배가 고팠습니다.
+But my grandmother made a lot of delicious food for us. | 하지만 할머니가 맛있는 음식을 많이 만들어 주셨어요.
+We ate together and talked all night. | 함께 먹고 밤새 이야기했습니다.
+My grandmother was so happy to see us. | 할머니는 우리를 보고 정말 기뻐하셨어요.
+It was a long trip, but I felt warm. | 긴 여정이었지만 마음이 따뜻했어요.`, 1),
+
+Q('bank-desc', 'desc', '은행', 'Tell me about a bank you use. Where is it, and what does it look like inside?', '이용하는 은행에 대해 말해 주세요. 어디에 있고, 안은 어떻게 생겼나요?',
+  ['어느 은행, 어디에', '안에 있는 것: 기계, 창구, 의자', '요즘은 앱을 더 쓴다'], `
+I use a bank near my office. | 저는 회사 근처 은행을 이용해요.
+It is on the first floor of a big building. | 큰 건물 1층에 있습니다.
+The bank is clean and quiet. | 은행은 깨끗하고 조용해요.
+There are three or four ATM machines by the door. | 문 옆에 현금 인출기가 서너 대 있습니다.
+Inside, there are some chairs and a number machine. | 안에는 의자와 번호표 기계가 있어요.
+The bank tellers are very kind. | 은행 직원들은 아주 친절합니다.
+It is open from nine to four. | 9시부터 4시까지 문을 열어요.
+But these days, I usually use a banking app on my phone. | 하지만 요즘은 보통 휴대폰 은행 앱을 써요.`, 1),
+Q('bank-routine', 'routine', '은행', 'What do you usually do when you go to a bank? Tell me the steps.', '은행에 가면 보통 무엇을 하나요? 순서대로 말해 주세요.',
+  ['얼마나 자주 가는지', '번호표 → 기다리기 → 창구', '앱으로 하는 일'], `
+I go to the bank about once a month. | 저는 한 달에 한 번 정도 은행에 가요.
+First, I take a number and wait on a chair. | 먼저 번호표를 뽑고 의자에서 기다립니다.
+I usually wait for about ten minutes. | 보통 10분 정도 기다려요.
+Then I go to the teller and show my ID card. | 그러고 나서 창구에 가서 신분증을 보여 줍니다.
+I usually open an account or get a new card. | 보통 계좌를 만들거나 새 카드를 받아요.
+Sometimes I use the ATM to get some cash. | 가끔 현금 인출기로 현금을 찾습니다.
+But I send money with my phone. | 하지만 송금은 휴대폰으로 해요.
+It is fast and easy. | 빠르고 쉬워요.`, 1),
+Q('bank-past', 'past', '은행', 'Tell me about a problem you had at a bank or with your bank card. What happened?', '은행에서 또는 카드 때문에 겪은 문제에 대해 말해 주세요. 무슨 일이 있었나요?',
+  ['언제, 어떤 문제', '기분과 내가 한 행동', '결과와 지금 습관'], `
+I had a problem with my bank card last year. | 작년에 카드 때문에 문제가 있었어요.
+I lost my wallet on the bus. | 버스에서 지갑을 잃어버렸습니다.
+My card was in the wallet. | 카드가 지갑 안에 있었어요.
+I was really worried. | 정말 걱정됐습니다.
+So I called the bank right away and stopped the card. | 그래서 바로 은행에 전화해서 카드를 정지했어요.
+The next day, I visited the bank and got a new card. | 다음 날 은행에 가서 새 카드를 받았습니다.
+It took about thirty minutes. | 30분 정도 걸렸어요.
+Luckily, I didn't lose any money. | 다행히 돈은 잃지 않았습니다.
+Now I only use my phone to pay. | 이제는 휴대폰으로만 결제해요.`, 1),
+
+Q('rp-rest-ask', 'rp-ask', '식당 예약', "I'm going to give you a situation and ask you to act it out. You want to have dinner with your friends at a new restaurant. Call the restaurant and ask three or four questions to make a reservation.", '상황을 드릴 테니 연기해 주세요. 새로 생긴 식당에서 친구들과 저녁을 먹고 싶습니다. 식당에 전화해서 예약을 위해 질문을 서너 개 하세요.',
+  ['인사 + 용건: I\'d like to make a reservation', '질문 3~4개: 자리, 시간, 메뉴, 주차', '예약 확정과 감사 인사'], `
+Hello. I'd like to make a reservation for this Friday. | 안녕하세요. 이번 주 금요일로 예약하고 싶은데요.
+Can I ask you some questions? | 몇 가지 여쭤봐도 될까요?
+Do you have a table for four people at seven? | 7시에 네 명 자리가 있나요?
+What time do you close? | 몇 시에 문을 닫나요?
+What is the most popular dish? | 가장 인기 있는 메뉴가 뭔가요?
+How much is it? | 얼마인가요?
+Also, is there a parking lot? | 그리고 주차장이 있나요?
+Great. Please book a table under the name Kim. | 좋아요. 김이라는 이름으로 예약해 주세요.
+Thank you. See you on Friday. | 감사합니다. 금요일에 뵙겠습니다.`),
+Q('rp-rest-solve', 'rp-solve', '식당 예약', "I'm sorry, but there is a problem you need to resolve. You ordered food for delivery, but you got the wrong food. Call the restaurant, explain the situation, and offer two or three alternatives.", '죄송하지만 해결해야 할 문제가 있습니다. 배달 음식을 시켰는데 다른 음식이 왔어요. 식당에 전화해 상황을 설명하고 대안을 두세 가지 제시하세요.',
+  ['문제 알리기: There is a problem with my order', '시킨 것과 받은 것', '대안: 다시 배달 / 환불 / 할인'], `
+Hello. I ordered some food thirty minutes ago. | 안녕하세요. 30분 전에 음식을 주문했는데요.
+But there is a problem with my order. | 주문에 문제가 있어요.
+I ordered a cheese pizza, but I got a potato pizza. | 치즈 피자를 시켰는데 포테이토 피자가 왔어요.
+I think this is the wrong food. | 음식이 잘못 온 것 같습니다.
+Could you send me the cheese pizza again? | 치즈 피자를 다시 보내 주실 수 있나요?
+If it takes too long, can I get a refund? | 너무 오래 걸리면 환불받을 수 있을까요?
+Or can I get a discount on this pizza? | 아니면 이 피자를 할인받을 수 있나요?
+Please let me know. Thank you. | 알려 주세요. 감사합니다.`),
+Q('rp-rest-exp', 'rp-exp', '식당 예약', "That's the end of the situation. Have you ever had a problem at a restaurant or with a food order? What happened, and how was it solved?", '상황극은 여기까지입니다. 식당에서나 음식 주문 때문에 문제가 생긴 적이 있나요? 무슨 일이 있었고 어떻게 해결됐나요?',
+  ['언제, 어느 식당, 누구와', '문제와 기분', '직원의 대응과 결과'], `
+Yes, I had a problem at a restaurant last year. | 네, 작년에 식당에서 문제가 있었어요.
+I went to a Korean restaurant with my family. | 가족과 한식당에 갔습니다.
+We ordered bulgogi, but it didn't come for forty minutes. | 불고기를 시켰는데 40분 동안 나오지 않았어요.
+We were very hungry and a little angry. | 우리는 아주 배가 고팠고 조금 화가 났습니다.
+So I called the staff and asked about our food. | 그래서 직원을 불러 음식에 대해 물어봤어요.
+They forgot our order. | 주문을 잊어버렸던 거예요.
+The manager said sorry and gave us free drinks. | 매니저가 사과하고 음료를 서비스로 줬습니다.
+The food was delicious, so we felt better. | 음식이 맛있어서 기분이 풀렸어요.`),
+
+Q('rp-friend-ask', 'rp-ask', '친구 약속', "I'm going to give you a situation and ask you to act it out. Your friend invited you to a birthday party this weekend. Call your friend and ask three or four questions about the party.", '상황을 드릴 테니 연기해 주세요. 친구가 이번 주말 생일 파티에 초대했습니다. 친구에게 전화해서 파티에 대해 질문을 서너 개 하세요.',
+  ['인사 + 초대 고마워', '질문 3~4개: 시간, 장소, 누가 오는지, 가져갈 것', '기대된다 + 끝인사'], `
+Hi, Jisu. It's me. | 안녕, 지수야. 나야.
+Thank you for inviting me to your birthday party. | 생일 파티에 초대해 줘서 고마워.
+I have some questions about the party. | 파티에 대해 몇 가지 물어볼 게 있어.
+What time does the party start? | 파티는 몇 시에 시작해?
+Where is the party? Is it at your house? | 파티는 어디서 해? 너희 집이야?
+Who is coming to the party? | 파티에 누가 와?
+Also, what should I bring? | 그리고 내가 뭘 가져가면 돼?
+Do you need any food or drinks? | 음식이나 음료가 필요해?
+Okay. I can't wait. See you on Saturday. | 알겠어. 정말 기대된다. 토요일에 봐.`),
+Q('rp-friend-solve', 'rp-solve', '친구 약속', "I'm sorry, but there is a problem you need to resolve. You can't go to your friend's party because you have to work on that day. Call your friend, explain the situation, and offer two or three alternatives.", '죄송하지만 해결해야 할 문제가 있습니다. 그날 일을 해야 해서 친구의 파티에 갈 수 없습니다. 친구에게 전화해 상황을 설명하고 대안을 두세 가지 제시하세요.',
+  ['사과 + 문제 알리기: I have a problem', '못 가는 이유', '대안: 늦게 가기 / 다른 날 만나기 / 선물 보내기'], `
+Hi, Jisu. I'm so sorry, but I have a problem. | 안녕, 지수야. 정말 미안한데 문제가 생겼어.
+I can't go to your party on Saturday. | 토요일 파티에 못 갈 것 같아.
+I have to work on that day. | 그날 일을 해야 하거든.
+My boss gave me an important project. | 상사가 중요한 프로젝트를 맡겼어.
+Can I come late, after nine? | 9시 넘어서 늦게 가도 될까?
+Or can we have dinner together on Sunday? | 아니면 일요일에 같이 저녁 먹을까?
+If you are busy, I can send you a gift first. | 네가 바쁘면 선물을 먼저 보낼게.
+I'm really sorry. Happy birthday. | 정말 미안해. 생일 축하해.`),
+Q('rp-friend-exp', 'rp-exp', '친구 약속', "That's the end of the situation. Have you ever had to cancel or change a plan with someone? What happened, and how did you handle it?", '상황극은 여기까지입니다. 누군가와의 약속을 취소하거나 바꿔야 했던 적이 있나요? 무슨 일이 있었고 어떻게 대처했나요?',
+  ['언제, 누구와 어떤 약속', '못 지킨 이유와 기분', '사과와 그 후'], `
+Yes, I had to cancel a plan last month. | 네, 지난달에 약속을 취소해야 했어요.
+I had a plan to see a movie with my friend. | 친구와 영화를 보기로 했습니다.
+But on that day, I caught a bad cold. | 그런데 그날 심한 감기에 걸렸어요.
+I had a fever, so I couldn't go out. | 열이 나서 나갈 수 없었습니다.
+I called my friend and said sorry. | 친구에게 전화해서 미안하다고 했어요.
+My friend was a little disappointed, but she understood. | 친구는 조금 실망했지만 이해해 줬습니다.
+We changed the plan to the next weekend. | 약속을 다음 주말로 바꿨어요.
+I bought the tickets and popcorn that day. | 그날은 제가 표와 팝콘을 샀습니다.
+We had a great time. | 즐거운 시간을 보냈어요.`)
 ];
 
 const DAYS = [
@@ -797,7 +1142,7 @@ const DAYS = [
     P('My favorite ___ is ___.', '제가 가장 좋아하는 ___는 ___예요.', 'My favorite place is my room.', '제가 가장 좋아하는 곳은 제 방이에요.'),
     P('I like it because ___.', '___해서 좋아해요.', 'I like it because I can relax there.', '거기서 쉴 수 있어서 좋아해요.')
   ],
-  models: ['home-desc', 'cafe-desc', 'park-desc'], practice: ['home-desc', 'cafe-desc', 'movie-desc', 'music-desc'],
+  models: ['home-desc', 'cafe-desc', 'park-desc'], practice: ['home-desc', 'cafe-desc', 'movie-desc', 'music-desc', 'shop-desc', 'concert-desc', 'walk-desc'],
   quiz: [
     Z('"거실에 소파가 있어요"를 바르게 말한 것은?', ['There are a sofa in the living room.', 'There is a sofa in the living room.', 'It has sofa in living room.', 'There have a sofa in the living room.'], 1, '하나일 때는 There is를 써요.'),
     Z('묘사 답변의 첫 문장으로 가장 좋은 것은?', ['I was happy.', 'I often go to a café near my office.', 'Thank you.', 'Because it is good.'], 1, '무엇을, 어디에 있는지 한 줄로 소개하며 시작해요.'),
@@ -823,7 +1168,7 @@ const DAYS = [
     P('I stay there for about ___.', '거기서 ___ 정도 머물러요.', 'I stay there for about thirty minutes.', '거기서 30분 정도 머물러요.'),
     P('It helps me ___.', '___하는 데 도움이 돼요.', 'It helps me sleep well.', '잠을 잘 자는 데 도움이 돼요.')
   ],
-  models: ['cafe-routine', 'movie-routine', 'park-routine'], practice: ['home-routine', 'music-routine', 'trip-routine', 'cafe-routine'],
+  models: ['cafe-routine', 'movie-routine', 'park-routine'], practice: ['home-routine', 'music-routine', 'trip-routine', 'cafe-routine', 'walk-routine', 'vac-routine', 'shop-routine'],
   quiz: [
     Z('빈도부사의 위치가 바른 문장은?', ['I go usually to the park.', 'I usually go to the park.', 'Usually go I to the park.', 'I go to usually the park.'], 1, 'usually는 일반동사 go 앞에 와요.'),
     Z('"일주일에 두세 번"을 영어로 하면?', ['two or three times a week', 'two three time week', 'a week two or three', 'in two or three weeks'], 0, '횟수 + a week 순서예요.'),
@@ -854,7 +1199,7 @@ const DAYS = [
     P('After that, I ___.', '그 후에 ___했어요.', 'After that, I bought a phone case.', '그 후에 휴대폰 케이스를 샀어요.'),
     P('I still remember it.', '아직도 기억나요.', 'It was a funny day, so I still remember it.', '재미있는 날이어서 아직도 기억나요.')
   ],
-  models: ['trip-past', 'cafe-past', 'park-past'], practice: ['movie-past', 'home-past', 'music-past', 'trip-past'],
+  models: ['trip-past', 'cafe-past', 'park-past'], practice: ['movie-past', 'home-past', 'music-past', 'trip-past', 'concert-past', 'shop-past', 'vac-past'],
   quiz: [
     Z('go의 과거형은?', ['goed', 'gone', 'went', 'going'], 2, 'go – went. 가장 많이 쓰는 과거형이에요.'),
     Z('"2년 전에"를 영어로 하면?', ['two years ago', 'before two year', 'ago two years', 'in two years'], 0, '기간 + ago 순서예요.'),
@@ -882,7 +1227,7 @@ const DAYS = [
     P('Could you ___?', '___해 주실 수 있나요?', 'Could you send someone to fix it?', '고쳐 줄 분을 보내 주실 수 있나요?'),
     P('Thank you for your help.', '도와주셔서 감사합니다.', 'Okay, I see. Thank you for your help.', '네, 알겠습니다. 도와주셔서 감사합니다.')
   ],
-  models: ['rp-movie-ask', 'rp-movie-solve', 'ava-home'], practice: ['rp-hotel-ask', 'rp-shop-solve', 'rp-movie-exp', 'ava-music'],
+  models: ['rp-movie-ask', 'rp-movie-solve', 'ava-home'], practice: ['rp-hotel-ask', 'rp-shop-solve', 'rp-movie-exp', 'ava-music', 'rp-rest-ask', 'rp-friend-solve', 'ava-trip'],
   quiz: [
     Z('영화 시작 시간을 묻는 문장은?', ['What time does the movie start?', 'How much is the movie?', 'Where is the movie?', 'Who is the movie?'], 0, 'What time does ~ start? 로 시간을 물어요.'),
     Z('11번 롤플레이에서 해야 하는 일은?', ['자기소개', '질문 3~4개 하기', '과거 경험 말하기', '장소 묘사'], 1, '11번은 정보를 얻기 위해 질문하는 문제예요.'),
@@ -909,7 +1254,7 @@ const DAYS = [
     P('Anyway, ___.', '어쨌든 ___.', 'Anyway, I like fall the most.', '어쨌든 저는 가을을 가장 좋아해요.'),
     P("That's all I can think of.", '생각나는 건 여기까지예요.', "That's all I can think of. Thank you.", '생각나는 건 여기까지예요. 감사합니다.')
   ],
-  models: ['phone-desc', 'weather-desc', 'rest-past'], practice: ['phone-routine', 'weather-past', 'rest-desc', 'phone-past'],
+  models: ['phone-desc', 'weather-desc', 'rest-past'], practice: ['phone-routine', 'weather-past', 'rest-desc', 'phone-past', 'recycle-routine', 'trans-routine', 'holiday-desc', 'bank-past'],
   quiz: [
     Z('생각할 시간이 필요할 때 쓰는 말은?', ['Well, let me think.', 'Thank you for your help.', 'Can I get a refund?', "That's all about me."], 0, '영어로 시간을 벌면 침묵을 피할 수 있어요.'),
     Z('잘 모르는 주제가 나왔을 때 좋은 방법은?', ['조용히 다음 문제를 기다린다', '한국어로 설명한다', '아는 경험 쪽으로 좁혀 말한다', '"I don\'t know."만 말한다'], 2, "I don't know much about it, but ~ 로 내 이야기로 옮겨요."),
@@ -975,7 +1320,7 @@ const ICON = {
 
 /* ---------- 저장 ---------- */
 const KEY = 'opicIm1.v1';
-const blank = () => ({ v: 1, onboarded: false, profile: { name: '', job: 'worker', examDate: '' }, days: {}, best: {}, attempts: [], total: { n: 0, secs: 0 }, cards: {}, scripts: {}, mocks: [], streak: { last: '', count: 0 }, settings: { rate: 0.9, showText: false } });
+const blank = () => ({ v: 1, onboarded: false, profile: { name: '', job: 'worker', examDate: '' }, days: {}, best: {}, attempts: [], total: { n: 0, secs: 0 }, cards: {}, scripts: {}, mocks: [], streak: { last: '', count: 0 }, settings: { rate: 0.9, showText: false, voice: 'buttery' } });
 let S = load();
 function load() { try { const r = JSON.parse(localStorage.getItem(KEY)); if (r && r.v === 1) return Object.assign(blank(), r); } catch (e) {} return blank(); }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -1019,7 +1364,7 @@ const Voice = {
     this.halt();
     const rate = S.settings.rate || 0.9;
     if (this.tts) {
-      return this.tts.speak(text, { rate: Math.max(0.7, Math.min(1.5, rate)), language: 'en' }).then(() => true, e => { if (e && e.code === 'not_granted') this.tts = null; return false; });
+      return this.tts.speak(text, { rate: Math.max(0.7, Math.min(1.5, rate)), language: 'en', voice: S.settings.voice || 'buttery' }).then(() => true, e => { if (e && e.code === 'not_granted') this.tts = null; return false; });
     }
     if (!('speechSynthesis' in window)) return Promise.resolve(false);
     return new Promise(res => {
@@ -1296,6 +1641,14 @@ function viewToday() {
     + (allDone ? '<button class="btn primary" data-act="goto" data-tab="mock">모의고사 다시 풀기</button>' : '<button class="btn primary" data-act="open-step" data-day="' + d.id + '" data-step="' + next[0] + '">' + (dayStarted(d) ? '이어서 하기' : '오늘 학습 시작') + ' · ' + next[1] + '</button>') + '</section>';
   html += '<div class="tiles"><div class="tile"><b>' + streakNow() + '일</b><small>연속 학습</small></div><div class="tile"><b>' + S.total.n + '회</b><small>말하기 연습</small></div><div class="tile"><b>' + due + '장</b><small>복습할 카드</small></div></div>';
   if (due) html += '<button class="btn block" data-act="goto" data-tab="review">복습 카드 ' + due + '장 넘겨 보기</button>';
+  if (!allDone) {
+    const n = dday(), left = D.DAYS.filter(x => !dayDone(x)).length;
+    if (n == null) html += '<section class="card"><h2>시험일을 알려 주세요</h2><p class="muted">날짜를 넣으면 남은 날에 맞춰 하루에 끝낼 분량을 계산해 드려요.</p><div class="row-btns"><button class="btn small" data-act="sec" data-sec="settings">시험일 입력하기</button></div></section>';
+    else {
+      const days = Math.max(1, n), per = Math.ceil(left / days), upto = Math.min(7, d.id + per - 1);
+      html += '<section class="card"><p class="eyebrow">' + (n === 0 ? '오늘이 시험일' : '시험까지 ' + n + '일') + '</p><h2>' + (per <= 1 ? '오늘은 Day ' + d.id + '만 끝내면 돼요' : '오늘은 Day ' + d.id + '부터 Day ' + upto + '까지 끝내요') + '</h2><p class="muted">남은 코스 ' + left + '일분을 ' + days + '일로 나눈 분량이에요.' + (per > 1 ? ' 시간이 모자라면 Day마다 개념, 쉐도잉, 말하기 연습 두 문제만 하고 넘어가세요.' : '') + '</p><div class="row-btns"><button class="btn small" data-act="sec" data-sec="sheet">시험 직전 요약 보기</button></div></section>';
+    }
+  }
   if (!allDone) html += '<div class="sect-title"><h2>오늘의 미션</h2><span>' + doneN + ' / ' + st.length + ' 완료</span></div><ol class="steps">' + st.map((s, i) => stepRow(d, s, i, next)).join('') + '</ol>';
   return { title: '오픽 IM1 7일 완성', sub: S.profile.name ? S.profile.name + '님의 학습' : '', html };
 }
@@ -1431,12 +1784,12 @@ function putScript(text) {
 }
 
 /* ---------- 문제 연습 ---------- */
-const FILTERS = [['all', '전체'], ['intro', '자기소개'], ['desc', '묘사'], ['routine', '루틴'], ['past', '과거 경험'], ['rp', '롤플레이'], ['ava', '질문하기'], ['unexp', '돌발']];
-const matchF = (q, f) => f === 'all' || (f === 'rp' ? q.type.indexOf('rp-') === 0 : f === 'unexp' ? q.unexp : q.type === f);
+const FILTERS = [['all', '전체'], ['intro', '자기소개'], ['desc', '묘사'], ['routine', '루틴'], ['past', '과거 경험'], ['rp', '롤플레이'], ['ava', '질문하기'], ['unexp', '돌발'], ['new', '안 푼 문제'], ['weak', '약한 문제']];
+const matchF = (q, f) => f === 'all' || (f === 'new' ? S.best[q.id] == null : f === 'weak' ? (S.best[q.id] != null && S.best[q.id] < 62) : false) || (f !== 'new' && f !== 'weak') && (f === 'rp' ? q.type.indexOf('rp-') === 0 : f === 'unexp' ? q.unexp : q.type === f);
 function viewPractice() {
   if (V.qid) return { title: '문제 연습', sub: D.TYPES[QMAP[V.qid].type] + ' · ' + QMAP[V.qid].topic, back: true, html: studioHTML(QMAP[V.qid]) };
   const f = V.filter || 'all', list = D.QUESTIONS.filter(q => matchF(q, f)), tried = list.filter(q => S.best[q.id] != null).length;
-  return { title: '문제 연습', sub: '유형별 ' + D.QUESTIONS.length + '문제', html: '<div class="scroller"><div class="choice">' + FILTERS.map(x => '<button data-act="filter" data-f="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + x[1] + '</button>').join('') + '</div></div><p class="muted">' + list.length + '문제 가운데 ' + tried + '문제를 풀었어요.</p><div class="stack">' + list.map(qRow).join('') + '</div>' };
+  return { title: '문제 연습', sub: '유형별 ' + D.QUESTIONS.length + '문제', html: '<div class="scroller"><div class="choice">' + FILTERS.map(x => '<button data-act="filter" data-f="' + x[0] + '" aria-pressed="' + (f === x[0]) + '">' + x[1] + '</button>').join('') + '</div></div><p class="muted">' + list.length + '문제 가운데 ' + tried + '문제를 풀었어요.</p>' + (list.length ? '<button class="btn block" data-act="random-q">' + (tried < list.length ? '안 푼 문제 하나 뽑기' : '아무 문제나 하나 뽑기') + '</button>' : '<section class="card empty"><p>' + (f === 'weak' ? '62점 아래인 문제가 없어요.' : '여기에 해당하는 문제가 없어요.') + '</p></section>') + '<div class="stack">' + list.map(qRow).join('') + '</div>' };
 }
 
 /* ---------- 모의고사 ---------- */
@@ -1523,7 +1876,24 @@ function mockResult(m) {
 }
 
 /* ---------- 복습 ---------- */
-const SECS = [['cards', '카드'], ['scripts', '스크립트'], ['stats', '기록'], ['settings', '설정']];
+const SECS = [['cards', '카드'], ['sheet', '요약'], ['scripts', '스크립트'], ['stats', '기록'], ['settings', '설정']];
+const SHEET = '<p class="muted">시험장에 들어가기 전에 이 화면만 한 번 읽으세요.</p>'
+  + '<section class="card lesson"><h2>유형별 뼈대</h2><div class="tablebox"><table><tr><th>유형</th><th>말하는 순서</th></tr>'
+  + '<tr><td>자기소개</td><td>이름 → 사는 곳 → 하는 일 → 취미 → That\'s all about me.</td></tr>'
+  + '<tr><td>묘사</td><td>한 줄 소개 → There is/are 세 문장 → I like it because ~</td></tr>'
+  + '<tr><td>루틴</td><td>얼마나 자주 → First, Then, After that → It helps me ~</td></tr>'
+  + '<tr><td>과거 경험</td><td>Last ~, I went ~ → 무슨 일 → I was so ~ → I still remember it.</td></tr>'
+  + '<tr><td>질문하기</td><td>Hello. I\'d like to ~ → 질문 3~4개 → Thank you for your help.</td></tr>'
+  + '<tr><td>문제 해결</td><td>I have a problem with ~ → 상황 두 문장 → Can I ~? Or can I ~?</td></tr></table></div></section>'
+  + '<section class="card lesson"><h2>어디에나 쓰는 문장</h2>' + [
+    ['Well, let me think.', '생각할 시간이 필요할 때'], ['I usually ___ on weekends.', '루틴을 시작할 때'], ['There are many ___.', '묘사에서 있는 것을 말할 때'],
+    ['It is ___, but it is ___.', '문장을 길게 만들 때'], ['I like it because ___.', '이유를 붙일 때'], ['I was so happy.', '경험에 기분을 넣을 때'],
+    ['So I ___.', '다음 행동으로 이을 때'], ['For example, ___.', '예를 들 때'], ["I'm not sure, but I think ___.", '확실하지 않을 때'],
+    ["I don't know much about it, but ___.", '모르는 주제일 때'], ["That's why I like ___.", '답변을 정리할 때'], ["That's all about ___.", '끝낼 때']
+  ].map(x => '<button class="sent" data-act="say" data-text="' + esc(x[0].replace(/_+/g, 'something')) + '"><span class="en">' + esc(x[0]) + '</span><span class="ko">' + x[1] + '</span></button>').join('') + '</section>'
+  + '<section class="card lesson"><h2>질문 틀</h2><p class="en">What time does ___ start?<br>How much is ___?<br>Do you have ___?<br>Can I ___?<br>Where is ___?<br>How often do you ___?<br>Who do you ___ with?</p><p>질문하기 문제에서는 이 가운데 세 개 이상을 쓰세요.</p></section>'
+  + '<section class="card lesson"><h2>과거형 12개</h2><p class="en">went · had · ate · saw · took · bought<br>got · made · came · felt · met · told</p><p>경험 문제에서 네 개 이상 쓰면 돼요. 기분은 happy, surprised, disappointed, upset, relieved 가운데 하나를 고르세요.</p></section>'
+  + '<section class="card lesson"><h2>시험장에서</h2><ul><li>설문은 외워 둔 12개를 그대로 고르기</li><li>난이도는 3단계, 7번 뒤 재조정은 비슷한 질문</li><li>답변은 문제마다 40초~1분 30초</li><li>틀려도 다시 말하지 않고 다음 문장으로</li><li>할 말이 없으면 마무리 문장으로 끝내고 넘어가기</li><li>평소보다 크고 또렷하게, 한국어 혼잣말 금지</li></ul></section>';
 function viewReview() {
   const sec = V.sec || 'cards';
   const seg = '<div class="seg">' + SECS.map(s => '<button data-act="sec" data-sec="' + s[0] + '" aria-pressed="' + (sec === s[0]) + '">' + s[1] + '</button>').join('') + '</div>';
@@ -1541,6 +1911,8 @@ function viewReview() {
         + (CQ.show ? '<p class="en">' + esc(p.en) + '</p><p class="ex">' + esc(p.ex) + '</p><button class="playbtn" data-act="say" data-text="' + esc(p.ex) + '" aria-label="예문 듣기">' + ICON.play + '</button>' : '') + '</section>'
         + (CQ.show ? '<div class="row-btns split"><button class="btn" data-act="card-again">다시 볼게요</button><button class="btn primary" data-act="card-good">외웠어요</button></div>' : '<button class="btn primary block" data-act="card-show">정답 보기</button>');
     }
+  } else if (sec === 'sheet') {
+    body = SHEET;
   } else if (sec === 'scripts') {
     const ids = Object.keys(S.scripts).filter(id => QMAP[id] && S.scripts[id]);
     body = ids.length ? '<div class="stack">' + ids.map(id => '<section class="card">' + chips(QMAP[id]) + '<p class="ko">' + esc(QMAP[id].ko) + '</p><p class="en">' + esc(S.scripts[id]) + '</p><div class="row-btns"><button class="btn small" data-act="say" data-text="' + esc(S.scripts[id]) + '">' + ICON.play + ' 듣기</button><button class="btn small" data-act="open-q" data-q="' + id + '" data-to="practice">연습하기</button><button class="btn small danger" data-act="script-del" data-q="' + id + '">삭제</button></div></section>').join('') + '</div>'
@@ -1552,7 +1924,7 @@ function viewReview() {
       + '<section class="card"><h2>코스 진도</h2><ul class="bars">' + D.DAYS.map(d => { const st = daySteps(d), n = st.filter(s => stepDone(d, s[0])).length; return '<li><span>Day ' + d.id + '</span><span class="meter"><i style="width:' + (n / st.length * 100) + '%"></i></span><b>' + n + '/' + st.length + '</b></li>'; }).join('') + '</ul></section>';
   } else {
     body = '<section class="card">' + field('setName', '영어 이름', S.profile.name, 'Minsu Kim') + '<div class="field"><label for="setDate">시험일</label><input type="date" id="setDate" value="' + esc(S.profile.examDate) + '"></div>'
-      + '<div class="field"><label for="setRate">읽어 주는 속도 <output id="rateOut">' + Number(S.settings.rate).toFixed(2) + '</output>배</label><input type="range" id="setRate" min="0.7" max="1.1" step="0.05" value="' + S.settings.rate + '"></div><div class="row-btns"><button class="btn small" data-act="say" data-text="I usually go to the park on weekends.">' + ICON.play + ' 속도 들어 보기</button></div></section>'
+      + '<div class="field"><label for="setRate">읽어 주는 속도 <output id="rateOut">' + Number(S.settings.rate).toFixed(2) + '</output>배</label><input type="range" id="setRate" min="0.7" max="1.1" step="0.05" value="' + S.settings.rate + '"></div>' + (Voice.tts ? '<div class="field"><label for="setVoice">목소리</label><select id="setVoice">' + [['buttery', '부드러운 목소리'], ['airy', '가벼운 목소리'], ['glassy', '맑은 목소리'], ['rounded', '둥근 목소리']].map(v => '<option value="' + v[0] + '"' + (S.settings.voice === v[0] ? ' selected' : '') + '>' + v[1] + '</option>').join('') + '</select></div>' : '') + '<div class="row-btns"><button class="btn small" data-act="say" data-text="I usually go to the park on weekends.">' + ICON.play + ' 속도 들어 보기</button></div></section>'
       + '<section class="card"><h2>학습 기록 지우기</h2><p class="muted">진도, 점수, 카드, 스크립트가 이 기기에서 모두 지워져요. 되돌릴 수 없어요.</p><div class="row-btns"><button class="btn small danger" data-act="reset">모든 기록 지우기</button></div></section>'
       + '<p class="fine">이 앱은 비공식 학습 도구이며 OPIc 주관 기관과 관계가 없어요. 문제와 모범 답변은 학습용으로 새로 쓴 것이고, 예상 수준은 참고용이에요. 학습 기록은 이 기기의 브라우저에만 저장돼요.</p>';
   }
@@ -1594,6 +1966,7 @@ const ACT = {
     go({ tab: 'practice', filter: V.filter, qid });
   },
   filter(el) { go({ tab: 'practice', filter: el.dataset.f }); },
+  'random-q'() { const f = V.filter || 'all', list = D.QUESTIONS.filter(q => matchF(q, f)), fresh = list.filter(q => S.best[q.id] == null), pool = fresh.length ? fresh : list; if (pool.length) go({ tab: 'practice', filter: f, qid: shuffle(pool)[0].id }); },
   async 'rec-toggle'() {
     const mock = V.tab === 'mock' && M;
     if (!Rec.active) {
@@ -1645,6 +2018,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'setShowText') { S.settings.showText = t.checked; save(); }
+  else if (t.id === 'setVoice') { S.settings.voice = t.value; save(); say('I usually go to the park on weekends.'); }
   else if (t.id === 'setName') { S.profile.name = t.value.trim(); save(); }
   else if (t.id === 'setDate') { S.profile.examDate = t.value; save(); setTop('복습', '카드 · 스크립트 · 기록', false); }
   else if (t.id === 'obDate') OB.date = t.value;

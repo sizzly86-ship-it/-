@@ -122,7 +122,7 @@ public class AlarmActivity extends Activity {
     private void openPikminAndFinish() {
         leaving = true;
         handler.removeCallbacks(watch);
-        Intent launch = getPackageManager().getLaunchIntentForPackage(PikminListener.PIKMIN_PKG);
+        Intent launch = getPackageManager().getLaunchIntentForPackage(PikminDetector.PIKMIN_PKG);
         if (launch == null) { finish(); return; }
         launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);

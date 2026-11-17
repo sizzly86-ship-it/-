@@ -5,8 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.location.GnssStatus;
@@ -22,7 +24,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 
 /**
- * 피크민이 꽃을 심는 동안(자동 모드) 또는 켜 둔 동안(수동 모드) GPS를 지켜보다가,
+ * 피크민이 꽃을 심는 동안(자동 모드, 사용 기록으로 판단) 또는 켜 둔 동안(수동 모드) GPS를 지켜보다가,
  * 잘 잡히던 GPS가 일정 시간 이상 끊기면(= 건물/집에 들어감) 알람을 울린다.
  * 꽃 심기를 안 할 때는 GPS를 아예 쓰지 않아서 배터리를 거의 안 먹는다.
  */
@@ -99,6 +101,28 @@ public class GpsWatchService extends Service {
         @Override public void onStopped() { satsUsed = 0; }
     };
 
+    /** 피크민 사용 기록을 10초마다 확인 (꽃 심기 켜고 끄는 것 따라가기) */
+    private final Runnable detectTick = new Runnable() {
+        @Override public void run() {
+            pollPikmin();
+            handler.postDelayed(this, 10_000);
+        }
+    };
+
+    /** 화면을 끄는 순간 = 피크민이 백그라운드로 가서 꽃 심기를 시작하는 순간이라 바로 확인 */
+    private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context c, Intent i) {
+            handler.postDelayed(GpsWatchService.this::pollPikmin, 3_000);
+            handler.postDelayed(GpsWatchService.this::pollPikmin, 12_000);
+        }
+    };
+    private boolean screenReceiverOn = false;
+
+    private void pollPikmin() {
+        if (!running) return;
+        if (PikminDetector.poll(this)) updateWatching();
+    }
+
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             if (!watching) return;
@@ -108,23 +132,6 @@ public class GpsWatchService extends Service {
     };
 
     // ───────────────────────── 외부에서 부르는 것들 ─────────────────────────
-
-    /** 피크민 꽃 심기 알림이 생기거나 없어졌을 때 (PikminListener가 호출) */
-    static void onPlantingChanged(Context ctx) {
-        GpsWatchService s = instance;
-        if (s != null) {
-            s.updateWatching();
-            return;
-        }
-        // 서비스가 죽어 있었는데 꽃 심기가 시작되면 다시 살린다
-        SharedPreferences p = ctx.getSharedPreferences(PREFS, MODE_PRIVATE);
-        if (PikminListener.planting && p.getBoolean(KEY_ENABLED, false)) {
-            try {
-                ctx.startForegroundService(new Intent(ctx, GpsWatchService.class)
-                        .setAction(ACTION_START));
-            } catch (Exception ignored) { }
-        }
-    }
 
     /** 모드 같은 설정이 바뀌었을 때 화면에서 호출 */
     static void refresh() {
@@ -176,12 +183,25 @@ public class GpsWatchService extends Service {
         running = true;
         instance = this;
         prefs().edit().putBoolean(KEY_ENABLED, true).apply();
+        if (!screenReceiverOn) {
+            IntentFilter f = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+            f.addAction(Intent.ACTION_SCREEN_ON);
+            registerReceiver(screenReceiver, f);
+            screenReceiverOn = true;
+        }
+        handler.removeCallbacks(detectTick);
+        handler.post(detectTick);
         updateWatching();
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
+        handler.removeCallbacks(detectTick);
+        if (screenReceiverOn) {
+            unregisterReceiver(screenReceiver);
+            screenReceiverOn = false;
+        }
         stopGps();
         running = false;
         instance = null;
@@ -195,7 +215,7 @@ public class GpsWatchService extends Service {
 
     private boolean shouldWatch() {
         boolean manual = "manual".equals(prefs().getString(KEY_MODE, "auto"));
-        return manual || PikminListener.planting;
+        return manual || PikminDetector.planting;
     }
 
     private void updateWatching() {

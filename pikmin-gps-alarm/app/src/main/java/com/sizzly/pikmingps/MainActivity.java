@@ -48,7 +48,6 @@ public class MainActivity extends Activity {
     private Button accessBtn;
     private TextView detectLine;
     private LinearLayout pikminList;
-    private Button resetLearn;
     private Button batteryBtn;
     private Button fullScreenBtn;
     private String lastListSig = null;
@@ -140,26 +139,17 @@ public class MainActivity extends Activity {
         autoBox.addView(accessLine);
         accessBtn = new Button(this);
         accessBtn.setAllCaps(false);
-        accessBtn.setText("알림 접근 허용하러 가기");
-        accessBtn.setOnClickListener(v -> openListenerSettings());
+        accessBtn.setText("사용 기록 접근 허용하러 가기");
+        accessBtn.setOnClickListener(v -> openUsageSettings());
         autoBox.addView(accessBtn);
         detectLine = text("", 15, true, "#333333");
         detectLine.setPadding(0, dp(8), 0, dp(4));
         autoBox.addView(detectLine);
-        TextView listTitle = text("지금 떠 있는 피크민 알림:", 13, false, "#777777");
+        TextView listTitle = text("피크민 최근 기록:", 13, false, "#777777");
         autoBox.addView(listTitle);
         pikminList = new LinearLayout(this);
         pikminList.setOrientation(LinearLayout.VERTICAL);
         autoBox.addView(pikminList);
-        resetLearn = new Button(this);
-        resetLearn.setAllCaps(false);
-        resetLearn.setText("인식 기준 처음으로 되돌리기");
-        resetLearn.setOnClickListener(v -> {
-            prefs.edit().remove(PikminListener.KEY_CHANNEL).apply();
-            PikminListener.requestRescan();
-            lastListSig = null;
-        });
-        autoBox.addView(resetLearn);
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         blp.topMargin = dp(10);
@@ -208,7 +198,7 @@ public class MainActivity extends Activity {
     private void render() {
         boolean running = GpsWatchService.running;
         boolean auto = !"manual".equals(prefs.getString(GpsWatchService.KEY_MODE, "auto"));
-        boolean access = PikminListener.hasAccess(this);
+        boolean access = PikminDetector.hasAccess(this);
         toggle.setText(running ? "앱 끄기" : "앱 켜기");
 
         String big, detail, color;
@@ -226,8 +216,8 @@ public class MainActivity extends Activity {
             color = "#9E9E9E";
         } else if (!GpsWatchService.watching) {
             if (auto && !access) {
-                big = "알림 접근 허용 필요";
-                detail = "아래 '알림 접근 허용하러 가기'를 눌러 주세요. 그래야 꽃 심는지 알 수 있어요.";
+                big = "사용 기록 접근 허용 필요";
+                detail = "아래 '사용 기록 접근 허용하러 가기'를 눌러 주세요. 그래야 꽃 심는지 알 수 있어요.";
                 color = "#E65100";
             } else {
                 big = "꽃 심기 기다리는 중 💤";
@@ -264,9 +254,9 @@ public class MainActivity extends Activity {
 
         // 자동 모드 설정 상자
         autoBox.setVisibility(auto ? View.VISIBLE : View.GONE);
-        accessLine.setText(access ? "✅ 피크민 알림 읽기 허용됨" : "⚠️ 피크민 알림을 읽을 수 있게 허용해 주세요");
+        accessLine.setText(access ? "✅ 사용 기록 접근 허용됨" : "⚠️ 사용 기록 접근을 허용해 주세요");
         accessBtn.setVisibility(access ? View.GONE : View.VISIBLE);
-        detectLine.setText(PikminListener.planting ? "🌸 지금 꽃 심는 중으로 인식됨" : "꽃 심기 꺼짐으로 인식됨");
+        detectLine.setText(PikminDetector.planting ? "🌸 지금 꽃 심는 중으로 인식됨" : "꽃 심기 꺼짐으로 인식됨");
         renderPikminList();
 
         batteryBtn.setText(isBatteryExempt() ? "배터리 최적화 해제됨 ✓" : "배터리 최적화 해제하기");
@@ -279,43 +269,20 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** 지금 떠 있는 피크민 알림 목록. 자동 인식이 틀리면 직접 골라 줄 수 있게 */
+    /** 피크민 최근 기록 (꽃 심기 인식이 잘 되는지 확인용) */
     private void renderPikminList() {
-        List<PikminListener.Info> list = PikminListener.current;
-        String learned = prefs.getString(PikminListener.KEY_CHANNEL, null);
-        StringBuilder sig = new StringBuilder(String.valueOf(learned));
-        for (PikminListener.Info i : list) sig.append('|').append(i.title).append(i.text).append(i.planting);
-        if (sig.toString().equals(lastListSig)) return;
-        lastListSig = sig.toString();
-
-        resetLearn.setVisibility(learned != null ? View.VISIBLE : View.GONE);
+        if (!GpsWatchService.running && PikminDetector.hasAccess(this)) PikminDetector.poll(this);
+        List<String> list = PikminDetector.recentLog();
+        String sig = String.join("|", list);
+        if (sig.equals(lastListSig)) return;
+        lastListSig = sig;
         pikminList.removeAllViews();
         if (list.isEmpty()) {
-            pikminList.addView(hint("(없음) 피크민에서 꽃 심기를 켜고 홈 화면으로 나가면 여기에 떠요."));
+            pikminList.addView(hint("(아직 없음) 피크민에서 꽃 심기를 켜고 홈 화면으로 나가면 "
+                    + "'백그라운드 작업 시작'이 떠야 해요."));
             return;
         }
-        for (PikminListener.Info i : list) {
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.VERTICAL);
-            row.setPadding(0, dp(6), 0, dp(6));
-            String head = (i.planting ? "🌸 " : "• ") + (i.title.isEmpty() ? "(제목 없음)" : i.title);
-            row.addView(text(head, 14, true, i.planting ? "#2E7D32" : "#333333"));
-            if (!i.text.isEmpty()) row.addView(text(i.text, 13, false, "#555555"));
-            if (!i.planting) {
-                Button pick = new Button(this);
-                pick.setAllCaps(false);
-                pick.setTextSize(13);
-                pick.setText("이게 꽃 심기 알림이에요");
-                String ch = i.channel;
-                pick.setOnClickListener(v -> {
-                    prefs.edit().putString(PikminListener.KEY_CHANNEL, ch).apply();
-                    PikminListener.requestRescan();
-                    lastListSig = null;
-                });
-                row.addView(pick);
-            }
-            pikminList.addView(row);
-        }
+        for (String line : list) pikminList.addView(text(line, 13, false, "#444444"));
     }
 
     // ───────────────────────── 켜기/끄기 ─────────────────────────
@@ -375,12 +342,13 @@ public class MainActivity extends Activity {
                 .setAction(GpsWatchService.ACTION_START));
 
         boolean auto = !"manual".equals(prefs.getString(GpsWatchService.KEY_MODE, "auto"));
-        if (auto && !PikminListener.hasAccess(this)) {
+        if (auto && !PikminDetector.hasAccess(this)) {
             new AlertDialog.Builder(this)
-                    .setTitle("알림 접근을 허용해 주세요")
-                    .setMessage("피크민이 꽃을 심는 중인지 알려면, 피크민의 '꽃 심는 중' 알림을 읽어야 해요.\n\n"
-                            + "다음 화면에서 '피크민 GPS 알리미'를 켜 주세요.")
-                    .setPositiveButton("허용하러 가기", (d, w) -> openListenerSettings())
+                    .setTitle("사용 기록 접근을 허용해 주세요")
+                    .setMessage("피크민이 꽃을 심는 중인지 알려면, 안드로이드 '사용 기록'에서 "
+                            + "피크민이 백그라운드로 돌고 있는지 봐야 해요.\n\n"
+                            + "다음 화면에서 '피크민 GPS 알리미'를 찾아 켜 주세요.")
+                    .setPositiveButton("허용하러 가기", (d, w) -> openUsageSettings())
                     .setNegativeButton("나중에", null)
                     .show();
         }
@@ -399,17 +367,13 @@ public class MainActivity extends Activity {
 
     // ───────────────────────── 설정 화면 열기 ─────────────────────────
 
-    private void openListenerSettings() {
+    private void openUsageSettings() {
         try {
-            if (Build.VERSION.SDK_INT >= 30) {
-                Intent i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS);
-                i.putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
-                        new android.content.ComponentName(this, PikminListener.class).flattenToString());
-                startActivity(i);
-                return;
-            }
-        } catch (Exception ignored) { }
-        startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+        }
     }
 
     private void openFullScreenSettings() {

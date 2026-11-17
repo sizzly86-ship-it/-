@@ -1,0 +1,52 @@
+name: 피크민 GPS 알리미 APK 빌드
+
+on:
+  push:
+    paths:
+      - 'pikmin-gps-alarm/**'
+      - '.github/workflows/pikmin-gps-alarm.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pikmin-gps-alarm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: APK 빌드
+        run: gradle --no-daemon assembleRelease
+
+      - name: 파일 이름 정리
+        run: cp app/build/outputs/apk/release/app-release.apk pikmin-gps-alarm.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pikmin-gps-alarm-apk
+          path: pikmin-gps-alarm/pikmin-gps-alarm.apk
+
+      - name: 릴리스에 올리기 (폰에서 바로 다운로드용)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pikmin-gps-alarm-latest
+          name: 피크민 GPS 알리미 (최신)
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            아래 Assets에서 **pikmin-gps-alarm.apk** 를 눌러 받은 뒤 설치하세요.
+            빌드: ${{ github.sha }}
+          files: pikmin-gps-alarm/pikmin-gps-alarm.apk

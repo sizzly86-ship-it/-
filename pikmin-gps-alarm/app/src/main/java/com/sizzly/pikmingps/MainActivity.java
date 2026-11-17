@@ -126,6 +126,13 @@ public class MainActivity extends Activity {
                 new String[]{"피크민 꽃 심을 때만 (추천)", "켜 둔 동안 항상"},
                 GpsWatchService.KEY_MODE, "auto", true));
         root.addView(hint("'꽃 심을 때만'으로 하면 꽃 심기를 끄면 GPS도 같이 놔서 배터리를 거의 안 먹어요."));
+        Button hideIdle = new Button(this);
+        hideIdle.setAllCaps(false);
+        hideIdle.setText("꽃 심기 안 할 때 알림 숨기기");
+        hideIdle.setOnClickListener(v -> openIdleChannelSettings());
+        root.addView(hideIdle);
+        root.addView(hint("다음 화면에서 스위치를 끄면, 꽃 심기 안 할 때는 알림창에 아무것도 안 떠요. "
+                + "꽃 심기를 켜면 감시 알림은 그대로 나타나요."));
 
         autoBox = new LinearLayout(this);
         autoBox.setOrientation(LinearLayout.VERTICAL);
@@ -373,6 +380,17 @@ public class MainActivity extends Activity {
                     Uri.parse("package:" + getPackageName())));
         } catch (Exception e) {
             startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+        }
+    }
+
+    private void openIdleChannelSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
+                    .putExtra(Settings.EXTRA_CHANNEL_ID, GpsWatchService.CH_IDLE));
+        } catch (Exception e) {
+            startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
         }
     }
 

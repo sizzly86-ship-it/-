@@ -44,6 +44,8 @@ public class GpsWatchService extends Service {
     static final String KEY_BACK = "notifyBack";
 
     private static final String CH_STATUS = "status";
+    /** 꽃 심기 대기 중 알림 전용 채널. 사용자가 이 채널만 꺼서 숨길 수 있음 */
+    static final String CH_IDLE = "idle";
     private static final String CH_ALERT = "gps_lost_v2";
     private static final String CH_BACK = "gps_back";
     private static final int ID_STATUS = 1;
@@ -174,7 +176,7 @@ public class GpsWatchService extends Service {
             return START_STICKY;
         }
 
-        Notification n = buildStatusNotification("준비 중…");
+        Notification n = buildStatusNotification("준비 중…", true);
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(ID_STATUS, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
         } else {
@@ -387,14 +389,15 @@ public class GpsWatchService extends Service {
         }
         if (text.equals(lastStatusText)) return;
         lastStatusText = text;
-        nm().notify(ID_STATUS, buildStatusNotification(text));
+        // 대기 중엔 '최소화' 채널로 → 상태바 아이콘 없이 맨 아래로 접히고, 채널을 꺼서 아예 숨길 수도 있음
+        nm().notify(ID_STATUS, buildStatusNotification(text, state == State.IDLE));
     }
 
-    private Notification buildStatusNotification(String text) {
+    private Notification buildStatusNotification(String text, boolean idle) {
         PendingIntent stop = PendingIntent.getService(this, 1,
                 new Intent(this, GpsWatchService.class).setAction(ACTION_STOP),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        return new Notification.Builder(this, CH_STATUS)
+        return new Notification.Builder(this, idle ? CH_IDLE : CH_STATUS)
                 .setSmallIcon(R.drawable.ic_flower)
                 .setContentTitle("피크민 GPS 알리미")
                 .setContentText(text)
@@ -416,8 +419,14 @@ public class GpsWatchService extends Service {
         NotificationManager m = nm();
         m.deleteNotificationChannel("gps_lost_v1"); // 예전 버전 채널 정리
 
+        NotificationChannel idle = new NotificationChannel(CH_IDLE,
+                "꽃 심기 대기 중 (꺼도 됨)", NotificationManager.IMPORTANCE_MIN);
+        idle.setDescription("꽃 심기를 안 할 때 표시. 꺼도 감시는 정상 작동해요");
+        idle.setShowBadge(false);
+        m.createNotificationChannel(idle);
+
         NotificationChannel status = new NotificationChannel(CH_STATUS,
-                "감시 상태 (상시 표시)", NotificationManager.IMPORTANCE_LOW);
+                "꽃 심는 중 감시 상태", NotificationManager.IMPORTANCE_LOW);
         status.setShowBadge(false);
         m.createNotificationChannel(status);
 

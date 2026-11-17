@@ -36,6 +36,8 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final int REQ_PERMS = 10;
+    private static final int REQ_BG = 11;
+    static final String EXTRA_AUTOSTART = "autostart";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SharedPreferences prefs;
@@ -49,6 +51,7 @@ public class MainActivity extends Activity {
     private TextView detectLine;
     private LinearLayout pikminList;
     private Button batteryBtn;
+    private Button bootBtn;
     private Button fullScreenBtn;
     private String lastListSig = null;
 
@@ -64,6 +67,20 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         prefs = getSharedPreferences(GpsWatchService.PREFS, MODE_PRIVATE);
         setContentView(buildUi());
+        handleAutostart(getIntent());
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleAutostart(intent);
+    }
+
+    /** 재부팅 후 '눌러서 켜기' 알림으로 들어오면 바로 켠다 */
+    private void handleAutostart(Intent i) {
+        if (i != null && i.getBooleanExtra(EXTRA_AUTOSTART, false) && !GpsWatchService.running) {
+            i.removeExtra(EXTRA_AUTOSTART);
+            onToggle();
+        }
     }
 
     @Override protected void onResume() {
@@ -186,6 +203,12 @@ public class MainActivity extends Activity {
         root.addView(hint("실내에서 와이파이로 대충 잡히는 위치를 걸러내는 기준이에요. 보통 50m면 충분해요."));
 
         root.addView(section("꺼지지 않게 하기 (갤럭시 필수)"));
+        bootBtn = new Button(this);
+        bootBtn.setAllCaps(false);
+        bootBtn.setOnClickListener(v -> askBackgroundLocation());
+        root.addView(bootBtn);
+        root.addView(hint("위치를 '항상 허용'으로 하면 재부팅하거나 앱을 업데이트해도 알아서 다시 켜져요. "
+                + "안 하면 재부팅 후 '눌러서 켜기' 알림이 떠요. (이 앱은 인터넷을 못 써서 위치가 밖으로 나가지 않아요)"));
         batteryBtn = new Button(this);
         batteryBtn.setAllCaps(false);
         batteryBtn.setOnClickListener(v -> askBatteryExemption());
@@ -266,6 +289,8 @@ public class MainActivity extends Activity {
         detectLine.setText(PikminDetector.planting ? "🌸 지금 꽃 심는 중으로 인식됨" : "꽃 심기 꺼짐으로 인식됨");
         renderPikminList();
 
+        bootBtn.setText(BootReceiver.hasBackgroundLocation(this)
+                ? "재부팅해도 자동으로 켜짐 ✓" : "재부팅해도 자동으로 켜기 (위치 '항상 허용')");
         batteryBtn.setText(isBatteryExempt() ? "배터리 최적화 해제됨 ✓" : "배터리 최적화 해제하기");
         if (Build.VERSION.SDK_INT >= 34) {
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -319,6 +344,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
+        if (code == REQ_BG) {
+            if (!BootReceiver.hasBackgroundLocation(this)) openAppSettings();
+            return;
+        }
         if (code != REQ_PERMS) return;
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -331,6 +360,23 @@ public class MainActivity extends Activity {
             return;
         }
         startWatching();
+    }
+
+    private void askBackgroundLocation() {
+        if (BootReceiver.hasBackgroundLocation(this)) { openAppSettings(); return; }
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            onToggle(); // 기본 위치 권한부터
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("위치를 '항상 허용'으로")
+                .setMessage("다음 화면에서 위치 권한을 '항상 허용'으로 골라 주세요.\n\n"
+                        + "안 보이면 '권한 → 위치 → 항상 허용'으로 들어가면 돼요.")
+                .setPositiveButton("확인", (d, w) -> requestPermissions(
+                        new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, REQ_BG))
+                .setNegativeButton("취소", null)
+                .show();
     }
 
     private void startWatching() {

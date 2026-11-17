@@ -177,11 +177,19 @@ public class GpsWatchService extends Service {
         }
 
         Notification n = buildStatusNotification("준비 중…", true);
-        if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(ID_STATUS, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-        } else {
-            startForeground(ID_STATUS, n);
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(ID_STATUS, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else {
+                startForeground(ID_STATUS, n);
+            }
+        } catch (Exception e) {
+            // 화면 없이 다시 켜지려는데 위치가 '항상 허용'이 아니면 여기로 옴 → 눌러서 켜기 알림
+            BootReceiver.askToRestart(this);
+            stopSelf();
+            return START_NOT_STICKY;
         }
+        BootReceiver.clearRestartNotice(this);
         running = true;
         instance = this;
         prefs().edit().putBoolean(KEY_ENABLED, true).apply();

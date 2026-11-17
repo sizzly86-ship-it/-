@@ -3,6 +3,7 @@ package com.sizzly.pikmingps;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,7 +23,6 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -36,17 +36,22 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final int REQ_PERMS = 10;
-    private static final int[] DELAYS = {15, 30, 60, 90};
-    private static final int[] ACCS = {30, 50, 100};
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private SharedPreferences prefs;
 
-    private TextView statusBig;
-    private TextView statusDetail;
+    private TextView statusBig, statusDetail;
     private GradientDrawable statusBg;
     private Button toggle;
+    private LinearLayout autoBox;
+    private TextView accessLine;
+    private Button accessBtn;
+    private TextView detectLine;
+    private LinearLayout pikminList;
+    private Button resetLearn;
     private Button batteryBtn;
+    private Button fullScreenBtn;
+    private String lastListSig = null;
 
     private final Runnable refresh = new Runnable() {
         @Override public void run() {
@@ -64,6 +69,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        lastListSig = null;
         handler.post(refresh);
     }
 
@@ -78,12 +84,11 @@ public class MainActivity extends Activity {
         int pad = dp(20);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(pad, dp(32), pad, pad);
+        root.setPadding(pad, dp(32), pad, dp(40));
         root.setBackgroundColor(Color.parseColor("#F6FAF6"));
 
-        TextView title = text("🌸 피크민 GPS 알리미", 24, true, "#1B5E20");
-        root.addView(title);
-        TextView sub = text("꽃 심으면서 건물에 들어가 GPS가 끊기면 알려줘요.", 15, false, "#555555");
+        root.addView(text("🌸 피크민 GPS 알리미", 24, true, "#1B5E20"));
+        TextView sub = text("꽃 심으면서 건물에 들어가 GPS가 끊기면 시끄럽게 알려줘요.", 15, false, "#555555");
         sub.setPadding(0, dp(4), 0, dp(16));
         root.addView(sub);
 
@@ -94,7 +99,7 @@ public class MainActivity extends Activity {
         statusBg = new GradientDrawable();
         statusBg.setCornerRadius(dp(16));
         card.setBackground(statusBg);
-        statusBig = text("", 26, true, "#FFFFFF");
+        statusBig = text("", 24, true, "#FFFFFF");
         statusDetail = text("", 15, false, "#FFFFFF");
         statusDetail.setPadding(0, dp(6), 0, 0);
         card.addView(statusBig);
@@ -110,26 +115,90 @@ public class MainActivity extends Activity {
         tlp.topMargin = dp(16);
         root.addView(toggle, tlp);
 
-        // 설정
-        root.addView(section("GPS가 몇 초 끊기면 알릴까요?"));
-        root.addView(choice(DELAYS, "초", GpsWatchService.KEY_DELAY, 30));
+        Button testBtn = new Button(this);
+        testBtn.setAllCaps(false);
+        testBtn.setText("🔔 알람 테스트 해보기");
+        testBtn.setOnClickListener(v -> testAlarm());
+        root.addView(testBtn);
+
+        // 모드
+        root.addView(section("언제 감시할까요?"));
+        root.addView(choice(new String[]{"auto", "manual"},
+                new String[]{"피크민 꽃 심을 때만 (추천)", "켜 둔 동안 항상"},
+                GpsWatchService.KEY_MODE, "auto", true));
+        root.addView(hint("'꽃 심을 때만'으로 하면 꽃 심기를 끄면 GPS도 같이 놔서 배터리를 거의 안 먹어요."));
+
+        autoBox = new LinearLayout(this);
+        autoBox.setOrientation(LinearLayout.VERTICAL);
+        autoBox.setPadding(dp(14), dp(12), dp(14), dp(12));
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(Color.WHITE);
+        boxBg.setCornerRadius(dp(12));
+        boxBg.setStroke(dp(1), Color.parseColor("#C8E6C9"));
+        autoBox.setBackground(boxBg);
+        accessLine = text("", 15, true, "#333333");
+        autoBox.addView(accessLine);
+        accessBtn = new Button(this);
+        accessBtn.setAllCaps(false);
+        accessBtn.setText("알림 접근 허용하러 가기");
+        accessBtn.setOnClickListener(v -> openListenerSettings());
+        autoBox.addView(accessBtn);
+        detectLine = text("", 15, true, "#333333");
+        detectLine.setPadding(0, dp(8), 0, dp(4));
+        autoBox.addView(detectLine);
+        TextView listTitle = text("지금 떠 있는 피크민 알림:", 13, false, "#777777");
+        autoBox.addView(listTitle);
+        pikminList = new LinearLayout(this);
+        pikminList.setOrientation(LinearLayout.VERTICAL);
+        autoBox.addView(pikminList);
+        resetLearn = new Button(this);
+        resetLearn.setAllCaps(false);
+        resetLearn.setText("인식 기준 처음으로 되돌리기");
+        resetLearn.setOnClickListener(v -> {
+            prefs.edit().remove(PikminListener.KEY_CHANNEL).apply();
+            PikminListener.requestRescan();
+            lastListSig = null;
+        });
+        autoBox.addView(resetLearn);
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        blp.topMargin = dp(10);
+        root.addView(autoBox, blp);
+
+        // 알람 세기
+        root.addView(section("알람 세기"));
+        root.addView(choice(new String[]{"crazy", "repeat", "once"},
+                new String[]{"🔥 끌 때까지 계속 울림", "2분마다 진동+소리", "한 번만"},
+                GpsWatchService.KEY_STRENGTH, "crazy", true));
+        root.addView(hint("'계속 울림'은 알람 끄기를 누르거나, 꽃 심기를 끄거나, GPS가 다시 잡힐 때까지 "
+                + "알람 소리+진동이 쉬지 않고 울려요. 10분 넘게 방치하면 2분마다로 바뀌어요."));
+        root.addView(sw("무음·진동 모드여도 알람 소리 내기", GpsWatchService.KEY_ALARM_STREAM, true));
+        root.addView(hint("켜 두면 시계 알람처럼 '알람 음량'으로 울려요."));
+        root.addView(sw("밖으로 나와 GPS가 다시 잡히면 알리기", GpsWatchService.KEY_BACK, true));
+
+        root.addView(section("GPS가 몇 초 끊기면 울릴까요?"));
+        root.addView(choice(new String[]{"15", "30", "60", "90"},
+                new String[]{"15초", "30초", "60초", "90초"},
+                GpsWatchService.KEY_DELAY, "30", false));
         root.addView(hint("짧으면 빨리 알지만, 큰 건물 옆·지하차도에서 잠깐 끊겨도 울릴 수 있어요."));
 
         root.addView(section("이 정도보다 부정확하면 끊긴 걸로 볼까요?"));
-        root.addView(choice(ACCS, "m", GpsWatchService.KEY_ACC, 50));
+        root.addView(choice(new String[]{"30", "50", "100"},
+                new String[]{"30m", "50m", "100m"},
+                GpsWatchService.KEY_ACC, "50", false));
         root.addView(hint("실내에서 와이파이로 대충 잡히는 위치를 걸러내는 기준이에요. 보통 50m면 충분해요."));
-
-        root.addView(section("알림 옵션"));
-        root.addView(sw("꽃 심기 끌 때까지 2분마다 다시 알리기", GpsWatchService.KEY_REPEAT, true));
-        root.addView(sw("밖으로 나와 GPS가 다시 잡히면 알리기", GpsWatchService.KEY_BACK, true));
 
         root.addView(section("꺼지지 않게 하기 (갤럭시 필수)"));
         batteryBtn = new Button(this);
         batteryBtn.setAllCaps(false);
         batteryBtn.setOnClickListener(v -> askBatteryExemption());
         root.addView(batteryBtn);
-        root.addView(hint("갤럭시는 배터리 절약 때문에 백그라운드 앱을 멈출 수 있어요. "
-                + "'제한 없음'으로 해 두면 화면이 꺼져도 계속 감시해요."));
+        fullScreenBtn = new Button(this);
+        fullScreenBtn.setAllCaps(false);
+        fullScreenBtn.setOnClickListener(v -> openFullScreenSettings());
+        root.addView(fullScreenBtn);
+        root.addView(hint("배터리 최적화를 해제해야 화면이 꺼져도 계속 감시해요. "
+                + "'전체 화면 알림'을 허용해야 잠금화면 위로 빨간 알람 화면이 떠요."));
 
         ScrollView sv = new ScrollView(this);
         sv.addView(root);
@@ -138,22 +207,34 @@ public class MainActivity extends Activity {
 
     private void render() {
         boolean running = GpsWatchService.running;
-        toggle.setText(running ? "감시 끄기" : "감시 시작");
+        boolean auto = !"manual".equals(prefs.getString(GpsWatchService.KEY_MODE, "auto"));
+        boolean access = PikminListener.hasAccess(this);
+        toggle.setText(running ? "앱 끄기" : "앱 켜기");
 
-        String big, detail;
-        String color;
+        String big, detail, color;
         long now = SystemClock.elapsedRealtime();
+        String info = "위성 " + GpsWatchService.satsUsed + "/" + GpsWatchService.satsVisible
+                + "개 · 정확도 " + (GpsWatchService.lastAccuracy >= 0
+                ? "±" + Math.round(GpsWatchService.lastAccuracy) + "m" : "-")
+                + " · 마지막 수신 " + (GpsWatchService.lastFixAt > 0
+                ? ((now - GpsWatchService.lastFixAt) / 1000) + "초 전" : "없음");
+
         if (!running) {
             big = "꺼져 있음";
-            detail = "피크민 켜고 밖에 나가기 전에 '감시 시작'을 눌러 주세요.";
+            detail = auto ? "'앱 켜기'를 한 번 눌러 두면, 피크민에서 꽃 심기를 켤 때마다 알아서 감시해요."
+                    : "피크민 켜고 나가기 전에 '앱 켜기'를 눌러 주세요.";
             color = "#9E9E9E";
+        } else if (!GpsWatchService.watching) {
+            if (auto && !access) {
+                big = "알림 접근 허용 필요";
+                detail = "아래 '알림 접근 허용하러 가기'를 눌러 주세요. 그래야 꽃 심는지 알 수 있어요.";
+                color = "#E65100";
+            } else {
+                big = "꽃 심기 기다리는 중 💤";
+                detail = "피크민에서 꽃 심기를 켜면 자동으로 감시를 시작해요. 지금은 GPS를 안 써요.";
+                color = "#546E7A";
+            }
         } else {
-            String acc = GpsWatchService.lastAccuracy >= 0
-                    ? "±" + Math.round(GpsWatchService.lastAccuracy) + "m" : "-";
-            String age = GpsWatchService.lastFixAt > 0
-                    ? ((now - GpsWatchService.lastFixAt) / 1000) + "초 전" : "없음";
-            String info = "위성 " + GpsWatchService.satsUsed + "/" + GpsWatchService.satsVisible
-                    + "개 · 정확도 " + acc + " · 마지막 수신 " + age;
             switch (GpsWatchService.state) {
                 case GOOD:
                     if (GpsWatchService.badSince > 0) {
@@ -161,7 +242,7 @@ public class MainActivity extends Activity {
                         color = "#F9A825";
                         detail = ((now - GpsWatchService.badSince) / 1000) + "초째 불안정\n" + info;
                     } else {
-                        big = "GPS 잘 잡힘 ✓";
+                        big = "꽃 심는 중 · GPS 잘 잡힘 ✓";
                         color = "#2E7D32";
                         detail = info;
                     }
@@ -181,11 +262,63 @@ public class MainActivity extends Activity {
         statusBig.setText(big);
         statusDetail.setText(detail);
 
-        batteryBtn.setText(isBatteryExempt()
-                ? "배터리 최적화 해제됨 ✓" : "배터리 최적화 해제하기");
+        // 자동 모드 설정 상자
+        autoBox.setVisibility(auto ? View.VISIBLE : View.GONE);
+        accessLine.setText(access ? "✅ 피크민 알림 읽기 허용됨" : "⚠️ 피크민 알림을 읽을 수 있게 허용해 주세요");
+        accessBtn.setVisibility(access ? View.GONE : View.VISIBLE);
+        detectLine.setText(PikminListener.planting ? "🌸 지금 꽃 심는 중으로 인식됨" : "꽃 심기 꺼짐으로 인식됨");
+        renderPikminList();
+
+        batteryBtn.setText(isBatteryExempt() ? "배터리 최적화 해제됨 ✓" : "배터리 최적화 해제하기");
+        if (Build.VERSION.SDK_INT >= 34) {
+            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            fullScreenBtn.setText(nm.canUseFullScreenIntent()
+                    ? "전체 화면 알림 허용됨 ✓" : "전체 화면 알림 허용하기");
+        } else {
+            fullScreenBtn.setVisibility(View.GONE);
+        }
     }
 
-    // ───────────────────────── 시작/중지 ─────────────────────────
+    /** 지금 떠 있는 피크민 알림 목록. 자동 인식이 틀리면 직접 골라 줄 수 있게 */
+    private void renderPikminList() {
+        List<PikminListener.Info> list = PikminListener.current;
+        String learned = prefs.getString(PikminListener.KEY_CHANNEL, null);
+        StringBuilder sig = new StringBuilder(String.valueOf(learned));
+        for (PikminListener.Info i : list) sig.append('|').append(i.title).append(i.text).append(i.planting);
+        if (sig.toString().equals(lastListSig)) return;
+        lastListSig = sig.toString();
+
+        resetLearn.setVisibility(learned != null ? View.VISIBLE : View.GONE);
+        pikminList.removeAllViews();
+        if (list.isEmpty()) {
+            pikminList.addView(hint("(없음) 피크민에서 꽃 심기를 켜고 홈 화면으로 나가면 여기에 떠요."));
+            return;
+        }
+        for (PikminListener.Info i : list) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(0, dp(6), 0, dp(6));
+            String head = (i.planting ? "🌸 " : "• ") + (i.title.isEmpty() ? "(제목 없음)" : i.title);
+            row.addView(text(head, 14, true, i.planting ? "#2E7D32" : "#333333"));
+            if (!i.text.isEmpty()) row.addView(text(i.text, 13, false, "#555555"));
+            if (!i.planting) {
+                Button pick = new Button(this);
+                pick.setAllCaps(false);
+                pick.setTextSize(13);
+                pick.setText("이게 꽃 심기 알림이에요");
+                String ch = i.channel;
+                pick.setOnClickListener(v -> {
+                    prefs.edit().putString(PikminListener.KEY_CHANNEL, ch).apply();
+                    PikminListener.requestRescan();
+                    lastListSig = null;
+                });
+                row.addView(pick);
+            }
+            pikminList.addView(row);
+        }
+    }
+
+    // ───────────────────────── 켜기/끄기 ─────────────────────────
 
     private void onToggle() {
         if (GpsWatchService.running) {
@@ -218,9 +351,7 @@ public class MainActivity extends Activity {
             new AlertDialog.Builder(this)
                     .setTitle("위치 권한이 필요해요")
                     .setMessage("GPS 상태를 보려면 '정확한 위치' 권한이 필요해요. 설정에서 허용해 주세요.")
-                    .setPositiveButton("설정 열기", (d, w) -> startActivity(
-                            new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.parse("package:" + getPackageName()))))
+                    .setPositiveButton("설정 열기", (d, w) -> openAppSettings())
                     .setNegativeButton("취소", null)
                     .show();
             return;
@@ -242,6 +373,58 @@ public class MainActivity extends Activity {
         }
         startForegroundService(new Intent(this, GpsWatchService.class)
                 .setAction(GpsWatchService.ACTION_START));
+
+        boolean auto = !"manual".equals(prefs.getString(GpsWatchService.KEY_MODE, "auto"));
+        if (auto && !PikminListener.hasAccess(this)) {
+            new AlertDialog.Builder(this)
+                    .setTitle("알림 접근을 허용해 주세요")
+                    .setMessage("피크민이 꽃을 심는 중인지 알려면, 피크민의 '꽃 심는 중' 알림을 읽어야 해요.\n\n"
+                            + "다음 화면에서 '피크민 GPS 알리미'를 켜 주세요.")
+                    .setPositiveButton("허용하러 가기", (d, w) -> openListenerSettings())
+                    .setNegativeButton("나중에", null)
+                    .show();
+        }
+    }
+
+    private void testAlarm() {
+        boolean alarmStream = prefs.getBoolean(GpsWatchService.KEY_ALARM_STREAM, true);
+        if ("crazy".equals(prefs.getString(GpsWatchService.KEY_STRENGTH, "crazy"))) {
+            Ringer.startContinuous(this, alarmStream);
+            handler.postDelayed(Ringer::stop, 15000); // 테스트는 15초면 자동으로 멈춤
+            startActivity(new Intent(this, AlarmActivity.class).putExtra(AlarmActivity.EXTRA_TEST, true));
+        } else {
+            Ringer.burst(this, alarmStream);
+        }
+    }
+
+    // ───────────────────────── 설정 화면 열기 ─────────────────────────
+
+    private void openListenerSettings() {
+        try {
+            if (Build.VERSION.SDK_INT >= 30) {
+                Intent i = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS);
+                i.putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                        new android.content.ComponentName(this, PikminListener.class).flattenToString());
+                startActivity(i);
+                return;
+            }
+        } catch (Exception ignored) { }
+        startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+    }
+
+    private void openFullScreenSettings() {
+        if (Build.VERSION.SDK_INT < 34) return;
+        try {
+            startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            openAppSettings();
+        }
+    }
+
+    private void openAppSettings() {
+        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + getPackageName())));
     }
 
     private boolean isBatteryExempt() {
@@ -250,16 +433,10 @@ public class MainActivity extends Activity {
     }
 
     private void askBatteryExemption() {
-        Intent i;
-        if (isBatteryExempt()) {
-            i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:" + getPackageName()));
-        } else {
-            i = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                    Uri.parse("package:" + getPackageName()));
-        }
+        if (isBatteryExempt()) { openAppSettings(); return; }
         try {
-            startActivity(i);
+            startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:" + getPackageName())));
         } catch (Exception e) {
             startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
         }
@@ -267,20 +444,27 @@ public class MainActivity extends Activity {
 
     // ───────────────────────── 작은 위젯 헬퍼 ─────────────────────────
 
-    private View choice(int[] values, String unit, String key, int def) {
+    /** 라디오 버튼 묶음. asString=false면 숫자(int)로 저장 */
+    private View choice(String[] values, String[] labels, String key, String def, boolean asString) {
         RadioGroup g = new RadioGroup(this);
-        g.setOrientation(RadioGroup.HORIZONTAL);
-        int cur = prefs.getInt(key, def);
-        for (int v : values) {
+        boolean vertical = labels[0].length() > 6;
+        g.setOrientation(vertical ? RadioGroup.VERTICAL : RadioGroup.HORIZONTAL);
+        String cur = asString ? prefs.getString(key, def)
+                : String.valueOf(prefs.getInt(key, Integer.parseInt(def)));
+        for (int k = 0; k < values.length; k++) {
+            String v = values[k];
             RadioButton r = new RadioButton(this);
             r.setId(View.generateViewId());
-            r.setText(v + unit);
+            r.setText(labels[k]);
             r.setTextSize(17);
-            r.setPadding(0, 0, dp(14), 0);
+            r.setPadding(0, dp(2), dp(14), dp(2));
             g.addView(r);
-            if (v == cur) r.setChecked(true);
+            if (v.equals(cur)) r.setChecked(true);
             r.setOnCheckedChangeListener((btn, on) -> {
-                if (on) prefs.edit().putInt(key, v).apply();
+                if (!on) return;
+                if (asString) prefs.edit().putString(key, v).apply();
+                else prefs.edit().putInt(key, Integer.parseInt(v)).apply();
+                if (GpsWatchService.KEY_MODE.equals(key)) GpsWatchService.refresh();
             });
         }
         return g;
@@ -292,8 +476,7 @@ public class MainActivity extends Activity {
         s.setTextSize(16);
         s.setChecked(prefs.getBoolean(key, def));
         s.setPadding(0, dp(8), 0, dp(8));
-        s.setOnCheckedChangeListener((CompoundButton btn, boolean on) ->
-                prefs.edit().putBoolean(key, on).apply());
+        s.setOnCheckedChangeListener((btn, on) -> prefs.edit().putBoolean(key, on).apply());
         return s;
     }
 
